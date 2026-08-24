@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+Solo se combina con los builds "debug" (nunca con "release"/Play Store).
+Permite tráfico HTTP sin cifrar hacia el backend local (backend_riesgo.py)
+mientras se desarrolla contra el emulador (10.0.2.2) o un PC en la misma
+wifi. Antes de publicar en Play Store, el backend real debe servir HTTPS y
+esta excepción deja de ser necesaria.
+-->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <application android:usesCleartextTraffic="true" />
+</manifest>
