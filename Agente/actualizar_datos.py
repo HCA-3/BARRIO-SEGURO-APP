@@ -70,6 +70,22 @@ DATASETS = {
         "formato": "GeoJSON",
         "archivo_local_patron": "manzanaestratificacion.json",
     },
+    "incidentes_nuse": {
+        "label": "Incidente Reportado (NUSE/C4)",
+        "ckan_id": "incidente-reportado-bogota-d-c",
+        "formato": "GeoJSON",
+        # Igual que "delitos": el dataset trae un corte "Enero-Junio" (parcial)
+        # y uno "enero-diciembre" (año completo); preferimos el completo. Este
+        # dataset se actualiza MENSUALMENTE según su ficha técnica, así que el
+        # corte "Enero-Junio" también se va actualizando durante el año — pero
+        # igual preferimos el corte anual para que coincida con el período de
+        # ANIOS_RECIENTES que usa ProcesarRiesgo.py.
+        "preferir_en_nombre": ["diciembre"],
+        "evitar_en_nombre": ["junio"],
+        # El recurso es un .zip con 3 archivos (localidad/UPZ/barrio);
+        # ProcesarRiesgo.py hoy solo usa el de localidad.
+        "archivo_local_patron": "IRLoc.geojson",
+    },
 }
 
 

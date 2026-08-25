@@ -1,1 +1,26 @@
-{}
+{
+  "delitos": {
+    "resource_id": "fc846aa6-68a9-456a-bdd3-f0284e162bd4",
+    "url": "https://datosabiertos.bogota.gov.co/dataset/7b270013-42ca-436b-9c1e-3bcb7d280c6b/resource/fc846aa6-68a9-456a-bdd3-f0284e162bd4/download/dai_geojson.zip",
+    "last_modified": "2026-01-29T16:31:58.015612",
+    "actualizado_en": "2026-08-25T09:49:49"
+  },
+  "poblacion": {
+    "resource_id": "5669484f-dc1d-4457-b1d1-de0a3825b41c",
+    "url": "https://datosabiertos.bogota.gov.co/dataset/0f1fb76a-1595-43d5-9257-0abcc3db908a/resource/5669484f-dc1d-4457-b1d1-de0a3825b41c/download/202503_localidad_proyeccion_retroproyeccion_poblacion_2005_2035.ods",
+    "last_modified": "2025-05-14T13:24:28.720400",
+    "actualizado_en": "2026-08-25T09:49:52"
+  },
+  "estratificacion": {
+    "resource_id": "29f2d770-bd5d-4450-9e95-8737167ba12f",
+    "url": "https://datosabiertos.bogota.gov.co/dataset/55467552-0af4-4524-a390-a2956035744e/resource/29f2d770-bd5d-4450-9e95-8737167ba12f/download/manzanaestratificacion.json",
+    "last_modified": "2025-11-20T14:54:15.811479",
+    "actualizado_en": "2026-08-25T09:50:05"
+  },
+  "incidentes_nuse": {
+    "resource_id": "2a4b73fd-93a7-4b08-8c20-b6ea22182a47",
+    "url": "https://datosabiertos.bogota.gov.co/dataset/ac8ebc76-583c-4c3b-9a2b-0f3791d63886/resource/2a4b73fd-93a7-4b08-8c20-b6ea22182a47/download/ir_geojson.zip",
+    "last_modified": "2026-01-29T16:27:32.605926",
+    "actualizado_en": "2026-08-25T09:50:11"
+  }
+}
