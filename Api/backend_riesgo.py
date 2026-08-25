@@ -68,6 +68,14 @@ habitantes), nunca en el estrato.
 
 "nivel_riesgo" viene de cortes de Jenks Natural Breaks sobre \
 score_ponderado_100k (3 niveles: bajo, medio, alto).
+
+OJO al leer el resultado de una herramienta, hay DOS cifras que se \
+parecen pero NO son lo mismo — no las confundas:
+- "delitos_recientes_total_2023_2025": delitos VERIFICADOS (SDSCJ).
+- "contexto.incidentes_nuse_recientes_total": LLAMADAS de emergencia \
+(NUSE/C4), no delitos verificados. Es solo contexto (igual que el \
+estrato): NO se usa para calcular nivel_riesgo. Se actualiza mensual, a \
+diferencia de los delitos que son de corte semestral/anual.
 """
 
 TOOLS = [

@@ -15,6 +15,17 @@ Fuentes de datos (todas en ./data, ver README_DATOS.md):
      ver nota ética abajo).
   4. OpenStreetMap Bogotá (vía BBBike) -> densidad de alumbrado público y de
      vías, como señal adicional de contexto urbano.
+  5. (Opcional) Incidente Reportado — NUSE/C4 (SDSCJ) -> volumen de llamadas
+     de emergencia por localidad. A diferencia de la fuente 1 (delitos
+     verificados, corte semestral/anual), esta se actualiza MENSUALMENTE, así
+     que sirve para no dejar la app tan desactualizada entre cortes oficiales
+     de delito. Se reporta como CONTEXTO (total agregado, sin desglosar por
+     categoría: los códigos de columna de este dataset — CMR, CMN, CMAOP,
+     etc. — no tienen diccionario público de fácil acceso, así que desglosar
+     mal una categoría sería peor que no desglosarla). NO se usa para
+     calcular nivel_riesgo, por la misma razón que el estrato: es volumen de
+     LLAMADAS (percepción/uso del servicio), no delito verificado. Si no se
+     descargó este dataset, el pipeline sigue funcionando sin él.
 
 Salida: ./output/zonas_riesgo.json con:
   { "localidad_codigo": {
@@ -239,6 +250,45 @@ def cargar_osm_contexto():
     return puntos, lineas
 
 
+# Prefijos de categoría del dataset "Incidente Reportado" (NUSE/C4, SDSCJ).
+# A diferencia de CATEGORIAS_DELITO, aquí no hay diccionario público que
+# traduzca cada prefijo a un nombre de categoría legible, así que solo se
+# suman TODAS para un total agregado (ver nota en el docstring del módulo).
+PREFIJOS_INCIDENTES_NUSE = ["CMAOP", "CMD", "CMH", "CMHC", "CMM", "CMMM", "CMN", "CMPIA", "CMR"]
+
+
+def cargar_incidentes_nuse() -> pd.DataFrame | None:
+    """
+    Volumen de llamadas de emergencia (NUSE/C4) por localidad, dataset
+    "Incidente Reportado" de la SDSCJ. Opcional: si no se descargó (ver
+    actualizar_datos.py), el pipeline sigue sin esta columna de contexto.
+    """
+    try:
+        ruta = buscar_archivo("IRLoc.geojson")
+    except FileNotFoundError:
+        print("  (no encontré IRLoc.geojson — se omite este contexto opcional; "
+              "correr 'python actualizar_datos.py --descargar' para traerlo)")
+        return None
+
+    gdf = gpd.read_file(ruta)
+    gdf = gdf[gdf["CMIULOCAL"] != "99"].copy()  # excluir "Sin Localización"
+    gdf["codigo"] = gdf["CMIULOCAL"].astype(int)
+
+    filas = []
+    for _, row in gdf.iterrows():
+        total_reciente = 0
+        for prefijo in PREFIJOS_INCIDENTES_NUSE:
+            for anio in ANIOS_RECIENTES:
+                for sufijo in ("CONT", "CON"):
+                    col = f"{prefijo}{anio}{sufijo}"
+                    if col in row.index and pd.notna(row[col]):
+                        total_reciente += row[col]
+                        break
+        filas.append({"codigo": row["codigo"], "incidentes_nuse_recientes_total": int(total_reciente)})
+
+    return pd.DataFrame(filas)
+
+
 def clasificar_por_jenks(serie: pd.Series):
     """
     Clasifica en 3 niveles usando Jenks Natural Breaks en vez de terciles.
@@ -308,6 +358,13 @@ def main():
     print("Cargando contexto OSM (puede tardar)...")
     puntos, lineas = cargar_osm_contexto()
 
+    print("Cargando incidentes NUSE/C4 (opcional)...")
+    incidentes_nuse = cargar_incidentes_nuse()
+    if incidentes_nuse is not None:
+        df = df.merge(incidentes_nuse, on="codigo", how="left")
+    else:
+        df["incidentes_nuse_recientes_total"] = None
+
     # Alumbrado público: en OSM suele venir como highway=street_lamp
     alumbrado = puntos[puntos.get("highway") == "street_lamp"] if "highway" in puntos.columns else puntos.iloc[0:0]
     if not alumbrado.empty:
@@ -367,6 +424,10 @@ def main():
                 "luminarias_por_km2": None if pd.isna(row.get("luminarias_por_km2")) else round(row["luminarias_por_km2"], 1),
                 "longitud_vias_km": None if pd.isna(row.get("longitud_vias_km")) else round(row["longitud_vias_km"], 1),
                 "area_km2": round(row["area_km2"], 2),
+                "incidentes_nuse_recientes_total": (
+                    None if pd.isna(row.get("incidentes_nuse_recientes_total"))
+                    else int(row["incidentes_nuse_recientes_total"])
+                ),
             },
         }
 
@@ -396,6 +457,15 @@ def main():
                 "El estrato socioeconomico se reporta como contexto pero NO "
                 "se usa para calcular nivel_riesgo, para evitar sesgar el "
                 "modelo contra localidades de bajos ingresos."
+            ),
+            "nota_incidentes_nuse": (
+                "incidentes_nuse_recientes_total (contexto.incidentes_nuse_recientes_total) "
+                "es el volumen de llamadas de emergencia NUSE/C4 (dataset 'Incidente "
+                "Reportado' de la SDSCJ), agregado sin desglosar por categoria porque "
+                "esas categorias no tienen diccionario publico de facil acceso. Se "
+                "actualiza MENSUALMENTE (a diferencia del dataset de delitos, que es "
+                "semestral/anual), pero es volumen de llamadas, no delito verificado -- "
+                "por eso tampoco se usa para calcular nivel_riesgo."
             ),
         }
     }

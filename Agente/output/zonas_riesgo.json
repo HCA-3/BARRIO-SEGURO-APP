@@ -23,7 +23,8 @@
       "Hurto de celulares": 8
     },
     "nota_pesos": "Los pesos de severidad son una decision de diseno (no una cifra oficial): reflejan que delitos contra la vida/integridad deben pesar mas que hurtos sin violencia. Se recomienda validarlos con el asesor del proyecto.",
-    "nota_etica": "El estrato socioeconomico se reporta como contexto pero NO se usa para calcular nivel_riesgo, para evitar sesgar el modelo contra localidades de bajos ingresos."
+    "nota_etica": "El estrato socioeconomico se reporta como contexto pero NO se usa para calcular nivel_riesgo, para evitar sesgar el modelo contra localidades de bajos ingresos.",
+    "nota_incidentes_nuse": "incidentes_nuse_recientes_total (contexto.incidentes_nuse_recientes_total) es el volumen de llamadas de emergencia NUSE/C4 (dataset 'Incidente Reportado' de la SDSCJ), agregado sin desglosar por categoria porque esas categorias no tienen diccionario publico de facil acceso. Se actualiza MENSUALMENTE (a diferencia del dataset de delitos, que es semestral/anual), pero es volumen de llamadas, no delito verificado -- por eso tampoco se usa para calcular nivel_riesgo."
   },
   "9": {
     "localidad": "Fontibón",
@@ -49,8 +50,9 @@
       "estrato_promedio": 3.05,
       "luminarias_estimadas": null,
       "luminarias_por_km2": null,
-      "longitud_vias_km": 1204.0,
-      "area_km2": 33.25
+      "longitud_vias_km": 1203.9,
+      "area_km2": 33.25,
+      "incidentes_nuse_recientes_total": 156924
     }
   },
   "19": {
@@ -77,8 +79,9 @@
       "estrato_promedio": 1.27,
       "luminarias_estimadas": null,
       "luminarias_por_km2": null,
-      "longitud_vias_km": 1273.8,
-      "area_km2": 129.9
+      "longitud_vias_km": 1255.4,
+      "area_km2": 129.9,
+      "incidentes_nuse_recientes_total": 295978
     }
   },
   "14": {
@@ -105,8 +108,9 @@
       "estrato_promedio": 2.92,
       "luminarias_estimadas": 14,
       "luminarias_por_km2": 2.2,
-      "longitud_vias_km": 391.1,
-      "area_km2": 6.51
+      "longitud_vias_km": 399.2,
+      "area_km2": 6.51,
+      "incidentes_nuse_recientes_total": 91608
     }
   },
   "15": {
@@ -133,8 +137,9 @@
       "estrato_promedio": 2.95,
       "luminarias_estimadas": null,
       "luminarias_por_km2": null,
-      "longitud_vias_km": 304.0,
-      "area_km2": 4.88
+      "longitud_vias_km": 304.3,
+      "area_km2": 4.88,
+      "incidentes_nuse_recientes_total": 65628
     }
   },
   "2": {
@@ -161,8 +166,9 @@
       "estrato_promedio": 4.05,
       "luminarias_estimadas": 89,
       "luminarias_por_km2": 2.3,
-      "longitud_vias_km": 954.5,
-      "area_km2": 37.98
+      "longitud_vias_km": 955.7,
+      "area_km2": 37.98,
+      "incidentes_nuse_recientes_total": 110932
     }
   },
   "20": {
@@ -190,7 +196,8 @@
       "luminarias_estimadas": null,
       "luminarias_por_km2": null,
       "longitud_vias_km": null,
-      "area_km2": 780.35
+      "area_km2": 780.35,
+      "incidentes_nuse_recientes_total": 113
     }
   },
   "18": {
@@ -218,7 +225,8 @@
       "luminarias_estimadas": null,
       "luminarias_por_km2": null,
       "longitud_vias_km": 633.2,
-      "area_km2": 13.82
+      "area_km2": 13.82,
+      "incidentes_nuse_recientes_total": 204968
     }
   },
   "17": {
@@ -245,8 +253,9 @@
       "estrato_promedio": 2.36,
       "luminarias_estimadas": 1,
       "luminarias_por_km2": 0.5,
-      "longitud_vias_km": 129.2,
-      "area_km2": 2.06
+      "longitud_vias_km": 122.8,
+      "area_km2": 2.06,
+      "incidentes_nuse_recientes_total": 16927
     }
   },
   "12": {
@@ -273,8 +282,9 @@
       "estrato_promedio": 3.29,
       "luminarias_estimadas": null,
       "luminarias_por_km2": null,
-      "longitud_vias_km": 689.0,
-      "area_km2": 11.89
+      "longitud_vias_km": 689.7,
+      "area_km2": 11.89,
+      "incidentes_nuse_recientes_total": 104401
     }
   },
   "13": {
@@ -301,8 +311,9 @@
       "estrato_promedio": 3.9,
       "luminarias_estimadas": 87,
       "luminarias_por_km2": 6.1,
-      "longitud_vias_km": 810.8,
-      "area_km2": 14.18
+      "longitud_vias_km": 812.0,
+      "area_km2": 14.18,
+      "incidentes_nuse_recientes_total": 100705
     }
   },
   "16": {
@@ -329,8 +340,9 @@
       "estrato_promedio": 3.0,
       "luminarias_estimadas": null,
       "luminarias_por_km2": null,
-      "longitud_vias_km": 894.4,
-      "area_km2": 17.3
+      "longitud_vias_km": 895.1,
+      "area_km2": 17.3,
+      "incidentes_nuse_recientes_total": 143336
     }
   },
   "1": {
@@ -357,8 +369,9 @@
       "estrato_promedio": 3.68,
       "luminarias_estimadas": 177,
       "luminarias_por_km2": 2.7,
-      "longitud_vias_km": 1615.7,
-      "area_km2": 65.15
+      "longitud_vias_km": 1617.9,
+      "area_km2": 65.15,
+      "incidentes_nuse_recientes_total": 217047
     }
   },
   "4": {
@@ -385,8 +398,9 @@
       "estrato_promedio": 1.99,
       "luminarias_estimadas": null,
       "luminarias_por_km2": null,
-      "longitud_vias_km": 1136.7,
-      "area_km2": 49.06
+      "longitud_vias_km": 931.9,
+      "area_km2": 49.06,
+      "incidentes_nuse_recientes_total": 200234
     }
   },
   "5": {
@@ -414,7 +428,8 @@
       "luminarias_estimadas": null,
       "luminarias_por_km2": null,
       "longitud_vias_km": 370.2,
-      "area_km2": 214.9
+      "area_km2": 214.9,
+      "incidentes_nuse_recientes_total": 183341
     }
   },
   "7": {
@@ -442,7 +457,8 @@
       "luminarias_estimadas": null,
       "luminarias_por_km2": null,
       "longitud_vias_km": 1102.4,
-      "area_km2": 23.91
+      "area_km2": 23.91,
+      "incidentes_nuse_recientes_total": 322392
     }
   },
   "8": {
@@ -470,7 +486,8 @@
       "luminarias_estimadas": null,
       "luminarias_por_km2": null,
       "longitud_vias_km": 1782.8,
-      "area_km2": 38.56
+      "area_km2": 38.56,
+      "incidentes_nuse_recientes_total": 485060
     }
   },
   "10": {
@@ -498,7 +515,8 @@
       "luminarias_estimadas": 11,
       "luminarias_por_km2": 0.3,
       "longitud_vias_km": 1487.3,
-      "area_km2": 35.85
+      "area_km2": 35.85,
+      "incidentes_nuse_recientes_total": 400506
     }
   },
   "11": {
@@ -525,8 +543,9 @@
       "estrato_promedio": 2.93,
       "luminarias_estimadas": 219,
       "luminarias_por_km2": 2.2,
-      "longitud_vias_km": 2060.9,
-      "area_km2": 100.48
+      "longitud_vias_km": 2063.0,
+      "area_km2": 100.48,
+      "incidentes_nuse_recientes_total": 509301
     }
   },
   "6": {
@@ -554,7 +573,8 @@
       "luminarias_estimadas": null,
       "luminarias_por_km2": null,
       "longitud_vias_km": 480.4,
-      "area_km2": 9.9
+      "area_km2": 9.9,
+      "incidentes_nuse_recientes_total": 89952
     }
   },
   "3": {
@@ -581,8 +601,9 @@
       "estrato_promedio": 2.25,
       "luminarias_estimadas": 2,
       "luminarias_por_km2": 0.0,
-      "longitud_vias_km": 854.1,
-      "area_km2": 45.13
+      "longitud_vias_km": 769.4,
+      "area_km2": 45.13,
+      "incidentes_nuse_recientes_total": 89889
     }
   }
 }

@@ -62,6 +62,14 @@ habitantes), nunca en el estrato.
 
 "nivel_riesgo" viene de cortes de Jenks Natural Breaks sobre \
 score_ponderado_100k (3 niveles: bajo, medio, alto).
+
+OJO al leer el resultado de una herramienta, hay DOS cifras que se \
+parecen pero NO son lo mismo — no las confundas:
+- "delitos_recientes_total_2023_2025": delitos VERIFICADOS (SDSCJ).
+- "contexto.incidentes_nuse_recientes_total": LLAMADAS de emergencia \
+(NUSE/C4), no delitos verificados. Es solo contexto (igual que el \
+estrato): NO se usa para calcular nivel_riesgo. Se actualiza mensual, a \
+diferencia de los delitos que son de corte semestral/anual.
 """
 
 TOOLS = [
@@ -211,20 +219,46 @@ def ejecutar_tool(nombre: str, argumentos: dict, datos: dict):
     return {"error": f"Herramienta desconocida: {nombre}"}
 
 
+# claves = bytes UTF-8 de la tilde reinterpretados como latin-1 (mojibake);
+# valores = el caracter correcto.
+MOJIBAKE_MAP = {
+    "Ã¡": "á",  # a-acento
+    "Ã©": "é",  # e-acento
+    "Ã­": "í",  # i-acento
+    "Ã³": "ó",  # o-acento
+    "Ãº": "ú",  # u-acento
+    "Ã±": "ñ",  # ene
+    "Ã": "Á",  # A-acento
+    "Ã": "É",  # E-acento
+    "Ã": "Í",  # I-acento
+    "Ã": "Ó",  # O-acento
+    "Ã": "Ú",  # U-acento
+    "Ã": "Ñ",  # ENE
+    "Â¿": "¿",  # interrogacion invertido
+    "Â¡": "¡",  # exclamacion invertido
+    "Ã¼": "ü",  # u-dieresis
+    "Ã¤": "ä",  # a-dieresis
+}
+
+
 def reparar_mojibake(texto: str) -> str:
     """
     A veces el modelo (llama3.1 vía Ollama, con tool-calling activado)
     genera una tilde como si fueran sus bytes UTF-8 reinterpretados como
     latin-1: "más" sale como "mÃ¡s". Es un artefacto del propio modelo, no
-    de cómo Python lee la respuesta HTTP (ya se fuerza utf-8 ahí). Se
-    intenta reparar re-codificando a latin-1 y volviendo a decodificar como
-    utf-8; si el texto no tiene ese patrón, el intento falla y se deja
-    tal cual.
+    de cómo Python lee la respuesta HTTP (ya se fuerza utf-8 ahí).
+
+    La corrupción es a veces parcial: un mismo mensaje puede traer "mÃ¡s"
+    (roto) junto a "Mártires" (ya bien codificado). Por eso NO se puede
+    reparar re-codificando la cadena completa a latin-1 y decodificando de
+    vuelta como utf-8 — el fragmento ya correcto contiene bytes que no
+    son continuaciones UTF-8 válidas y el round-trip completo lanza
+    UnicodeDecodeError, dejando el mensaje entero sin reparar. En su
+    lugar se reemplazan directamente las secuencias mojibake conocidas.
     """
-    try:
-        return texto.encode("latin-1").decode("utf-8")
-    except (UnicodeEncodeError, UnicodeDecodeError):
-        return texto
+    for roto, correcto in MOJIBAKE_MAP.items():
+        texto = texto.replace(roto, correcto)
+    return texto
 
 
 def preguntar(modelo: str, historial: list, datos: dict) -> str:
