@@ -3,8 +3,8 @@ Backend HTTP para la app de Android "Barrio Seguro" (Riesgos Sociales en
 Chapinero / Bogotá).
 
 Expone por REST los datos de riesgo por localidad que calcula
-../../Data/ProcesarRiesgo.py, y el agente conversacional (mismo diseño de
-tool-calling que Data/agente.py: el LLM nunca "lee" cifras sueltas de un
+../Agente/ProcesarRiesgo.py, y el agente conversacional (mismo diseño de
+tool-calling que Agente/agente.py: el LLM nunca "lee" cifras sueltas de un
 bloque de texto largo — siempre llama funciones Python que las calculan —
 porque en las pruebas un modelo local de 8B alucinaba el ranking cuando se
 le pedía leerlo directamente de un JSON o de una tabla en el prompt).
@@ -12,8 +12,8 @@ le pedía leerlo directamente de un JSON o de una tabla en el prompt).
 Requiere:
   - Ollama corriendo localmente con un modelo que soporte tool-calling ya
     descargado (ej. "ollama pull llama3.1").
-  - Que ../../Data/output/zonas_riesgo.json ya exista (correr primero
-    Data/ProcesarRiesgo.py).
+  - Que ../Agente/output/zonas_riesgo.json ya exista (correr primero
+    Agente/ProcesarRiesgo.py).
 
 Uso:
   uvicorn backend_riesgo:app --host 0.0.0.0 --port 8000 --reload
@@ -40,7 +40,7 @@ from pydantic import BaseModel
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 ZONAS_PATH = os.environ.get(
     "ZONAS_RIESGO_PATH",
-    os.path.normpath(os.path.join(BASE_DIR, "..", "..", "Data", "output", "zonas_riesgo.json")),
+    os.path.normpath(os.path.join(BASE_DIR, "..", "Agente", "output", "zonas_riesgo.json")),
 )
 OLLAMA_URL = "http://localhost:11434/api/chat"
 MODELO_DEFECTO = "llama3.1"
