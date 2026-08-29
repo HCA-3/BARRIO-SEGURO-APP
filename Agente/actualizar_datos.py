@@ -64,6 +64,18 @@ DATASETS = {
         "evitar_en_nombre": ["upz", "metadato"],
         "archivo_local_patron": "*localidad_proyeccion_retroproyeccion*.ods",
     },
+    "poblacion_upz": {
+        # Mismo dataset del portal que "poblacion", pero es un recurso
+        # (archivo) distinto adentro del mismo paquete: población por UPZ en
+        # vez de por localidad. La usa ProcesarRiesgo.py para la capa
+        # secundaria de llamadas NUSE por UPZ, no para nivel_riesgo.
+        "label": "Proyecciones de población por UPZ 2005-2035",
+        "ckan_id": "proyecciones-y-retroproyecciones-de-poblacion-2005-2035",
+        "formato": "ODS",
+        "requerir_en_nombre": ["upz"],
+        "evitar_en_nombre": ["metadato"],
+        "archivo_local_patron": "*upz_proyeccion_retroproyeccion*.ods",
+    },
     "estratificacion": {
         "label": "Estratificación socioeconómica por manzana",
         "ckan_id": "estratificacion-para-bogota",
@@ -82,8 +94,12 @@ DATASETS = {
         # ANIOS_RECIENTES que usa ProcesarRiesgo.py.
         "preferir_en_nombre": ["diciembre"],
         "evitar_en_nombre": ["junio"],
-        # El recurso es un .zip con 3 archivos (localidad/UPZ/barrio);
-        # ProcesarRiesgo.py hoy solo usa el de localidad.
+        # El recurso es un .zip con 3 archivos (localidad/UPZ/sector
+        # catastral): ProcesarRiesgo.py usa el de localidad (contexto) y el
+        # de UPZ (capa secundaria de llamadas). El de sector catastral no se
+        # usa todavía. Los 3 quedan en la misma carpeta al descomprimir, así
+        # que con revisar el de localidad alcanza para saber si hay versión
+        # nueva de los 3 juntos.
         "archivo_local_patron": "IRLoc.geojson",
     },
 }

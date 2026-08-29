@@ -40,9 +40,20 @@ object ApiClient {
 
     data class MensajeChat(val role: String, val content: String)
 
-    data class RespuestaChat(val respuesta: String, val mensajes: List<MensajeChat>)
+    data class RespuestaChat(
+        val respuesta: String,
+        val mensajes: List<MensajeChat>,
+        val hechosNuevos: List<String>,
+    )
 
-    data class RiesgoPorPunto(val localidad: String, val nivelRiesgo: String, val scoreMixto: Double)
+    data class RiesgoUpz(val upz: String, val nivelLlamadas: String, val tasaLlamadas100k: Double)
+
+    data class RiesgoPorPunto(
+        val localidad: String,
+        val nivelRiesgo: String,
+        val scoreMixto: Double,
+        val upz: RiesgoUpz?,
+    )
 
     class ApiException(message: String) : Exception(message)
 
@@ -71,20 +82,33 @@ object ApiClient {
             if (resp.code == 404) return null
             if (!resp.isSuccessful) throw ApiException("Error ${resp.code} consultando el riesgo por ubicación")
             val o = JSONObject(resp.body?.string() ?: "{}")
+            val upzJson = o.optJSONObject("upz")
             return RiesgoPorPunto(
                 localidad = o.getString("localidad"),
                 nivelRiesgo = o.getString("nivel_riesgo"),
                 scoreMixto = o.getDouble("score_mixto"),
+                upz = upzJson?.let {
+                    RiesgoUpz(
+                        upz = it.getString("upz"),
+                        nivelLlamadas = it.getString("nivel_llamadas"),
+                        tasaLlamadas100k = it.getDouble("tasa_llamadas_100k"),
+                    )
+                },
             )
         }
     }
 
-    fun enviarMensajeChat(historial: List<MensajeChat>): RespuestaChat {
+    fun enviarMensajeChat(historial: List<MensajeChat>, hechosRecordados: List<String> = emptyList()): RespuestaChat {
         val mensajesJson = JSONArray()
         for (m in historial) {
             mensajesJson.put(JSONObject().put("role", m.role).put("content", m.content))
         }
-        val cuerpo = JSONObject().put("mensajes", mensajesJson).toString()
+        val hechosJson = JSONArray()
+        for (h in hechosRecordados) hechosJson.put(h)
+        val cuerpo = JSONObject()
+            .put("mensajes", mensajesJson)
+            .put("hechos_recordados", hechosJson)
+            .toString()
         val request = Request.Builder()
             .url(baseUrl + "chat")
             .post(cuerpo.toRequestBody(jsonMediaType))
@@ -98,7 +122,13 @@ object ApiClient {
                 val o = mensajesResp.getJSONObject(i)
                 MensajeChat(role = o.getString("role"), content = o.optString("content", ""))
             }
-            return RespuestaChat(respuesta = json.getString("respuesta"), mensajes = historialActualizado)
+            val hechosResp = json.optJSONArray("hechos_nuevos") ?: JSONArray()
+            val hechosNuevos = List(hechosResp.length()) { i -> hechosResp.getString(i) }
+            return RespuestaChat(
+                respuesta = json.getString("respuesta"),
+                mensajes = historialActualizado,
+                hechosNuevos = hechosNuevos,
+            )
         }
     }
 }

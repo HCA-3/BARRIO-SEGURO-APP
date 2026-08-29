@@ -40,8 +40,10 @@ class MonitoreoUbicacionService : Service() {
         private const val TAG = "MonitoreoUbicacion"
         private const val CANAL_MONITOREO = "monitoreo_ubicacion"
         private const val CANAL_ALERTA = "alerta_riesgo"
+        private const val CANAL_ALERTA_UPZ = "alerta_llamadas_upz"
         private const val ID_NOTIFICACION_MONITOREO = 1
         private const val ID_NOTIFICACION_ALERTA = 2
+        private const val ID_NOTIFICACION_ALERTA_UPZ = 3
 
         // Cada cuánto se revisa la ubicación. 2 minutos: suficientemente
         // frecuente para una alerta útil ("acabo de entrar a una zona roja"),
@@ -57,6 +59,11 @@ class MonitoreoUbicacionService : Service() {
     // Se resetea al salir de una zona de riesgo alto, así que si vuelve a
     // entrar (a la misma u otra) se vuelve a avisar.
     private var ultimaZonaAlertada: String? = null
+
+    // Igual que ultimaZonaAlertada, pero para la capa secundaria de UPZ
+    // (llamadas de emergencia). Es independiente: se puede estar en una
+    // localidad de riesgo medio pero en una UPZ puntual con muchas llamadas.
+    private var ultimaUpzAlertada: String? = null
 
     private lateinit var locationCallback: LocationCallback
 
@@ -142,6 +149,16 @@ class MonitoreoUbicacionService : Service() {
             } else {
                 ultimaZonaAlertada = null
             }
+
+            val upz = resultado?.upz
+            if (upz?.nivelLlamadas == "alto") {
+                if (upz.upz != ultimaUpzAlertada) {
+                    ultimaUpzAlertada = upz.upz
+                    mostrarAlertaUpz(upz.upz)
+                }
+            } else {
+                ultimaUpzAlertada = null
+            }
         }
     }
 
@@ -161,7 +178,18 @@ class MonitoreoUbicacionService : Service() {
                 CANAL_ALERTA,
                 "Alertas de zona de riesgo",
                 NotificationManager.IMPORTANCE_HIGH,
-            ).apply { description = "Avisa cuando entras a una localidad con riesgo alto." },
+            ).apply { description = "Avisa cuando entras a una localidad con riesgo alto (delito verificado)." },
+        )
+
+        manager.createNotificationChannel(
+            NotificationChannel(
+                CANAL_ALERTA_UPZ,
+                "Alertas de llamadas de emergencia",
+                NotificationManager.IMPORTANCE_DEFAULT,
+            ).apply {
+                description = "Avisa cuando entras a una zona más pequeña (UPZ) con muchas llamadas de " +
+                    "emergencia recientes. Señal secundaria, no es delito verificado."
+            },
         )
     }
 
@@ -206,6 +234,36 @@ class MonitoreoUbicacionService : Service() {
             .build()
 
         getSystemService(NotificationManager::class.java).notify(ID_NOTIFICACION_ALERTA, notificacion)
+    }
+
+    private fun mostrarAlertaUpz(upz: String) {
+        if (ActivityCompat.checkSelfPermission(
+                this,
+                android.Manifest.permission.POST_NOTIFICATIONS,
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
+            return
+        }
+
+        val abrirApp = PendingIntent.getActivity(
+            this,
+            0,
+            Intent(this, MainActivity::class.java),
+            PendingIntent.FLAG_IMMUTABLE,
+        )
+        // Texto deliberadamente distinto al de la alerta oficial ("Zona de
+        // riesgo alto"): esta es una señal más ruidosa (llamadas de
+        // emergencia, no delito verificado) y no debe sonar igual de certera.
+        val notificacion = NotificationCompat.Builder(this, CANAL_ALERTA_UPZ)
+            .setContentTitle("Zona con muchas llamadas de emergencia")
+            .setContentText("$upz ha tenido varias llamadas de emergencia recientes (no es delito confirmado).")
+            .setSmallIcon(android.R.drawable.ic_dialog_info)
+            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+            .setAutoCancel(true)
+            .setContentIntent(abrirApp)
+            .build()
+
+        getSystemService(NotificationManager::class.java).notify(ID_NOTIFICACION_ALERTA_UPZ, notificacion)
     }
 
     override fun onDestroy() {

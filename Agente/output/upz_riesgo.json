@@ -1,0 +1,799 @@
+{
+  "_meta": {
+    "fuente": "Incidente Reportado (NUSE/C4): llamadas de emergencia, NO delito verificado",
+    "advertencia": "Capa secundaria y mas ruidosa que nivel_riesgo por localidad (volumen de llamadas, no delito confirmado). No mezclar como si tuviera la misma certeza: usar solo como contexto adicional de mayor resolucion espacial.",
+    "periodo": "promedio 2023-2025",
+    "clasificacion": {
+      "variable_usada": "tasa_llamadas_100k",
+      "metodo_corte": "Jenks Natural Breaks (3 clases)",
+      "umbral_bajo_medio": 44694.72,
+      "umbral_medio_alto": 97029.94,
+      "poblacion_minima_para_clasificar": 1000,
+      "nota_poblacion_minima": "UPZ con menos poblacion residente que este umbral (parques, aeropuertos, zonas rurales) no se clasifican: con tan pocos habitantes censados, una sola llamada dispara una tasa por habitante estadisticamente sin sentido. nivel_llamadas y tasa_llamadas_100k quedan null en esos casos."
+    }
+  },
+  "22": {
+    "upz": "Doce De Octubre",
+    "poblacion_2025": 71259,
+    "incidentes_nuse_recientes_total": 34846,
+    "tasa_llamadas_100k": 48900.49,
+    "nivel_llamadas": "medio"
+  },
+  "103": {
+    "upz": "Parque Salitre",
+    "poblacion_2025": 1090,
+    "incidentes_nuse_recientes_total": 1778,
+    "tasa_llamadas_100k": 163119.27,
+    "nivel_llamadas": "alto"
+  },
+  "105": {
+    "upz": "Jardin Botanico",
+    "poblacion_2025": 4121,
+    "incidentes_nuse_recientes_total": 2507,
+    "tasa_llamadas_100k": 60834.75,
+    "nivel_llamadas": "medio"
+  },
+  "88": {
+    "upz": "El Refugio",
+    "poblacion_2025": 37763,
+    "incidentes_nuse_recientes_total": 8495,
+    "tasa_llamadas_100k": 22495.56,
+    "nivel_llamadas": "bajo"
+  },
+  "27": {
+    "upz": "Suba",
+    "poblacion_2025": 199208,
+    "incidentes_nuse_recientes_total": 62355,
+    "tasa_llamadas_100k": 31301.45,
+    "nivel_llamadas": "bajo"
+  },
+  "99": {
+    "upz": "Chapinero",
+    "poblacion_2025": 23777,
+    "incidentes_nuse_recientes_total": 33544,
+    "tasa_llamadas_100k": 141077.51,
+    "nivel_llamadas": "alto"
+  },
+  "109": {
+    "upz": "Ciudad Salitre Oriental",
+    "poblacion_2025": 25701,
+    "incidentes_nuse_recientes_total": 4576,
+    "tasa_llamadas_100k": 17804.75,
+    "nivel_llamadas": "bajo"
+  },
+  "90": {
+    "upz": "Pardo Rubio",
+    "poblacion_2025": 49224,
+    "incidentes_nuse_recientes_total": 19199,
+    "tasa_llamadas_100k": 39003.33,
+    "nivel_llamadas": "bajo"
+  },
+  "102": {
+    "upz": "La Sabana",
+    "poblacion_2025": 38290,
+    "incidentes_nuse_recientes_total": 54009,
+    "tasa_llamadas_100k": 141052.49,
+    "nivel_llamadas": "alto"
+  },
+  "45": {
+    "upz": "Carvajal",
+    "poblacion_2025": 85180,
+    "incidentes_nuse_recientes_total": 45921,
+    "tasa_llamadas_100k": 53910.54,
+    "nivel_llamadas": "medio"
+  },
+  "93": {
+    "upz": "Las Nieves",
+    "poblacion_2025": 18823,
+    "incidentes_nuse_recientes_total": 35668,
+    "tasa_llamadas_100k": 189491.58,
+    "nivel_llamadas": "alto"
+  },
+  "72": {
+    "upz": "Bolivia",
+    "poblacion_2025": 85218,
+    "incidentes_nuse_recientes_total": 16164,
+    "tasa_llamadas_100k": 18967.82,
+    "nivel_llamadas": "bajo"
+  },
+  "16": {
+    "upz": "Santa Barbara",
+    "poblacion_2025": 73252,
+    "incidentes_nuse_recientes_total": 25876,
+    "tasa_llamadas_100k": 35324.63,
+    "nivel_llamadas": "bajo"
+  },
+  "89": {
+    "upz": "San Isidro - Patios",
+    "poblacion_2025": 16489,
+    "incidentes_nuse_recientes_total": 3894,
+    "tasa_llamadas_100k": 23615.74,
+    "nivel_llamadas": "bajo"
+  },
+  "106": {
+    "upz": "La Esmeralda",
+    "poblacion_2025": 38989,
+    "incidentes_nuse_recientes_total": 7393,
+    "tasa_llamadas_100k": 18961.76,
+    "nivel_llamadas": "bajo"
+  },
+  "86": {
+    "upz": "El Porvenir",
+    "poblacion_2025": 162664,
+    "incidentes_nuse_recientes_total": 54296,
+    "tasa_llamadas_100k": 33379.24,
+    "nivel_llamadas": "bajo"
+  },
+  "82": {
+    "upz": "Patio Bonito",
+    "poblacion_2025": 133130,
+    "incidentes_nuse_recientes_total": 80688,
+    "tasa_llamadas_100k": 60608.43,
+    "nivel_llamadas": "medio"
+  },
+  "37": {
+    "upz": "Santa Isabel",
+    "poblacion_2025": 45697,
+    "incidentes_nuse_recientes_total": 34927,
+    "tasa_llamadas_100k": 76431.71,
+    "nivel_llamadas": "medio"
+  },
+  "49": {
+    "upz": "Apogeo",
+    "poblacion_2025": 32051,
+    "incidentes_nuse_recientes_total": 13584,
+    "tasa_llamadas_100k": 42382.45,
+    "nivel_llamadas": "bajo"
+  },
+  "19": {
+    "upz": "El Prado",
+    "poblacion_2025": 92722,
+    "incidentes_nuse_recientes_total": 38111,
+    "tasa_llamadas_100k": 41102.44,
+    "nivel_llamadas": "bajo"
+  },
+  "24": {
+    "upz": "Niza",
+    "poblacion_2025": 74879,
+    "incidentes_nuse_recientes_total": 24151,
+    "tasa_llamadas_100k": 32253.37,
+    "nivel_llamadas": "bajo"
+  },
+  "110": {
+    "upz": "Ciudad Salitre Occidental",
+    "poblacion_2025": 45303,
+    "incidentes_nuse_recientes_total": 9474,
+    "tasa_llamadas_100k": 20912.52,
+    "nivel_llamadas": "bajo"
+  },
+  "100": {
+    "upz": "Galerias",
+    "poblacion_2025": 36224,
+    "incidentes_nuse_recientes_total": 38758,
+    "tasa_llamadas_100k": 106995.36,
+    "nivel_llamadas": "alto"
+  },
+  "83": {
+    "upz": "Las Margaritas",
+    "poblacion_2025": 39399,
+    "incidentes_nuse_recientes_total": 6254,
+    "tasa_llamadas_100k": 15873.5,
+    "nivel_llamadas": "bajo"
+  },
+  "107": {
+    "upz": "Quinta Paredes",
+    "poblacion_2025": 26799,
+    "incidentes_nuse_recientes_total": 13870,
+    "tasa_llamadas_100k": 51755.66,
+    "nivel_llamadas": "medio"
+  },
+  "101": {
+    "upz": "Teusaquillo",
+    "poblacion_2025": 26762,
+    "incidentes_nuse_recientes_total": 29165,
+    "tasa_llamadas_100k": 108979.15,
+    "nivel_llamadas": "alto"
+  },
+  "81": {
+    "upz": "Gran Britalia",
+    "poblacion_2025": 60303,
+    "incidentes_nuse_recientes_total": 38249,
+    "tasa_llamadas_100k": 63428.02,
+    "nivel_llamadas": "medio"
+  },
+  "55": {
+    "upz": "Diana Turbay",
+    "poblacion_2025": 74162,
+    "incidentes_nuse_recientes_total": 32371,
+    "tasa_llamadas_100k": 43649.04,
+    "nivel_llamadas": "bajo"
+  },
+  "51": {
+    "upz": "Los Libertadores",
+    "poblacion_2025": 78989,
+    "incidentes_nuse_recientes_total": 30434,
+    "tasa_llamadas_100k": 38529.42,
+    "nivel_llamadas": "bajo"
+  },
+  "60": {
+    "upz": "Parque Entrenubes",
+    "poblacion_2025": 638,
+    "incidentes_nuse_recientes_total": 172,
+    "tasa_llamadas_100k": null,
+    "nivel_llamadas": null
+  },
+  "56": {
+    "upz": "Danubio",
+    "poblacion_2025": 62190,
+    "incidentes_nuse_recientes_total": 16230,
+    "tasa_llamadas_100k": 26097.44,
+    "nivel_llamadas": "bajo"
+  },
+  "65": {
+    "upz": "Arborizadora",
+    "poblacion_2025": 92189,
+    "incidentes_nuse_recientes_total": 29954,
+    "tasa_llamadas_100k": 32491.95,
+    "nivel_llamadas": "bajo"
+  },
+  "2": {
+    "upz": "La Academia",
+    "poblacion_2025": 7858,
+    "incidentes_nuse_recientes_total": 813,
+    "tasa_llamadas_100k": 10346.14,
+    "nivel_llamadas": "bajo"
+  },
+  "17": {
+    "upz": "San Jose De Bavaria",
+    "poblacion_2025": 44029,
+    "incidentes_nuse_recientes_total": 13204,
+    "tasa_llamadas_100k": 29989.33,
+    "nivel_llamadas": "bajo"
+  },
+  "26": {
+    "upz": "Las Ferias",
+    "poblacion_2025": 99419,
+    "incidentes_nuse_recientes_total": 62437,
+    "tasa_llamadas_100k": 62801.88,
+    "nivel_llamadas": "medio"
+  },
+  "48": {
+    "upz": "Timiza",
+    "poblacion_2025": 141301,
+    "incidentes_nuse_recientes_total": 52079,
+    "tasa_llamadas_100k": 36856.78,
+    "nivel_llamadas": "bajo"
+  },
+  "113": {
+    "upz": "Bavaria",
+    "poblacion_2025": 47494,
+    "incidentes_nuse_recientes_total": 11306,
+    "tasa_llamadas_100k": 23805.11,
+    "nivel_llamadas": "bajo"
+  },
+  "70": {
+    "upz": "Jerusalem",
+    "poblacion_2025": 106306,
+    "incidentes_nuse_recientes_total": 38864,
+    "tasa_llamadas_100k": 36558.61,
+    "nivel_llamadas": "bajo"
+  },
+  "35": {
+    "upz": "Ciudad Jardin",
+    "poblacion_2025": 26098,
+    "incidentes_nuse_recientes_total": 16832,
+    "tasa_llamadas_100k": 64495.36,
+    "nivel_llamadas": "medio"
+  },
+  "115": {
+    "upz": "Capellania",
+    "poblacion_2025": 17531,
+    "incidentes_nuse_recientes_total": 6737,
+    "tasa_llamadas_100k": 38429.07,
+    "nivel_llamadas": "bajo"
+  },
+  "50": {
+    "upz": "La Gloria",
+    "poblacion_2025": 93919,
+    "incidentes_nuse_recientes_total": 46169,
+    "tasa_llamadas_100k": 49158.32,
+    "nivel_llamadas": "medio"
+  },
+  "20": {
+    "upz": "La Alhambra",
+    "poblacion_2025": 36446,
+    "incidentes_nuse_recientes_total": 10727,
+    "tasa_llamadas_100k": 29432.59,
+    "nivel_llamadas": "bajo"
+  },
+  "79": {
+    "upz": "Calandaima",
+    "poblacion_2025": 161033,
+    "incidentes_nuse_recientes_total": 35285,
+    "tasa_llamadas_100k": 21911.66,
+    "nivel_llamadas": "bajo"
+  },
+  "61": {
+    "upz": "Ciudad Usme",
+    "poblacion_2025": 34428,
+    "incidentes_nuse_recientes_total": 8710,
+    "tasa_llamadas_100k": 25299.18,
+    "nivel_llamadas": "bajo"
+  },
+  "12": {
+    "upz": "Toberin",
+    "poblacion_2025": 59715,
+    "incidentes_nuse_recientes_total": 21666,
+    "tasa_llamadas_100k": 36282.34,
+    "nivel_llamadas": "bajo"
+  },
+  "10": {
+    "upz": "La Uribe",
+    "poblacion_2025": 41157,
+    "incidentes_nuse_recientes_total": 9807,
+    "tasa_llamadas_100k": 23828.27,
+    "nivel_llamadas": "bajo"
+  },
+  "58": {
+    "upz": "Comuneros",
+    "poblacion_2025": 97543,
+    "incidentes_nuse_recientes_total": 40990,
+    "tasa_llamadas_100k": 42022.49,
+    "nivel_llamadas": "bajo"
+  },
+  "43": {
+    "upz": "San Rafael",
+    "poblacion_2025": 71434,
+    "incidentes_nuse_recientes_total": 37343,
+    "tasa_llamadas_100k": 52276.23,
+    "nivel_llamadas": "medio"
+  },
+  "36": {
+    "upz": "San Jose",
+    "poblacion_2025": 47190,
+    "incidentes_nuse_recientes_total": 26773,
+    "tasa_llamadas_100k": 56734.48,
+    "nivel_llamadas": "medio"
+  },
+  "66": {
+    "upz": "San Francisco",
+    "poblacion_2025": 70127,
+    "incidentes_nuse_recientes_total": 33817,
+    "tasa_llamadas_100k": 48222.51,
+    "nivel_llamadas": "medio"
+  },
+  "57": {
+    "upz": "Gran Yomasa",
+    "poblacion_2025": 124469,
+    "incidentes_nuse_recientes_total": 59105,
+    "tasa_llamadas_100k": 47485.72,
+    "nivel_llamadas": "medio"
+  },
+  "52": {
+    "upz": "La Flora",
+    "poblacion_2025": 20425,
+    "incidentes_nuse_recientes_total": 11388,
+    "tasa_llamadas_100k": 55755.2,
+    "nivel_llamadas": "medio"
+  },
+  "11": {
+    "upz": "San Cristobal Norte",
+    "poblacion_2025": 67410,
+    "incidentes_nuse_recientes_total": 39277,
+    "tasa_llamadas_100k": 58265.84,
+    "nivel_llamadas": "medio"
+  },
+  "14": {
+    "upz": "Usaquen",
+    "poblacion_2025": 41855,
+    "incidentes_nuse_recientes_total": 12211,
+    "tasa_llamadas_100k": 29174.53,
+    "nivel_llamadas": "bajo"
+  },
+  "73": {
+    "upz": "Garces Navas",
+    "poblacion_2025": 177750,
+    "incidentes_nuse_recientes_total": 75979,
+    "tasa_llamadas_100k": 42744.87,
+    "nivel_llamadas": "bajo"
+  },
+  "104": {
+    "upz": "Parque Simon Bolivar - Can",
+    "poblacion_2025": 3091,
+    "incidentes_nuse_recientes_total": 3606,
+    "tasa_llamadas_100k": 116661.27,
+    "nivel_llamadas": "alto"
+  },
+  "31": {
+    "upz": "Santa Cecilia",
+    "poblacion_2025": 68581,
+    "incidentes_nuse_recientes_total": 29706,
+    "tasa_llamadas_100k": 43315.2,
+    "nivel_llamadas": "bajo"
+  },
+  "64": {
+    "upz": "Monte Blanco",
+    "poblacion_2025": 7149,
+    "incidentes_nuse_recientes_total": 2833,
+    "tasa_llamadas_100k": 39627.92,
+    "nivel_llamadas": "bajo"
+  },
+  "71": {
+    "upz": "Tibabuyes",
+    "poblacion_2025": 327822,
+    "incidentes_nuse_recientes_total": 138199,
+    "tasa_llamadas_100k": 42156.72,
+    "nivel_llamadas": "bajo"
+  },
+  "29": {
+    "upz": "Minuto De Dios",
+    "poblacion_2025": 100871,
+    "incidentes_nuse_recientes_total": 53089,
+    "tasa_llamadas_100k": 52630.59,
+    "nivel_llamadas": "medio"
+  },
+  "76": {
+    "upz": "Fontibon San Pablo",
+    "poblacion_2025": 33014,
+    "incidentes_nuse_recientes_total": 16692,
+    "tasa_llamadas_100k": 50560.37,
+    "nivel_llamadas": "medio"
+  },
+  "3": {
+    "upz": "Guaymaral",
+    "poblacion_2025": 2463,
+    "incidentes_nuse_recientes_total": 203,
+    "tasa_llamadas_100k": 8241.98,
+    "nivel_llamadas": "bajo"
+  },
+  "80": {
+    "upz": "Corabastos",
+    "poblacion_2025": 55147,
+    "incidentes_nuse_recientes_total": 40898,
+    "tasa_llamadas_100k": 74161.79,
+    "nivel_llamadas": "medio"
+  },
+  "67": {
+    "upz": "Lucero",
+    "poblacion_2025": 164961,
+    "incidentes_nuse_recientes_total": 69886,
+    "tasa_llamadas_100k": 42365.17,
+    "nivel_llamadas": "bajo"
+  },
+  "63": {
+    "upz": "El Mochuelo",
+    "poblacion_2025": 7,
+    "incidentes_nuse_recientes_total": 154,
+    "tasa_llamadas_100k": null,
+    "nivel_llamadas": null
+  },
+  "28": {
+    "upz": "El Rincon",
+    "poblacion_2025": 258655,
+    "incidentes_nuse_recientes_total": 149364,
+    "tasa_llamadas_100k": 57746.42,
+    "nivel_llamadas": "medio"
+  },
+  "30": {
+    "upz": "Boyaca Real",
+    "poblacion_2025": 130019,
+    "incidentes_nuse_recientes_total": 63806,
+    "tasa_llamadas_100k": 49074.37,
+    "nivel_llamadas": "medio"
+  },
+  "116": {
+    "upz": "Alamos",
+    "poblacion_2025": 12408,
+    "incidentes_nuse_recientes_total": 8310,
+    "tasa_llamadas_100k": 66972.92,
+    "nivel_llamadas": "medio"
+  },
+  "44": {
+    "upz": "Americas",
+    "poblacion_2025": 78562,
+    "incidentes_nuse_recientes_total": 37931,
+    "tasa_llamadas_100k": 48281.61,
+    "nivel_llamadas": "medio"
+  },
+  "41": {
+    "upz": "Muzu",
+    "poblacion_2025": 58620,
+    "incidentes_nuse_recientes_total": 27230,
+    "tasa_llamadas_100k": 46451.72,
+    "nivel_llamadas": "medio"
+  },
+  "40": {
+    "upz": "Ciudad Montes",
+    "poblacion_2025": 100773,
+    "incidentes_nuse_recientes_total": 50200,
+    "tasa_llamadas_100k": 49814.93,
+    "nivel_llamadas": "medio"
+  },
+  "34": {
+    "upz": "20 De Julio",
+    "poblacion_2025": 77898,
+    "incidentes_nuse_recientes_total": 42667,
+    "tasa_llamadas_100k": 54772.91,
+    "nivel_llamadas": "medio"
+  },
+  "32": {
+    "upz": "San Blas",
+    "poblacion_2025": 106051,
+    "incidentes_nuse_recientes_total": 39958,
+    "tasa_llamadas_100k": 37678.1,
+    "nivel_llamadas": "bajo"
+  },
+  "95": {
+    "upz": "Las Cruces",
+    "poblacion_2025": 21881,
+    "incidentes_nuse_recientes_total": 15591,
+    "tasa_llamadas_100k": 71253.6,
+    "nivel_llamadas": "medio"
+  },
+  "87": {
+    "upz": "Tintal Sur",
+    "poblacion_2025": 149955,
+    "incidentes_nuse_recientes_total": 31070,
+    "tasa_llamadas_100k": 20719.55,
+    "nivel_llamadas": "bajo"
+  },
+  "117": {
+    "upz": "Aeropuerto El Dorado",
+    "poblacion_2025": 936,
+    "incidentes_nuse_recientes_total": 1078,
+    "tasa_llamadas_100k": null,
+    "nivel_llamadas": null
+  },
+  "77": {
+    "upz": "Zona Franca",
+    "poblacion_2025": 68833,
+    "incidentes_nuse_recientes_total": 15783,
+    "tasa_llamadas_100k": 22929.41,
+    "nivel_llamadas": "bajo"
+  },
+  "54": {
+    "upz": "Marruecos",
+    "poblacion_2025": 124689,
+    "incidentes_nuse_recientes_total": 40803,
+    "tasa_llamadas_100k": 32723.82,
+    "nivel_llamadas": "bajo"
+  },
+  "62": {
+    "upz": "Tunjuelito",
+    "poblacion_2025": 39052,
+    "incidentes_nuse_recientes_total": 26690,
+    "tasa_llamadas_100k": 68344.77,
+    "nivel_llamadas": "medio"
+  },
+  "53": {
+    "upz": "Marco Fidel Suarez",
+    "poblacion_2025": 41840,
+    "incidentes_nuse_recientes_total": 32966,
+    "tasa_llamadas_100k": 78790.63,
+    "nivel_llamadas": "medio"
+  },
+  "69": {
+    "upz": "Ismael Perdomo",
+    "poblacion_2025": 171438,
+    "incidentes_nuse_recientes_total": 59547,
+    "tasa_llamadas_100k": 34733.84,
+    "nivel_llamadas": "bajo"
+  },
+  "46": {
+    "upz": "Castilla",
+    "poblacion_2025": 152844,
+    "incidentes_nuse_recientes_total": 57273,
+    "tasa_llamadas_100k": 37471.54,
+    "nivel_llamadas": "bajo"
+  },
+  "112": {
+    "upz": "Granjas De Techo",
+    "poblacion_2025": 59196,
+    "incidentes_nuse_recientes_total": 13900,
+    "tasa_llamadas_100k": 23481.32,
+    "nivel_llamadas": "bajo"
+  },
+  "25": {
+    "upz": "La Floresta",
+    "poblacion_2025": 44705,
+    "incidentes_nuse_recientes_total": 9046,
+    "tasa_llamadas_100k": 20234.87,
+    "nivel_llamadas": "bajo"
+  },
+  "98": {
+    "upz": "Los Alcazares",
+    "poblacion_2025": 37956,
+    "incidentes_nuse_recientes_total": 49916,
+    "tasa_llamadas_100k": 131510.17,
+    "nivel_llamadas": "alto"
+  },
+  "96": {
+    "upz": "Lourdes",
+    "poblacion_2025": 45993,
+    "incidentes_nuse_recientes_total": 16280,
+    "tasa_llamadas_100k": 35396.69,
+    "nivel_llamadas": "bajo"
+  },
+  "92": {
+    "upz": "La Macarena",
+    "poblacion_2025": 12482,
+    "incidentes_nuse_recientes_total": 7929,
+    "tasa_llamadas_100k": 63523.47,
+    "nivel_llamadas": "medio"
+  },
+  "94": {
+    "upz": "La Candelaria",
+    "poblacion_2025": 16801,
+    "incidentes_nuse_recientes_total": 16302,
+    "tasa_llamadas_100k": 97029.94,
+    "nivel_llamadas": "medio"
+  },
+  "78": {
+    "upz": "Tintal Norte",
+    "poblacion_2025": 36413,
+    "incidentes_nuse_recientes_total": 6689,
+    "tasa_llamadas_100k": 18369.81,
+    "nivel_llamadas": "bajo"
+  },
+  "9": {
+    "upz": "Verbenal",
+    "poblacion_2025": 130259,
+    "incidentes_nuse_recientes_total": 50467,
+    "tasa_llamadas_100k": 38743.58,
+    "nivel_llamadas": "bajo"
+  },
+  "15": {
+    "upz": "Country Club",
+    "poblacion_2025": 23662,
+    "incidentes_nuse_recientes_total": 4656,
+    "tasa_llamadas_100k": 19677.12,
+    "nivel_llamadas": "bajo"
+  },
+  "85": {
+    "upz": "Bosa Central",
+    "poblacion_2025": 225228,
+    "incidentes_nuse_recientes_total": 103199,
+    "tasa_llamadas_100k": 45819.79,
+    "nivel_llamadas": "medio"
+  },
+  "23": {
+    "upz": "Casa Blanca Suba",
+    "poblacion_2025": 60859,
+    "incidentes_nuse_recientes_total": 12358,
+    "tasa_llamadas_100k": 20305.95,
+    "nivel_llamadas": "bajo"
+  },
+  "13": {
+    "upz": "Los Cedros",
+    "poblacion_2025": 132670,
+    "incidentes_nuse_recientes_total": 36211,
+    "tasa_llamadas_100k": 27294.04,
+    "nivel_llamadas": "bajo"
+  },
+  "114": {
+    "upz": "Modelia",
+    "poblacion_2025": 42517,
+    "incidentes_nuse_recientes_total": 14141,
+    "tasa_llamadas_100k": 33259.64,
+    "nivel_llamadas": "bajo"
+  },
+  "21": {
+    "upz": "Los Andes",
+    "poblacion_2025": 29451,
+    "incidentes_nuse_recientes_total": 15059,
+    "tasa_llamadas_100k": 51132.39,
+    "nivel_llamadas": "medio"
+  },
+  "33": {
+    "upz": "Sosiego",
+    "poblacion_2025": 44486,
+    "incidentes_nuse_recientes_total": 22679,
+    "tasa_llamadas_100k": 50980.08,
+    "nivel_llamadas": "medio"
+  },
+  "38": {
+    "upz": "Restrepo",
+    "poblacion_2025": 53660,
+    "incidentes_nuse_recientes_total": 45798,
+    "tasa_llamadas_100k": 85348.49,
+    "nivel_llamadas": "medio"
+  },
+  "39": {
+    "upz": "Quiroga",
+    "poblacion_2025": 91228,
+    "incidentes_nuse_recientes_total": 55839,
+    "tasa_llamadas_100k": 61208.18,
+    "nivel_llamadas": "medio"
+  },
+  "108": {
+    "upz": "Zona Industrial",
+    "poblacion_2025": 7044,
+    "incidentes_nuse_recientes_total": 13705,
+    "tasa_llamadas_100k": 194562.75,
+    "nivel_llamadas": "alto"
+  },
+  "42": {
+    "upz": "Venecia",
+    "poblacion_2025": 138318,
+    "incidentes_nuse_recientes_total": 58110,
+    "tasa_llamadas_100k": 42011.89,
+    "nivel_llamadas": "bajo"
+  },
+  "47": {
+    "upz": "Kennedy Central",
+    "poblacion_2025": 89792,
+    "incidentes_nuse_recientes_total": 43485,
+    "tasa_llamadas_100k": 48428.59,
+    "nivel_llamadas": "medio"
+  },
+  "97": {
+    "upz": "Chico Lago",
+    "poblacion_2025": 35323,
+    "incidentes_nuse_recientes_total": 38042,
+    "tasa_llamadas_100k": 107697.53,
+    "nivel_llamadas": "alto"
+  },
+  "59": {
+    "upz": "Alfonso Lopez",
+    "poblacion_2025": 53230,
+    "incidentes_nuse_recientes_total": 23791,
+    "tasa_llamadas_100k": 44694.72,
+    "nivel_llamadas": "bajo"
+  },
+  "111": {
+    "upz": "Puente Aranda",
+    "poblacion_2025": 13840,
+    "incidentes_nuse_recientes_total": 9393,
+    "tasa_llamadas_100k": 67868.5,
+    "nivel_llamadas": "medio"
+  },
+  "74": {
+    "upz": "Engativa",
+    "poblacion_2025": 148992,
+    "incidentes_nuse_recientes_total": 70201,
+    "tasa_llamadas_100k": 47117.29,
+    "nivel_llamadas": "medio"
+  },
+  "68": {
+    "upz": "El Tesoro",
+    "poblacion_2025": 56507,
+    "incidentes_nuse_recientes_total": 23687,
+    "tasa_llamadas_100k": 41918.7,
+    "nivel_llamadas": "bajo"
+  },
+  "84": {
+    "upz": "Bosa Occidental",
+    "poblacion_2025": 197442,
+    "incidentes_nuse_recientes_total": 95191,
+    "tasa_llamadas_100k": 48212.13,
+    "nivel_llamadas": "medio"
+  },
+  "91": {
+    "upz": "Sagrado Corazon",
+    "poblacion_2025": 13072,
+    "incidentes_nuse_recientes_total": 9697,
+    "tasa_llamadas_100k": 74181.46,
+    "nivel_llamadas": "medio"
+  },
+  "1": {
+    "upz": "Paseo De Los Libertadores",
+    "poblacion_2025": 2325,
+    "incidentes_nuse_recientes_total": 1716,
+    "tasa_llamadas_100k": 73806.45,
+    "nivel_llamadas": "medio"
+  },
+  "75": {
+    "upz": "Fontibon",
+    "poblacion_2025": 124145,
+    "incidentes_nuse_recientes_total": 69486,
+    "tasa_llamadas_100k": 55971.65,
+    "nivel_llamadas": "medio"
+  },
+  "18": {
+    "upz": "Britalia",
+    "poblacion_2025": 92704,
+    "incidentes_nuse_recientes_total": 23026,
+    "tasa_llamadas_100k": 24838.19,
+    "nivel_llamadas": "bajo"
+  }
+}
