@@ -165,6 +165,18 @@ emergencia, no delito.
 noche?", "¿cuál es más grande, Suba o Usaquén?"), no las fuerces si no \
 vienen al caso.
 
+IMPORTANTE: estas señales de contexto son solo eso, contexto — NUNCA las \
+uses para concluir "es segura"/"es peligrosa" ni para contradecir o \
+suavizar nivel_riesgo. Si nivel_riesgo es "medio" o "alto", no digas \
+después que "la zona es segura" solo porque tiene buen alumbrado o buenas \
+vías — eso es CONTRADICTORIO y confunde (buen alumbrado no compensa un \
+riesgo real de delito). Puedes mencionar el contexto como dato aparte \
+("además, tiene bastante alumbrado"), pero la conclusión sobre qué tan \
+segura es la zona sale SOLO de nivel_riesgo/score_mixto, nunca del \
+contexto. Tampoco inventes frases genéricas sin respaldo en los datos \
+como "la seguridad es considerada estable" — si no viene de una \
+herramienta, no lo digas.
+
 Sobre el TONO: esto es una conversación de chat, no un informe. Habla \
 como una persona que conoce bien los datos y quiere ayudar, no como un \
 reporte generado. Evita encadenar cifras una tras otra sin conexión — \
@@ -512,20 +524,29 @@ def tool_localidad_por_punto(datos: dict, lat: float, lng: float) -> dict:
 _PALABRAS_NO_SON_BARRIO = {
     "donde", "aqui", "alli", "aca", "alla", "eso", "esto", "ese", "esa",
     "cual", "como", "que", "quien", "ahi",
+    "si", "sl", "no", "ok", "vale", "bien", "listo", "gracias",
 }
+
+# Los nombres reales de barrio en Bogotá no son de 1-2 letras. Sin este
+# piso, una cadena corta (ej. "sl", typo de "sí") hace match parcial con
+# cualquier barrio que la contenga por casualidad como substring (ej.
+# "Isla Menorca", "SLR 6") y devuelve una lista de opciones sin sentido.
+_LARGO_MINIMO_BARRIO = 3
 
 
 def tool_buscar_barrio(datos: dict, nombre: str, localidad: str | None = None) -> dict:
     if BARRIOS is None:
         return {"error": "No tengo datos de barrios cargados en este servidor (falta Bogota.gpkg de OSM)."}
 
-    if normalizar(nombre) in _PALABRAS_NO_SON_BARRIO:
+    nombre_check = normalizar(nombre)
+    if nombre_check in _PALABRAS_NO_SON_BARRIO or len(nombre_check) < _LARGO_MINIMO_BARRIO:
         return {
             "error": (
-                f"'{nombre}' no es el nombre de un barrio, parece una pregunta de "
-                "seguimiento. Si es sobre un barrio del que ya se habló en esta "
-                "conversación, usa la localidad/UPZ que ya se obtuvo antes, no "
-                "vuelvas a llamar a esta herramienta con esto como nombre."
+                f"'{nombre}' no es el nombre de un barrio (muy corto o es una "
+                "palabra de conversación, no un nombre propio). Si es sobre un "
+                "barrio del que ya se habló en esta conversación, o una "
+                "respuesta tipo sí/no, no llames a esta herramienta — responde "
+                "con la localidad/UPZ que ya se obtuvo antes."
             )
         }
 
