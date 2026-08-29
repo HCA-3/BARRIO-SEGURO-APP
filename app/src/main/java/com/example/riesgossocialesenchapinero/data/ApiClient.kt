@@ -42,6 +42,8 @@ object ApiClient {
 
     data class RespuestaChat(val respuesta: String, val mensajes: List<MensajeChat>)
 
+    data class RiesgoPorPunto(val localidad: String, val nivelRiesgo: String, val scoreMixto: Double)
+
     class ApiException(message: String) : Exception(message)
 
     fun obtenerRanking(): List<Localidad> {
@@ -59,6 +61,21 @@ object ApiClient {
                     tasaDelitos100k = o.getDouble("tasa_delitos_100k"),
                 )
             }
+        }
+    }
+
+    /** null si el punto no cae dentro de ninguna localidad de Bogotá (ej. fuera de la ciudad). */
+    fun consultarRiesgoPorPunto(lat: Double, lng: Double): RiesgoPorPunto? {
+        val request = Request.Builder().url(baseUrl + "riesgo?lat=$lat&lng=$lng").get().build()
+        client.newCall(request).execute().use { resp ->
+            if (resp.code == 404) return null
+            if (!resp.isSuccessful) throw ApiException("Error ${resp.code} consultando el riesgo por ubicación")
+            val o = JSONObject(resp.body?.string() ?: "{}")
+            return RiesgoPorPunto(
+                localidad = o.getString("localidad"),
+                nivelRiesgo = o.getString("nivel_riesgo"),
+                scoreMixto = o.getDouble("score_mixto"),
+            )
         }
     }
 

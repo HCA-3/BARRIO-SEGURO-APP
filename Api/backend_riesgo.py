@@ -32,15 +32,21 @@ import os
 import unicodedata
 from typing import Any
 
+import geopandas as gpd
 import requests
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+from shapely.geometry import Point
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 ZONAS_PATH = os.environ.get(
     "ZONAS_RIESGO_PATH",
     os.path.normpath(os.path.join(BASE_DIR, "..", "Agente", "output", "zonas_riesgo.json")),
+)
+LIMITES_PATH = os.environ.get(
+    "LIMITES_LOCALIDADES_PATH",
+    os.path.normpath(os.path.join(BASE_DIR, "..", "Agente", "output", "localidades.geojson")),
 )
 OLLAMA_URL = "http://localhost:11434/api/chat"
 MODELO_DEFECTO = "llama3.1"
@@ -62,12 +68,21 @@ celular, no en una pantalla grande).
 El campo "estrato_promedio" es solo contexto socioeconómico: el pipeline \
 NO lo usa para calcular nivel_riesgo (decisión ética documentada del \
 proyecto, para no estigmatizar zonas de bajos ingresos). Si preguntan por \
-qué una localidad tiene cierto riesgo, explica que se basa en \
-score_ponderado_100k (delitos ponderados por severidad, por 100k \
-habitantes), nunca en el estrato.
+qué una localidad tiene cierto riesgo, explica que se basa en score_mixto, \
+nunca en el estrato.
 
-"nivel_riesgo" viene de cortes de Jenks Natural Breaks sobre \
-score_ponderado_100k (3 niveles: bajo, medio, alto).
+"nivel_riesgo" viene de cortes de Jenks Natural Breaks sobre score_mixto \
+(3 niveles: bajo, medio, alto). score_mixto promedia dos señales, cada \
+una normalizada 0-1: score_ponderado_100k (delitos ponderados por \
+severidad, por habitante) y score_ponderado_por_km2 (lo mismo, pero por \
+área). Se combinan las dos porque normalizar solo por población residente \
+infla el riesgo de localidades pequeñas con mucha población flotante no \
+residente (comercio, turismo, tránsito) y diluye localidades grandes y \
+pobladas donde el delito es alto en cifras absolutas — y la app alerta \
+según dónde está alguien físicamente (GPS), no según dónde vive \
+registrado. Si preguntan por qué una localidad concreta tiene tal nivel, \
+puedes mencionar ambos componentes (por habitante y por área) para \
+explicarlo mejor.
 
 OJO al leer el resultado de una herramienta, hay DOS cifras que se \
 parecen pero NO son lo mismo — no las confundas:
@@ -76,6 +91,19 @@ parecen pero NO son lo mismo — no las confundas:
 (NUSE/C4), no delitos verificados. Es solo contexto (igual que el \
 estrato): NO se usa para calcular nivel_riesgo. Se actualiza mensual, a \
 diferencia de los delitos que son de corte semestral/anual.
+
+Sobre el TONO: esto es una conversación de chat, no un informe. Habla \
+como una persona que conoce bien los datos y quiere ayudar, no como un \
+reporte generado. Evita encadenar cifras una tras otra sin conexión — \
+elige el dato más relevante para lo que preguntaron y menciona el resto \
+solo si aporta. Está bien usar un tono cercano ("ojo con...", "eso sí, \
+ten en cuenta que...") sin dejar de ser preciso con los números. Si la \
+pregunta es ambigua (ej. no dice qué localidad), pregunta primero en vez \
+de asumir. Cuando termines de responder algo, si tiene sentido, cierra \
+con una pregunta corta de seguimiento (ej. "¿quieres que compare con otra \
+localidad?", "¿te cuento qué tipo de delito pesa más ahí?") para invitar \
+a seguir la conversación — pero no lo hagas si ya se despidieron o si \
+sería forzado.
 """
 
 TOOLS = [
@@ -166,18 +194,50 @@ def cargar_datos() -> dict:
         return json.load(f)
 
 
+def cargar_limites() -> gpd.GeoDataFrame:
+    if not os.path.exists(LIMITES_PATH):
+        raise RuntimeError(
+            f"No encontré {LIMITES_PATH}. Corre primero Agente/ProcesarRiesgo.py, "
+            f"o define la variable de entorno LIMITES_LOCALIDADES_PATH."
+        )
+    gdf = gpd.read_file(LIMITES_PATH)
+    if gdf.crs is None or gdf.crs.to_epsg() != 4326:
+        gdf = gdf.to_crs(4326)
+    return gdf
+
+
 DATOS = cargar_datos()
+LIMITES = cargar_limites()
+
+
+def tool_localidad_por_punto(datos: dict, lat: float, lng: float) -> dict:
+    punto = Point(lng, lat)  # shapely usa (x, y) = (lng, lat), no al revés
+    coincidencias = LIMITES[LIMITES.contains(punto)]
+    if coincidencias.empty:
+        return {"error": "Ese punto no cae dentro de ninguna localidad de Bogotá."}
+    codigo = str(int(coincidencias.iloc[0]["codigo"]))
+    info = datos.get(codigo)
+    if info is None:
+        return {"error": f"No tengo datos de riesgo para la localidad con código {codigo}."}
+    return {
+        "codigo": codigo,
+        "localidad": info["localidad"],
+        "nivel_riesgo": info["nivel_riesgo"],
+        "score_mixto": info["score_mixto"],
+    }
 
 
 def tool_obtener_ranking(datos: dict) -> list:
     filas = [(cod, info) for cod, info in datos.items() if cod != "_meta"]
-    filas.sort(key=lambda kv: kv[1]["score_ponderado_100k"], reverse=True)
+    filas.sort(key=lambda kv: kv[1]["score_mixto"], reverse=True)
     return [
         {
             "posicion": i,
             "localidad": info["localidad"],
             "nivel_riesgo": info["nivel_riesgo"],
+            "score_mixto": info["score_mixto"],
             "score_ponderado_100k": info["score_ponderado_100k"],
+            "score_ponderado_por_km2": info["score_ponderado_por_km2"],
             "tasa_delitos_100k": info["tasa_delitos_100k"],
         }
         for i, (_, info) in enumerate(filas, start=1)
@@ -299,6 +359,17 @@ def extremo(cual: str = "mayor"):
     if cual not in ("mayor", "menor"):
         raise HTTPException(status_code=400, detail="El parámetro 'cual' debe ser 'mayor' o 'menor'")
     return tool_localidad_extrema(DATOS, cual)
+
+
+@app.get("/riesgo")
+def riesgo_por_punto(lat: float, lng: float):
+    """Geofencing: dado un punto GPS, resuelve en qué localidad cae y su
+    nivel de riesgo. Así es como la app debe consultar la ubicación del
+    usuario para las alertas por geolocalización."""
+    resultado = tool_localidad_por_punto(DATOS, lat, lng)
+    if "error" in resultado:
+        raise HTTPException(status_code=404, detail=resultado)
+    return resultado
 
 
 @app.get("/zonas/{nombre}")

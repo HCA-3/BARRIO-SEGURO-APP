@@ -4,10 +4,10 @@
     "periodo_delitos": "promedio 2023-2025",
     "granularidad": "localidad (20 zonas). No se usó UPZ: el portal de datos abiertos de Bogotá no publica actualmente 'Delito de Alto Impacto' desagregado por UPZ, solo por localidad.",
     "clasificacion": {
-      "variable_usada": "score_ponderado_100k (delitos ponderados por severidad, por 100k habitantes)",
+      "variable_usada": "score_mixto (promedio normalizado de score_ponderado_100k y score_ponderado_por_km2)",
       "metodo_corte": "Jenks Natural Breaks (3 clases)",
-      "umbral_bajo_medio": 310643.16,
-      "umbral_medio_alto": 775887.01
+      "umbral_bajo_medio": 0.1798,
+      "umbral_medio_alto": 0.3757
     },
     "pesos_severidad": {
       "Homicidios": 100,
@@ -23,6 +23,7 @@
       "Hurto de celulares": 8
     },
     "nota_pesos": "Los pesos de severidad son una decision de diseno (no una cifra oficial): reflejan que delitos contra la vida/integridad deben pesar mas que hurtos sin violencia. Se recomienda validarlos con el asesor del proyecto.",
+    "nota_score_mixto": "nivel_riesgo se calcula sobre score_mixto, NO solo sobre score_ponderado_100k. Motivo: normalizar unicamente por poblacion residente infla el riesgo de localidades pequenas con mucha poblacion flotante no residente -- comercio, turismo, transito -- (ej. Los Martires por San Victorino/Paloquemao, La Candelaria por el centro historico) y diluye localidades grandes y muy pobladas donde el delito violento en cifras absolutas es alto (ej. Ciudad Bolivar, Kennedy, Bosa), a pesar de que la app alerta segun donde esta fisicamente alguien (GPS), no segun donde vive registrado. score_mixto promedia score_ponderado_100k (por habitante) y score_ponderado_por_km2 (por area), cada uno normalizado 0-1 por min-max sobre las 20 localidades, con ponderacion 50/50. Es una decision de diseno documentada, no una formula oficial: se recomienda validarla con el asesor del proyecto. score_ponderado_100k y score_ponderado_por_km2 se conservan en la salida por transparencia/comparacion.",
     "nota_etica": "El estrato socioeconomico se reporta como contexto pero NO se usa para calcular nivel_riesgo, para evitar sesgar el modelo contra localidades de bajos ingresos.",
     "nota_incidentes_nuse": "incidentes_nuse_recientes_total (contexto.incidentes_nuse_recientes_total) es el volumen de llamadas de emergencia NUSE/C4 (dataset 'Incidente Reportado' de la SDSCJ), agregado sin desglosar por categoria porque esas categorias no tienen diccionario publico de facil acceso. Se actualiza MENSUALMENTE (a diferencia del dataset de delitos, que es semestral/anual), pero es volumen de llamadas, no delito verificado -- por eso tampoco se usa para calcular nivel_riesgo."
   },
@@ -32,6 +33,8 @@
     "delitos_recientes_total_2023_2025": 41963,
     "tasa_delitos_100k": 10719.2,
     "score_ponderado_100k": 240545.12,
+    "score_ponderado_por_km2": 28317.24,
+    "score_mixto": 0.1798,
     "nivel_riesgo": "bajo",
     "detalle_delitos": {
       "Homicidios": 105,
@@ -61,6 +64,8 @@
     "delitos_recientes_total_2023_2025": 47162,
     "tasa_delitos_100k": 6933.49,
     "score_ponderado_100k": 212607.65,
+    "score_ponderado_por_km2": 11133.04,
+    "score_mixto": 0.1153,
     "nivel_riesgo": "bajo",
     "detalle_delitos": {
       "Homicidios": 662,
@@ -90,6 +95,8 @@
     "delitos_recientes_total_2023_2025": 42688,
     "tasa_delitos_100k": 50826.91,
     "score_ponderado_100k": 1251827.07,
+    "score_ponderado_por_km2": 161530.01,
+    "score_mixto": 1.0,
     "nivel_riesgo": "alto",
     "detalle_delitos": {
       "Homicidios": 139,
@@ -119,6 +126,8 @@
     "delitos_recientes_total_2023_2025": 13691,
     "tasa_delitos_100k": 17165.68,
     "score_ponderado_100k": 375016.93,
+    "score_ponderado_por_km2": 61347.0,
+    "score_mixto": 0.3363,
     "nivel_riesgo": "medio",
     "detalle_delitos": {
       "Homicidios": 37,
@@ -148,6 +157,8 @@
     "delitos_recientes_total_2023_2025": 51644,
     "tasa_delitos_100k": 31549.3,
     "score_ponderado_100k": 623511.7,
+    "score_ponderado_por_km2": 26874.34,
+    "score_mixto": 0.3298,
     "nivel_riesgo": "medio",
     "detalle_delitos": {
       "Homicidios": 48,
@@ -177,6 +188,8 @@
     "delitos_recientes_total_2023_2025": 5,
     "tasa_delitos_100k": 137.02,
     "score_ponderado_100k": 12058.1,
+    "score_ponderado_por_km2": 0.56,
+    "score_mixto": 0.0,
     "nivel_riesgo": "bajo",
     "detalle_delitos": {
       "Homicidios": 4,
@@ -206,7 +219,9 @@
     "delitos_recientes_total_2023_2025": 27148,
     "tasa_delitos_100k": 7161.0,
     "score_ponderado_100k": 187125.6,
-    "nivel_riesgo": "bajo",
+    "score_ponderado_por_km2": 51320.87,
+    "score_mixto": 0.2295,
+    "nivel_riesgo": "medio",
     "detalle_delitos": {
       "Homicidios": 212,
       "Lesiones personales": 2832,
@@ -235,6 +250,8 @@
     "delitos_recientes_total_2023_2025": 7469,
     "tasa_delitos_100k": 44455.69,
     "score_ponderado_100k": 1001327.3,
+    "score_ponderado_por_km2": 81722.32,
+    "score_mixto": 0.6519,
     "nivel_riesgo": "alto",
     "detalle_delitos": {
       "Homicidios": 15,
@@ -264,6 +281,8 @@
     "delitos_recientes_total_2023_2025": 27503,
     "tasa_delitos_100k": 19679.3,
     "score_ponderado_100k": 421685.65,
+    "score_ponderado_por_km2": 49548.94,
+    "score_mixto": 0.3186,
     "nivel_riesgo": "medio",
     "detalle_delitos": {
       "Homicidios": 56,
@@ -293,6 +312,8 @@
     "delitos_recientes_total_2023_2025": 39702,
     "tasa_delitos_100k": 25197.06,
     "score_ponderado_100k": 509287.54,
+    "score_ponderado_por_km2": 56584.03,
+    "score_mixto": 0.3757,
     "nivel_riesgo": "medio",
     "detalle_delitos": {
       "Homicidios": 35,
@@ -322,7 +343,9 @@
     "delitos_recientes_total_2023_2025": 34239,
     "tasa_delitos_100k": 13602.5,
     "score_ponderado_100k": 310643.16,
-    "nivel_riesgo": "bajo",
+    "score_ponderado_por_km2": 45204.87,
+    "score_mixto": 0.2603,
+    "nivel_riesgo": "medio",
     "detalle_delitos": {
       "Homicidios": 77,
       "Lesiones personales": 2278,
@@ -351,6 +374,8 @@
     "delitos_recientes_total_2023_2025": 43287,
     "tasa_delitos_100k": 7555.44,
     "score_ponderado_100k": 170927.08,
+    "score_ponderado_por_km2": 15031.43,
+    "score_mixto": 0.1106,
     "nivel_riesgo": "bajo",
     "detalle_delitos": {
       "Homicidios": 130,
@@ -380,6 +405,8 @@
     "delitos_recientes_total_2023_2025": 26073,
     "tasa_delitos_100k": 6495.29,
     "score_ponderado_100k": 183167.25,
+    "score_ponderado_por_km2": 14987.17,
+    "score_mixto": 0.1154,
     "nivel_riesgo": "bajo",
     "detalle_delitos": {
       "Homicidios": 189,
@@ -409,6 +436,8 @@
     "delitos_recientes_total_2023_2025": 21375,
     "tasa_delitos_100k": 5302.17,
     "score_ponderado_100k": 158488.06,
+    "score_ponderado_por_km2": 2973.19,
+    "score_mixto": 0.0683,
     "nivel_riesgo": "bajo",
     "detalle_delitos": {
       "Homicidios": 231,
@@ -438,7 +467,9 @@
     "delitos_recientes_total_2023_2025": 42579,
     "tasa_delitos_100k": 5548.91,
     "score_ponderado_100k": 150626.71,
-    "nivel_riesgo": "bajo",
+    "score_ponderado_por_km2": 48332.01,
+    "score_mixto": 0.2055,
+    "nivel_riesgo": "medio",
     "detalle_delitos": {
       "Homicidios": 321,
       "Lesiones personales": 4423,
@@ -467,7 +498,9 @@
     "delitos_recientes_total_2023_2025": 78410,
     "tasa_delitos_100k": 7256.17,
     "score_ponderado_100k": 176404.36,
-    "nivel_riesgo": "bajo",
+    "score_ponderado_por_km2": 49436.55,
+    "score_mixto": 0.2193,
+    "nivel_riesgo": "medio",
     "detalle_delitos": {
       "Homicidios": 509,
       "Lesiones personales": 6324,
@@ -496,7 +529,9 @@
     "delitos_recientes_total_2023_2025": 72894,
     "tasa_delitos_100k": 8810.23,
     "score_ponderado_100k": 202711.82,
-    "nivel_riesgo": "bajo",
+    "score_ponderado_por_km2": 46780.69,
+    "score_mixto": 0.2217,
+    "nivel_riesgo": "medio",
     "detalle_delitos": {
       "Homicidios": 177,
       "Lesiones personales": 4073,
@@ -525,6 +560,8 @@
     "delitos_recientes_total_2023_2025": 81468,
     "tasa_delitos_100k": 6535.02,
     "score_ponderado_100k": 154639.24,
+    "score_ponderado_por_km2": 19185.81,
+    "score_mixto": 0.1169,
     "nivel_riesgo": "bajo",
     "detalle_delitos": {
       "Homicidios": 246,
@@ -554,7 +591,9 @@
     "delitos_recientes_total_2023_2025": 14738,
     "tasa_delitos_100k": 8309.18,
     "score_ponderado_100k": 209158.82,
-    "nivel_riesgo": "bajo",
+    "score_ponderado_por_km2": 37461.77,
+    "score_mixto": 0.1954,
+    "nivel_riesgo": "medio",
     "detalle_delitos": {
       "Homicidios": 78,
       "Lesiones personales": 1397,
@@ -583,6 +622,8 @@
     "delitos_recientes_total_2023_2025": 38210,
     "tasa_delitos_100k": 33698.75,
     "score_ponderado_100k": 775887.01,
+    "score_ponderado_por_km2": 19491.89,
+    "score_mixto": 0.3684,
     "nivel_riesgo": "medio",
     "detalle_delitos": {
       "Homicidios": 203,
