@@ -234,6 +234,69 @@ def cargar_poblacion() -> pd.DataFrame:
     return agregado
 
 
+def cargar_poblacion_upz() -> pd.DataFrame:
+    """Igual que cargar_poblacion(), pero a nivel UPZ: usado solo para la
+    capa secundaria de llamadas NUSE por UPZ (ver main()), NO para
+    nivel_riesgo por localidad."""
+    ruta = buscar_por_palabras("ods", incluir=["upz", "poblacion"])
+    xl = pd.read_excel(ruta, engine="odf", sheet_name="Hoja1", header=4)
+    anio_objetivo = 2000 + max(ANIOS_RECIENTES)
+    xl = xl[xl["AÑO"] == anio_objetivo].copy()
+
+    cols_pob = [c for c in xl.columns if c.startswith("Hombres_") or c.startswith("Mujeres_")]
+    xl["poblacion_fila"] = xl[cols_pob].sum(axis=1)
+
+    xl = xl.rename(columns={"Código UPZ": "codigo_upz", "Nombre UPZ": "upz_pob"})
+    agregado = (
+        xl.groupby(["codigo_upz", "upz_pob"], as_index=False)["poblacion_fila"]
+        .sum()
+        .rename(columns={"poblacion_fila": "poblacion_total"})
+    )
+    return agregado
+
+
+def cargar_incidentes_nuse_upz() -> gpd.GeoDataFrame | None:
+    """Llamadas NUSE/C4 por UPZ (más fino que por localidad), con geometría
+    para poder hacer geofencing a este nivel. Igual que
+    cargar_incidentes_nuse(): opcional, y NO es delito verificado."""
+    try:
+        ruta = buscar_archivo("IRUPZ.geojson")
+    except FileNotFoundError:
+        print("  (no encontré IRUPZ.geojson — se omite la capa UPZ de llamadas)")
+        return None
+
+    gdf = gpd.read_file(ruta)
+    gdf = gdf[gdf["CMIUUPLA"].notna() & gdf.geometry.notna()].copy()
+    # CMIUUPLA viene como "UPZ22" para zonas urbanas (el código numérico hace
+    # match con "Código UPZ" del dataset de población) o como "UPR<n>" para
+    # zonas rurales (Unidad de Planeamiento Rural, sin equivalente en el
+    # dataset de población UPZ): estas últimas se excluyen de esta capa.
+    gdf = gdf[gdf["CMIUUPLA"].str.match(r"^UPZ\d+$")].copy()
+    gdf["codigo_upz"] = gdf["CMIUUPLA"].str.replace("UPZ", "", regex=False).astype(int)
+
+    filas = []
+    for _, row in gdf.iterrows():
+        total_reciente = 0
+        for prefijo in PREFIJOS_INCIDENTES_NUSE:
+            for anio in ANIOS_RECIENTES:
+                for sufijo in ("CONT", "CON"):
+                    col = f"{prefijo}{anio}{sufijo}"
+                    if col in row.index and pd.notna(row[col]):
+                        total_reciente += row[col]
+                        break
+        filas.append(
+            {
+                "codigo_upz": row["codigo_upz"],
+                "upz": row["CMNOMUPLA"],
+                "incidentes_nuse_recientes_total": int(total_reciente),
+                "geometry": row["geometry"],
+            }
+        )
+
+    df = pd.DataFrame(filas)
+    return gpd.GeoDataFrame(df, geometry="geometry", crs=gdf.crs)
+
+
 def cargar_estratificacion() -> pd.DataFrame:
     """Estrato promedio por manzana, agregado luego por localidad vía join espacial."""
     gdf = gpd.read_file(buscar_archivo("manzanaestratificacion.json"))
@@ -533,6 +596,88 @@ def main():
         os.remove(limites_path)  # to_file no sobreescribe GeoJSON existente
     limites.to_file(limites_path, driver="GeoJSON")
     print(f"Listo -> {limites_path}")
+
+    # --- Capa secundaria: densidad de llamadas NUSE por UPZ ---
+    # Más fina que la localidad (117 UPZ vs 20 localidades), pero basada en
+    # llamadas de emergencia, NO en delito verificado: por diseño no toca
+    # nivel_riesgo ni score_mixto, vive en su propio archivo con su propio
+    # campo "nivel_llamadas" para que nunca se confunda con el score oficial.
+    print("Calculando densidad de llamadas NUSE por UPZ (capa secundaria, no es delito verificado)...")
+    # Umbral mínimo de población para clasificar: UPZ como El Mochuelo (7
+    # habitantes censados, junto al relleno sanitario Doña Juana) o parques/
+    # aeropuertos (Parque Simón Bolívar, El Dorado) tienen poca o ninguna
+    # población residente pero actividad real, así que una sola llamada
+    # dispara una tasa por habitante absurda (ej. 2'200,000 por 100k). Por
+    # debajo del umbral no se clasifica (nivel_llamadas queda null) en vez
+    # de mostrar un número engañoso.
+    UMBRAL_POBLACION_MINIMA_UPZ = 1000
+
+    incidentes_upz = cargar_incidentes_nuse_upz()
+    if incidentes_upz is not None:
+        poblacion_upz = cargar_poblacion_upz()
+        upz_df = incidentes_upz.merge(poblacion_upz, on="codigo_upz", how="inner")
+        upz_df = upz_df[upz_df["poblacion_total"] > 0].copy()
+        upz_df["tasa_llamadas_100k"] = (
+            upz_df["incidentes_nuse_recientes_total"] / upz_df["poblacion_total"] * 100_000
+        )
+
+        clasificable = upz_df["poblacion_total"] >= UMBRAL_POBLACION_MINIMA_UPZ
+        upz_df["nivel_llamadas"] = None
+        upz_df.loc[clasificable, "nivel_llamadas"], (uq1, uq2) = clasificar_por_jenks(
+            upz_df.loc[clasificable, "tasa_llamadas_100k"]
+        )
+
+        salida_upz = {}
+        for _, row in upz_df.iterrows():
+            salida_upz[str(int(row["codigo_upz"]))] = {
+                "upz": row["upz"],
+                "poblacion_2025": int(row["poblacion_total"]),
+                "incidentes_nuse_recientes_total": int(row["incidentes_nuse_recientes_total"]),
+                "tasa_llamadas_100k": (
+                    round(row["tasa_llamadas_100k"], 2) if row["poblacion_total"] >= UMBRAL_POBLACION_MINIMA_UPZ
+                    else None
+                ),
+                "nivel_llamadas": row["nivel_llamadas"],
+            }
+
+        meta_upz = {
+            "_meta": {
+                "fuente": "Incidente Reportado (NUSE/C4): llamadas de emergencia, NO delito verificado",
+                "advertencia": (
+                    "Capa secundaria y mas ruidosa que nivel_riesgo por localidad "
+                    "(volumen de llamadas, no delito confirmado). No mezclar como "
+                    "si tuviera la misma certeza: usar solo como contexto adicional "
+                    "de mayor resolucion espacial."
+                ),
+                "periodo": f"promedio {min(ANIOS_RECIENTES)+2000}-{max(ANIOS_RECIENTES)+2000}",
+                "clasificacion": {
+                    "variable_usada": "tasa_llamadas_100k",
+                    "metodo_corte": "Jenks Natural Breaks (3 clases)",
+                    "umbral_bajo_medio": round(uq1, 2),
+                    "umbral_medio_alto": round(uq2, 2),
+                    "poblacion_minima_para_clasificar": UMBRAL_POBLACION_MINIMA_UPZ,
+                    "nota_poblacion_minima": (
+                        "UPZ con menos poblacion residente que este umbral (parques, "
+                        "aeropuertos, zonas rurales) no se clasifican: con tan pocos "
+                        "habitantes censados, una sola llamada dispara una tasa por "
+                        "habitante estadisticamente sin sentido. nivel_llamadas y "
+                        "tasa_llamadas_100k quedan null en esos casos."
+                    ),
+                },
+            }
+        }
+        resultado_upz = {**meta_upz, **salida_upz}
+        upz_out_path = os.path.join(OUT_DIR, "upz_riesgo.json")
+        with open(upz_out_path, "w", encoding="utf-8") as f:
+            json.dump(resultado_upz, f, ensure_ascii=False, indent=2)
+        print(f"Listo -> {upz_out_path}")
+
+        upz_limites_path = os.path.join(OUT_DIR, "upz_limites.geojson")
+        limites_upz = upz_df[["codigo_upz", "upz", "geometry"]].set_geometry("geometry").to_crs(4326)
+        if os.path.exists(upz_limites_path):
+            os.remove(upz_limites_path)
+        limites_upz.to_file(upz_limites_path, driver="GeoJSON")
+        print(f"Listo -> {upz_limites_path}")
 
     print(f"\nListo -> {out_path}")
     print(

@@ -13,6 +13,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -22,6 +23,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SuggestionChip
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -49,14 +51,43 @@ fun PantallaChat(modifier: Modifier = Modifier, viewModel: ChatViewModel = viewM
     val estado by viewModel.estado.collectAsState()
     val mensajes = viewModel.mensajesVisibles
     var texto by remember { mutableStateOf("") }
+    var mostrarMemoria by remember { mutableStateOf(false) }
     val listState = rememberLazyListState()
 
     LaunchedEffect(mensajes.size) {
         if (mensajes.isNotEmpty()) listState.animateScrollToItem(mensajes.size - 1)
     }
 
+    if (mostrarMemoria) {
+        DialogoMemoria(
+            hechos = estado.hechosRecordados,
+            onBorrarHecho = { viewModel.borrarHecho(it) },
+            onBorrarConversacion = { viewModel.borrarConversacion() },
+            onCerrar = { mostrarMemoria = false },
+        )
+    }
+
     Column(modifier = modifier.fillMaxSize()) {
-        if (mensajes.isEmpty() && !estado.enviando) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 4.dp),
+            horizontalArrangement = Arrangement.End,
+        ) {
+            TextButton(onClick = { mostrarMemoria = true }) {
+                Text(
+                    if (estado.hechosRecordados.isEmpty()) {
+                        "🧠 Memoria"
+                    } else {
+                        "🧠 Memoria (${estado.hechosRecordados.size})"
+                    },
+                )
+            }
+        }
+
+        if (estado.cargandoHistorial) {
+            Box(modifier = Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator()
+            }
+        } else if (mensajes.isEmpty() && !estado.enviando) {
             Column(
                 modifier = Modifier.weight(1f).fillMaxWidth(),
                 verticalArrangement = Arrangement.Center,
@@ -132,6 +163,50 @@ fun FilaSugerencias(onSugerenciaClick: (String) -> Unit) {
             SuggestionChip(onClick = { onSugerenciaClick(pregunta) }, label = { Text(pregunta) })
         }
     }
+}
+
+@Composable
+fun DialogoMemoria(
+    hechos: List<String>,
+    onBorrarHecho: (String) -> Unit,
+    onBorrarConversacion: () -> Unit,
+    onCerrar: () -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onCerrar,
+        title = { Text("Lo que recuerda el agente de ti") },
+        text = {
+            Column {
+                if (hechos.isEmpty()) {
+                    Text(
+                        "Todavía no recuerda nada. A medida que converses, va a ir guardando " +
+                            "cosas relevantes que le cuentes (ej. dónde vives) para no preguntarte " +
+                            "lo mismo cada vez.",
+                        style = MaterialTheme.typography.bodySmall,
+                    )
+                } else {
+                    for (hecho in hechos) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Text(hecho, modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium)
+                            IconButton(onClick = { onBorrarHecho(hecho) }) {
+                                Text("✕")
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onCerrar) { Text("Listo") }
+        },
+        dismissButton = {
+            TextButton(onClick = { onBorrarConversacion(); onCerrar() }) { Text("Borrar conversación") }
+        },
+    )
 }
 
 @Composable

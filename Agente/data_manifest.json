@@ -22,5 +22,11 @@
     "url": "https://datosabiertos.bogota.gov.co/dataset/ac8ebc76-583c-4c3b-9a2b-0f3791d63886/resource/2a4b73fd-93a7-4b08-8c20-b6ea22182a47/download/ir_geojson.zip",
     "last_modified": "2026-01-29T16:27:32.605926",
     "actualizado_en": "2026-08-25T09:50:11"
+  },
+  "poblacion_upz": {
+    "resource_id": "96583ea9-9c0b-40c3-9797-156d173eb734",
+    "url": "https://datosabiertos.bogota.gov.co/dataset/0f1fb76a-1595-43d5-9257-0abcc3db908a/resource/96583ea9-9c0b-40c3-9797-156d173eb734/download/202503_upz_proyeccion_retroproyeccion_poblacion_2005_2035.ods",
+    "last_modified": "2025-05-14T13:25:40.181816",
+    "actualizado_en": "2026-08-28T21:22:42"
   }
 }

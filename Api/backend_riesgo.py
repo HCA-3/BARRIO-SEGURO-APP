@@ -27,12 +27,15 @@ conectarse:
     "Dirección IPv4" de la red wifi/ethernet activa)
 """
 
+import glob
 import json
 import os
+import re
 import unicodedata
 from typing import Any
 
 import geopandas as gpd
+import pandas as pd
 import requests
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -48,6 +51,23 @@ LIMITES_PATH = os.environ.get(
     "LIMITES_LOCALIDADES_PATH",
     os.path.normpath(os.path.join(BASE_DIR, "..", "Agente", "output", "localidades.geojson")),
 )
+UPZ_PATH = os.environ.get(
+    "UPZ_RIESGO_PATH",
+    os.path.normpath(os.path.join(BASE_DIR, "..", "Agente", "output", "upz_riesgo.json")),
+)
+UPZ_LIMITES_PATH = os.environ.get(
+    "UPZ_LIMITES_PATH",
+    os.path.normpath(os.path.join(BASE_DIR, "..", "Agente", "output", "upz_limites.geojson")),
+)
+# El .gpkg de OSM se descomprime con nombres de carpeta que varían (BBBike
+# a veces agrega "(1)", etc. — ver Agente/ProcesarRiesgo.py buscar_archivo),
+# así que se busca en vez de exigir una ruta fija, salvo que se fije por env.
+OSM_GPKG_PATH = os.environ.get("OSM_GPKG_PATH")
+if not OSM_GPKG_PATH:
+    _candidatos_gpkg = glob.glob(
+        os.path.normpath(os.path.join(BASE_DIR, "..", "Agente", "**", "Bogota.gpkg")), recursive=True
+    )
+    OSM_GPKG_PATH = _candidatos_gpkg[0] if _candidatos_gpkg else None
 OLLAMA_URL = "http://localhost:11434/api/chat"
 MODELO_DEFECTO = "llama3.1"
 MAX_RONDAS_TOOLS = 4
@@ -58,12 +78,50 @@ reglas + geofencing (SIN machine learning) sobre datos oficiales de la \
 Alcaldía de Bogotá (delitos SDSCJ, población DANE/SDP, estratificación \
 SDP) y OpenStreetMap.
 
-No tienes los datos memorizados: SIEMPRE que te pregunten algo con \
-números, nombres de localidades o comparaciones, usa las herramientas \
-disponibles (localidad_extrema, obtener_ranking, obtener_localidad). Nunca \
-inventes ni "recuerdes" una cifra — si no la obtuviste de una herramienta, \
-no la uses. Responde en español, breve y concreto (esto se muestra en un \
-celular, no en una pantalla grande).
+No tienes los datos de riesgo memorizados: SIEMPRE que te pregunten algo \
+con números, nombres de localidades, barrios o comparaciones, usa las \
+herramientas disponibles (localidad_extrema, obtener_ranking, \
+obtener_localidad, comparar_localidades, buscar_barrio). Nunca inventes ni \
+"recuerdes" una cifra ni una ubicación — si no la obtuviste de una \
+herramienta, no la uses. Responde en español, breve y concreto (esto se \
+muestra en un celular, no en una pantalla grande).
+
+IMPORTANTE sobre BARRIOS: cuando NOMBREN un barrio nuevo (ej. "¿es seguro \
+el barrio Acapulco?", "vivo en Galerías"), usa SIEMPRE buscar_barrio \
+primero, pasando el NOMBRE PROPIO del barrio — te dice en qué localidad \
+cae de verdad, con su riesgo real, en vez de que tengas que adivinar. \
+Si en vez de nombrar un barrio te hacen una pregunta de SEGUIMIENTO sobre \
+uno del que YA hablaron en la conversación (ej. "¿dónde queda?", "¿cómo \
+es?", "cuéntame más"), NO llames buscar_barrio con esa pregunta como si \
+fuera el nombre (nunca pases "donde", "eso", "aquí", "cuál" ni palabras \
+así como argumento "nombre") — usa la localidad/UPZ que ya te devolvió la \
+herramienta antes en esta misma conversación para responder. NUNCA inventes ni \
+"recuerdes" en qué localidad está un barrio ni su ubicación geográfica \
+(norte/sur/etc.) por tu cuenta, aunque te suene familiar o creas saberlo \
+de memoria — decir algo incorrecto con seguridad es peor que admitir que \
+no lo sabes. Solo si buscar_barrio devuelve error (no lo encontró, o hay \
+varios barrios con ese nombre en localidades distintas) puedes decirlo \
+honestamente y preguntar más detalle — nunca rellenar el hueco por tu \
+cuenta. Ten en cuenta que buscar_barrio usa datos de OpenStreetMap, no un \
+registro oficial: puede no tener todos los barrios, sobre todo los más \
+pequeños o informales.
+
+Si el usuario afirma o da por hecho algo que CONTRADICE lo que devolvió \
+una herramienta (ej. dice "Acapulco en Engativá" pero buscar_barrio dijo \
+Ciudad Bolívar), CORRÍGELO claro y directo ("no, Acapulco queda en Ciudad \
+Bolívar, no en Engativá") — no mezcles su versión incorrecta con el dato \
+real en la misma frase (nunca digas algo como "Acapulco de Engativá está \
+en Ciudad Bolívar", que sale confuso y suena a que le estás dando la \
+razón). No hay que darle la razón a lo que diga el usuario, hay que ser \
+preciso con los datos aunque eso signifique contradecirlo.
+
+Sí puedes recordar cosas sobre el USUARIO (no cifras de riesgo) con la \
+herramienta recordar_hecho, para conversaciones futuras: dónde vive, sus \
+rutinas, qué le preocupa. Úsala cuando comparta algo así de forma natural, \
+sin interrogarlo ni pedirle explícitamente que te cuente datos personales. \
+Si en "Cosas que ya sabes de este usuario" ves algo relevante a lo que \
+pregunta, úsalo con naturalidad (ej. si sabes que vive en Kennedy y \
+pregunta "¿es seguro donde vivo?", no le preguntes dónde vive).
 
 El campo "estrato_promedio" es solo contexto socioeconómico: el pipeline \
 NO lo usa para calcular nivel_riesgo (decisión ética documentada del \
@@ -91,6 +149,21 @@ parecen pero NO son lo mismo — no las confundas:
 (NUSE/C4), no delitos verificados. Es solo contexto (igual que el \
 estrato): NO se usa para calcular nivel_riesgo. Se actualiza mensual, a \
 diferencia de los delitos que son de corte semestral/anual.
+
+Cada localidad trae un bloque "contexto" con señales adicionales que \
+puedes usar para responder preguntas más ricas, no solo repetir el \
+nivel_riesgo:
+- "estrato_promedio": nivel socioeconómico (SOLO contexto, ver nota arriba).
+- "luminarias_estimadas" / "luminarias_por_km2": alumbrado público (OSM). \
+Más luminarias por km² sugiere calles mejor iluminadas de noche.
+- "longitud_vias_km": km de vías registradas (OSM). Útil para preguntas \
+sobre qué tan transitada/conectada es la zona.
+- "area_km2": tamaño de la localidad, para dar contexto de escala.
+- "incidentes_nuse_recientes_total": ver nota abajo, es llamadas de \
+emergencia, no delito.
+Úsalas cuando la pregunta se preste (ej. "¿está bien iluminado Kennedy de \
+noche?", "¿cuál es más grande, Suba o Usaquén?"), no las fuerces si no \
+vienen al caso.
 
 Sobre el TONO: esto es una conversación de chat, no un informe. Habla \
 como una persona que conoce bien los datos y quiere ayudar, no como un \
@@ -166,6 +239,98 @@ TOOLS = [
             },
         },
     },
+    {
+        "type": "function",
+        "function": {
+            "name": "comparar_localidades",
+            "description": (
+                "Devuelve el detalle completo de DOS O MÁS localidades juntas, "
+                "para comparar entre sí (ej. '¿cuál es más segura, Kennedy o "
+                "Suba?', '¿dónde hay más alumbrado, Bosa o Usme?'). Más "
+                "directo que llamar obtener_localidad varias veces."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "nombres": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "Nombres de las localidades a comparar, ej. ['Kennedy', 'Suba']",
+                    }
+                },
+                "required": ["nombres"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "recordar_hecho",
+            "description": (
+                "Guarda un hecho DURADERO sobre este usuario para recordarlo en "
+                "futuras conversaciones (ej. dónde vive, dónde trabaja/estudia, "
+                "rutinas u horarios, preferencias de seguridad). Úsala solo cuando "
+                "el usuario comparta algo sobre sí mismo que valga la pena recordar "
+                "más allá de esta conversación — no la uses para cada mensaje, ni "
+                "para preguntas sobre localidades. Nunca guardes contraseñas, datos "
+                "financieros ni información sensible innecesaria."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "hecho": {
+                        "type": "string",
+                        "description": (
+                            "El hecho a recordar, en una frase corta y en tercera "
+                            "persona, ej. 'Vive en Chapinero cerca a la Zona T'"
+                        ),
+                    }
+                },
+                "required": ["hecho"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "buscar_barrio",
+            "description": (
+                "Busca un BARRIO por nombre (ej. 'Acapulco', 'Galerías', 'Restrepo') "
+                "y devuelve en qué localidad cae y su nivel de riesgo real — así "
+                "puedes responder bien cuando alguien menciona un barrio en vez de "
+                "una localidad. Úsala SIEMPRE que mencionen un barrio, antes de "
+                "decir que no tienes esa información. Si no lo encuentra, es "
+                "porque de verdad no está en la base de datos (barrios de OpenStreetMap "
+                "en Bogotá) — en ese caso sí puedes decir que no lo tienes, pero NUNCA "
+                "inventes en qué localidad queda por tu cuenta.\n"
+                "Si la respuesta trae varias 'opciones' (nombre ambiguo, existe en más "
+                "de una localidad) y le preguntas al usuario cuál es, cuando te "
+                "conteste vuelve a llamar a ESTA MISMA herramienta con el mismo "
+                "'nombre' PERO ahora incluyendo también 'localidad' con lo que te "
+                "dijo — así te devuelve directamente la correcta en vez de la lista "
+                "ambigua otra vez. No repitas la pregunta de aclaración si el "
+                "usuario ya te dijo la localidad: úsala."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "nombre": {
+                        "type": "string",
+                        "description": "Nombre del barrio, ej. 'Acapulco', 'Galerías', 'Suba Rincón'",
+                    },
+                    "localidad": {
+                        "type": "string",
+                        "description": (
+                            "Opcional. Nombre de la localidad, para cuando el nombre del barrio "
+                            "es ambiguo (existe en varias) y el usuario ya aclaró cuál. Ej: "
+                            "'Engativá'."
+                        ),
+                    },
+                },
+                "required": ["nombre"],
+            },
+        },
+    },
 ]
 
 
@@ -182,6 +347,24 @@ def reparar_mojibake(texto: str) -> str:
         return texto.encode("latin-1").decode("utf-8")
     except (UnicodeEncodeError, UnicodeDecodeError):
         return texto
+
+
+def reparar_mojibake_argumentos(argumentos: dict) -> dict:
+    """El mismo artefacto de reparar_mojibake pasa también en los
+    ARGUMENTOS de una tool call (ej. localidad="Engativ¡" en vez de
+    "Engativá"), no solo en el texto de la respuesta final — si no se
+    repara aquí, comparaciones como normalizar(localidad) fallan en
+    silencio y una herramienta con nombre/localidad correctos "no
+    encuentra" nada."""
+    reparado = {}
+    for clave, valor in argumentos.items():
+        if isinstance(valor, str):
+            reparado[clave] = reparar_mojibake(valor)
+        elif isinstance(valor, list):
+            reparado[clave] = [reparar_mojibake(v) if isinstance(v, str) else v for v in valor]
+        else:
+            reparado[clave] = valor
+    return reparado
 
 
 def cargar_datos() -> dict:
@@ -206,8 +389,102 @@ def cargar_limites() -> gpd.GeoDataFrame:
     return gdf
 
 
+def cargar_datos_upz() -> dict | None:
+    """Capa secundaria (llamadas NUSE por UPZ, ver ProcesarRiesgo.py):
+    opcional, si no se generó el backend sigue funcionando sin ella."""
+    if not os.path.exists(UPZ_PATH):
+        return None
+    with open(UPZ_PATH, "r", encoding="utf-8") as f:
+        return json.load(f)
+
+
+def cargar_limites_upz() -> gpd.GeoDataFrame | None:
+    if not os.path.exists(UPZ_LIMITES_PATH):
+        return None
+    gdf = gpd.read_file(UPZ_LIMITES_PATH)
+    if gdf.crs is None or gdf.crs.to_epsg() != 4326:
+        gdf = gdf.to_crs(4326)
+    return gdf
+
+
+def cargar_barrios() -> gpd.GeoDataFrame | None:
+    """Nombres de barrio de OpenStreetMap (Bogotá NO tiene un dataset
+    oficial de límites de barrio en el portal de la Alcaldía, así que se
+    usa OSM vía BBBike, la misma fuente que ya usa ProcesarRiesgo.py para
+    alumbrado/vías). Opcional: si no está el .gpkg, buscar_barrio queda sin
+    datos en vez de romper todo.
+
+    Un solo tag no alcanza para cubrir bien los barrios reales: place=
+    neighbourhood/suburb/quarter es lo más limpio, pero varios barrios
+    reales en Bogotá solo aparecen en OSM como el nombre de un paradero de
+    bus ("Urbanización Acapulco (Cl 69b - Kr 71b)", highway=bus_stop) —
+    muchísimos con el prefijo abreviado "Br. " (de "Barrio"; ej. "Br. Palo
+    Blanco" — hay 777 puntos así, casi tantos como los que sí llevan
+    place=neighbourhood) — o como un polígono de uso de suelo residencial
+    (landuse=residential, "Conjunto Residencial Acapulco"). Se combinan
+    las tres fuentes, excluyendo negocios que casualmente se llaman igual
+    (ej. "Calzado Acapulco", una zapatería) por el tag "shop".
+    """
+    if not OSM_GPKG_PATH or not os.path.exists(OSM_GPKG_PATH):
+        return None
+
+    pts = gpd.read_file(OSM_GPKG_PATH, layer="points")
+    es_lugar = pts["place"].isin(["neighbourhood", "suburb", "quarter"])
+    otros_tags = pts["other_tags"].fillna("") if "other_tags" in pts.columns else ""
+    es_negocio = otros_tags.str.contains('"shop"=>', regex=False) | otros_tags.str.contains(
+        '"amenity"=>', regex=False
+    )
+    es_residencial_por_nombre = pts["name"].notna() & pts["name"].str.contains(
+        r"^(?:urbanizaci[oó]n|conjunto residencial|barrio|br\.)\s", case=False, regex=True, na=False
+    )
+    candidatos_pts = pts[(es_lugar | es_residencial_por_nombre) & ~es_negocio][["name", "geometry"]].dropna(
+        subset=["name"]
+    )
+
+    polys = gpd.read_file(OSM_GPKG_PATH, layer="multipolygons")
+    if "landuse" in polys.columns:
+        candidatos_poly = polys[(polys["landuse"] == "residential") & polys["name"].notna()][
+            ["name", "geometry"]
+        ].copy()
+        candidatos_poly["geometry"] = candidatos_poly.geometry.centroid
+    else:
+        candidatos_poly = polys.iloc[0:0][["name", "geometry"]]
+
+    combinado = gpd.GeoDataFrame(
+        pd.concat([candidatos_pts, candidatos_poly], ignore_index=True), geometry="geometry", crs=pts.crs
+    )
+    if combinado.crs is None or combinado.crs.to_epsg() != 4326:
+        combinado = combinado.to_crs(4326)
+    combinado["nombre_norm"] = combinado["name"].apply(normalizar)
+    return combinado
+
+
 DATOS = cargar_datos()
 LIMITES = cargar_limites()
+DATOS_UPZ = cargar_datos_upz()
+LIMITES_UPZ = cargar_limites_upz()
+BARRIOS = cargar_barrios()
+
+
+def tool_upz_por_punto(lat: float, lng: float) -> dict | None:
+    """None si no hay capa UPZ disponible, o si el punto no cae en ninguna
+    UPZ clasificada (ej. población insuficiente, ver ProcesarRiesgo.py)."""
+    if DATOS_UPZ is None or LIMITES_UPZ is None:
+        return None
+    punto = Point(lng, lat)
+    coincidencias = LIMITES_UPZ[LIMITES_UPZ.contains(punto)]
+    if coincidencias.empty:
+        return None
+    codigo_upz = str(int(coincidencias.iloc[0]["codigo_upz"]))
+    info = DATOS_UPZ.get(codigo_upz)
+    if info is None or info.get("nivel_llamadas") is None:
+        return None
+    return {
+        "codigo_upz": codigo_upz,
+        "upz": info["upz"],
+        "nivel_llamadas": info["nivel_llamadas"],
+        "tasa_llamadas_100k": info["tasa_llamadas_100k"],
+    }
 
 
 def tool_localidad_por_punto(datos: dict, lat: float, lng: float) -> dict:
@@ -224,7 +501,87 @@ def tool_localidad_por_punto(datos: dict, lat: float, lng: float) -> dict:
         "localidad": info["localidad"],
         "nivel_riesgo": info["nivel_riesgo"],
         "score_mixto": info["score_mixto"],
+        "upz": tool_upz_por_punto(lat, lng),
     }
+
+
+# Palabras que a veces el modelo manda como si fueran el "nombre" de un
+# barrio cuando en realidad la pregunta era de seguimiento sobre uno ya
+# mencionado antes en la conversación (ej. "¿dónde queda?" -> nombre="donde").
+# Salvaguarda de backend: no depender solo de que el prompt lo evite.
+_PALABRAS_NO_SON_BARRIO = {
+    "donde", "aqui", "alli", "aca", "alla", "eso", "esto", "ese", "esa",
+    "cual", "como", "que", "quien", "ahi",
+}
+
+
+def tool_buscar_barrio(datos: dict, nombre: str, localidad: str | None = None) -> dict:
+    if BARRIOS is None:
+        return {"error": "No tengo datos de barrios cargados en este servidor (falta Bogota.gpkg de OSM)."}
+
+    if normalizar(nombre) in _PALABRAS_NO_SON_BARRIO:
+        return {
+            "error": (
+                f"'{nombre}' no es el nombre de un barrio, parece una pregunta de "
+                "seguimiento. Si es sobre un barrio del que ya se habló en esta "
+                "conversación, usa la localidad/UPZ que ya se obtuvo antes, no "
+                "vuelvas a llamar a esta herramienta con esto como nombre."
+            )
+        }
+
+    # OJO: las tres condiciones se evalúan JUNTAS, no en cascada (probar
+    # igualdad exacta primero y solo caer a "contains" si no hay match
+    # exacto se quedaba con un solo resultado — ej. "Acapulco" en Ciudad
+    # Bolívar — e ignoraba otros reales que coinciden parcial, como
+    # "Urbanización Acapulco" en Engativá, un barrio DISTINTO que existe de
+    # verdad y por eso nunca disparaba la pregunta de "¿cuál de los dos?").
+    nombre_norm = normalizar(nombre)
+    patron = re.escape(nombre_norm)
+    coincidencias = BARRIOS[
+        (BARRIOS["nombre_norm"] == nombre_norm)
+        | BARRIOS["nombre_norm"].str.contains(patron, na=False, regex=True)
+        | BARRIOS["nombre_norm"].apply(lambda n: bool(n) and n in nombre_norm)
+    ]
+    if coincidencias.empty:
+        return {"error": f"No encontré el barrio '{nombre}' en la base de datos (OpenStreetMap)."}
+
+    resultados = []
+    for _, fila in coincidencias.iterrows():
+        info = tool_localidad_por_punto(datos, fila.geometry.y, fila.geometry.x)
+        if "error" not in info:
+            # "Br. " es abreviatura de "Barrio" en el nombre de muchos
+            # paraderos de bus de OSM: se quita para que la respuesta se
+            # lea natural ("Palo Blanco" en vez de "Br. Palo Blanco").
+            nombre_limpio = re.sub(r"^br\.\s*", "", fila["name"], flags=re.IGNORECASE)
+            resultados.append({"barrio": nombre_limpio, **info})
+
+    if not resultados:
+        return {"error": f"Encontré el barrio '{nombre}' pero no pude ubicarlo dentro de ninguna localidad."}
+
+    # Si ya se sabe la localidad (el usuario aclaró tras una pregunta
+    # ambigua anterior), filtrar por ahí resuelve la ambigüedad de una vez
+    # en vez de devolver la misma lista otra vez.
+    if localidad:
+        localidad_norm = normalizar(localidad)
+        filtrados = [r for r in resultados if localidad_norm in normalizar(r["localidad"])]
+        if filtrados:
+            resultados = filtrados
+        # Si no hay coincidencia con esa localidad, se sigue con todos los
+        # resultados (mejor mostrar las opciones reales que fallar en seco
+        # por una localidad mal escrita).
+
+    # Varios puntos con el mismo nombre en localidades DISTINTAS: nombre
+    # ambiguo de verdad (pasa con ~100 nombres de barrio en Bogotá) — hay
+    # que preguntar cuál. Si caen en la misma localidad, no hay ambigüedad
+    # real (ej. el mismo barrio con dos puntos OSM cercanos): se deduplica
+    # a una opción por localidad para no confundir con entradas repetidas.
+    opciones_por_localidad = {r["localidad"]: r for r in resultados}
+    if len(opciones_por_localidad) > 1:
+        return {
+            "error": f"Hay varios barrios llamados '{nombre}' en localidades distintas — pregunta cuál.",
+            "opciones": list(opciones_por_localidad.values()),
+        }
+    return next(iter(opciones_por_localidad.values()))
 
 
 def tool_obtener_ranking(datos: dict) -> list:
@@ -268,6 +625,10 @@ def tool_obtener_localidad(datos: dict, nombre: str) -> dict:
     }
 
 
+def tool_comparar_localidades(datos: dict, nombres: list) -> dict:
+    return {nombre: tool_obtener_localidad(datos, nombre) for nombre in nombres}
+
+
 def ejecutar_tool(nombre: str, argumentos: dict, datos: dict):
     if nombre == "localidad_extrema":
         return tool_localidad_extrema(datos, argumentos.get("cual", "mayor"))
@@ -275,10 +636,23 @@ def ejecutar_tool(nombre: str, argumentos: dict, datos: dict):
         return tool_obtener_ranking(datos)
     if nombre == "obtener_localidad":
         return tool_obtener_localidad(datos, argumentos.get("nombre", ""))
+    if nombre == "comparar_localidades":
+        return tool_comparar_localidades(datos, argumentos.get("nombres", []))
+    if nombre == "buscar_barrio":
+        return tool_buscar_barrio(datos, argumentos.get("nombre", ""), argumentos.get("localidad"))
+    if nombre == "recordar_hecho":
+        return {"guardado": True}
     return {"error": f"Herramienta desconocida: {nombre}"}
 
 
-def preguntar(modelo: str, historial: list, datos: dict) -> str:
+def preguntar(modelo: str, historial: list, datos: dict) -> tuple[str, list[str]]:
+    # hechos_nuevos: la app (no este backend) es quien guarda la memoria del
+    # usuario, localmente en el celular — este backend es stateless. Cuando
+    # el modelo llama recordar_hecho(), en vez de "recordarlo" él mismo aquí,
+    # el hecho se junta en esta lista y viaja en la respuesta HTTP para que
+    # la app lo persista.
+    hechos_nuevos = []
+
     for _ in range(MAX_RONDAS_TOOLS):
         try:
             resp = requests.post(
@@ -299,15 +673,19 @@ def preguntar(modelo: str, historial: list, datos: dict) -> str:
 
         tool_calls = mensaje.get("tool_calls")
         if not tool_calls:
-            return reparar_mojibake(mensaje.get("content", ""))
+            return reparar_mojibake(mensaje.get("content", "")), hechos_nuevos
 
         for llamada in tool_calls:
             fn = llamada["function"]
-            argumentos = fn.get("arguments") or {}
+            argumentos = reparar_mojibake_argumentos(fn.get("arguments") or {})
+            if fn["name"] == "recordar_hecho":
+                hecho = str(argumentos.get("hecho", "")).strip()
+                if hecho:
+                    hechos_nuevos.append(hecho)
             resultado = ejecutar_tool(fn["name"], argumentos, datos)
             historial.append({"role": "tool", "content": json.dumps(resultado, ensure_ascii=False)})
 
-    return "No pude terminar de consultar los datos (demasiadas llamadas a herramientas)."
+    return "No pude terminar de consultar los datos (demasiadas llamadas a herramientas).", hechos_nuevos
 
 
 app = FastAPI(title="Barrio Seguro API", version="1.0")
@@ -327,11 +705,16 @@ class Mensaje(BaseModel):
 class ChatRequest(BaseModel):
     mensajes: list[dict[str, Any]]
     modelo: str = MODELO_DEFECTO
+    # Hechos que la app ya tiene guardados localmente de conversaciones
+    # anteriores con este usuario (ver recordar_hecho). El backend no
+    # guarda nada entre requests: la app se los reenvía cada vez.
+    hechos_recordados: list[str] = []
 
 
 class ChatResponse(BaseModel):
     respuesta: str
     mensajes: list[dict[str, Any]]
+    hechos_nuevos: list[str] = []
 
 
 @app.get("/health")
@@ -382,6 +765,14 @@ def zona_por_nombre(nombre: str):
 
 @app.post("/chat", response_model=ChatResponse)
 def chat(req: ChatRequest):
-    historial = [{"role": "system", "content": SYSTEM_PROMPT}] + req.mensajes
-    respuesta = preguntar(req.modelo, historial, DATOS)
-    return ChatResponse(respuesta=respuesta, mensajes=historial[1:])
+    system_prompt = SYSTEM_PROMPT
+    if req.hechos_recordados:
+        lista = "\n".join(f"- {h}" for h in req.hechos_recordados)
+        system_prompt += (
+            "\n\nCosas que ya sabes de este usuario, de conversaciones anteriores:\n"
+            f"{lista}\nÚsalas si son relevantes para lo que pregunta ahora, pero no las "
+            "repitas sin razón ni las menciones si no vienen al caso."
+        )
+    historial = [{"role": "system", "content": system_prompt}] + req.mensajes
+    respuesta, hechos_nuevos = preguntar(req.modelo, historial, DATOS)
+    return ChatResponse(respuesta=respuesta, mensajes=historial[1:], hechos_nuevos=hechos_nuevos)
