@@ -402,10 +402,36 @@ def main():
     df["area_km2"] = df_m.geometry.area / 1_000_000
     df["luminarias_por_km2"] = df["num_luminarias"] / df["area_km2"]
 
-    print("Clasificando riesgo con Jenks Natural Breaks sobre el score ponderado por severidad...")
-    df["nivel_riesgo"], (q1, q2) = clasificar_por_jenks(df["score_ponderado_100k"])
-    print(f"  Umbral bajo/medio: {q1:.1f} (score ponderado/100k)")
-    print(f"  Umbral medio/alto: {q2:.1f} (score ponderado/100k)")
+    # score_ponderado_100k normaliza por población RESIDENTE, lo que infla
+    # artificialmente localidades pequeñas con mucha población flotante no
+    # residente (comercio, turismo, tránsito: ej. Los Mártires con San
+    # Victorino/Paloquemao, La Candelaria con el centro histórico) y diluye
+    # localidades grandes y muy pobladas donde el delito violento en cifras
+    # absolutas es alto (ej. Ciudad Bolívar, Kennedy, Bosa), porque la app
+    # alerta según dónde está físicamente alguien en el mapa (GPS), no según
+    # dónde está registrado como residente. Por eso se combina con densidad
+    # por área (score_ponderado_por_km2), que mide concentración de delito
+    # en el espacio físico sin depender del censo de residentes.
+    df["score_ponderado_por_km2"] = df["score_ponderado"] / df["area_km2"]
+
+    # Score mixto: promedio de las dos métricas normalizadas a escala 0-1
+    # (min-max sobre las 20 localidades), para que ninguna domine solo por
+    # tener números más grandes en su unidad. Ponderación 50/50 documentada
+    # como decisión de diseño (ver nota_score_mixto en el meta de salida):
+    # se recomienda validarla con el asesor del proyecto.
+    def normalizar_minmax(serie: pd.Series) -> pd.Series:
+        minimo, maximo = serie.min(), serie.max()
+        return (serie - minimo) / (maximo - minimo)
+
+    df["score_mixto"] = (
+        normalizar_minmax(df["score_ponderado_100k"]) * 0.5
+        + normalizar_minmax(df["score_ponderado_por_km2"]) * 0.5
+    )
+
+    print("Clasificando riesgo con Jenks Natural Breaks sobre el score mixto (población + área)...")
+    df["nivel_riesgo"], (q1, q2) = clasificar_por_jenks(df["score_mixto"])
+    print(f"  Umbral bajo/medio: {q1:.3f} (score mixto, escala 0-1)")
+    print(f"  Umbral medio/alto: {q2:.3f} (score mixto, escala 0-1)")
 
     # --- Construir salida JSON ---
     salida = {}
@@ -416,6 +442,8 @@ def main():
             "delitos_recientes_total_2023_2025": int(row["delitos_recientes_total"]),
             "tasa_delitos_100k": round(row["tasa_delitos_100k"], 2),
             "score_ponderado_100k": round(row["score_ponderado_100k"], 2),
+            "score_ponderado_por_km2": round(row["score_ponderado_por_km2"], 2),
+            "score_mixto": round(row["score_mixto"], 4),
             "nivel_riesgo": row["nivel_riesgo"],
             "detalle_delitos": row["detalle_delitos"],
             "contexto": {
@@ -441,10 +469,10 @@ def main():
                 "Impacto' desagregado por UPZ, solo por localidad."
             ),
             "clasificacion": {
-                "variable_usada": "score_ponderado_100k (delitos ponderados por severidad, por 100k habitantes)",
+                "variable_usada": "score_mixto (promedio normalizado de score_ponderado_100k y score_ponderado_por_km2)",
                 "metodo_corte": "Jenks Natural Breaks (3 clases)",
-                "umbral_bajo_medio": round(q1, 2),
-                "umbral_medio_alto": round(q2, 2),
+                "umbral_bajo_medio": round(q1, 4),
+                "umbral_medio_alto": round(q2, 4),
             },
             "pesos_severidad": PESO_SEVERIDAD,
             "nota_pesos": (
@@ -452,6 +480,25 @@ def main():
                 "cifra oficial): reflejan que delitos contra la vida/integridad "
                 "deben pesar mas que hurtos sin violencia. Se recomienda "
                 "validarlos con el asesor del proyecto."
+            ),
+            "nota_score_mixto": (
+                "nivel_riesgo se calcula sobre score_mixto, NO solo sobre "
+                "score_ponderado_100k. Motivo: normalizar unicamente por "
+                "poblacion residente infla el riesgo de localidades pequenas "
+                "con mucha poblacion flotante no residente -- comercio, "
+                "turismo, transito -- (ej. Los Martires por San "
+                "Victorino/Paloquemao, La Candelaria por el centro historico) "
+                "y diluye localidades grandes y muy pobladas donde el delito "
+                "violento en cifras absolutas es alto (ej. Ciudad Bolivar, "
+                "Kennedy, Bosa), a pesar de que la app alerta segun donde esta "
+                "fisicamente alguien (GPS), no segun donde vive registrado. "
+                "score_mixto promedia score_ponderado_100k (por habitante) y "
+                "score_ponderado_por_km2 (por area), cada uno normalizado 0-1 "
+                "por min-max sobre las 20 localidades, con ponderacion 50/50. "
+                "Es una decision de diseno documentada, no una formula "
+                "oficial: se recomienda validarla con el asesor del proyecto. "
+                "score_ponderado_100k y score_ponderado_por_km2 se conservan "
+                "en la salida por transparencia/comparacion."
             ),
             "nota_etica": (
                 "El estrato socioeconomico se reporta como contexto pero NO "
@@ -475,10 +522,22 @@ def main():
     with open(out_path, "w", encoding="utf-8") as f:
         json.dump(resultado, f, ensure_ascii=False, indent=2)
 
+    # Límites geográficos por localidad, para resolver "dado un punto GPS,
+    # en qué localidad cae" (geofencing en el backend). Se reproyecta a
+    # WGS84 (EPSG:4326) porque es el sistema de coordenadas que reporta el
+    # GPS del celular (lat/lng), distinto del CRS oficial colombiano
+    # (MAGNA-SIRGAS / EPSG:4686) en el que viene el dataset de origen.
+    limites_path = os.path.join(OUT_DIR, "localidades.geojson")
+    limites = df[["codigo", "localidad", "geometry"]].set_geometry("geometry").to_crs(4326)
+    if os.path.exists(limites_path):
+        os.remove(limites_path)  # to_file no sobreescribe GeoJSON existente
+    limites.to_file(limites_path, driver="GeoJSON")
+    print(f"Listo -> {limites_path}")
+
     print(f"\nListo -> {out_path}")
     print(
-        df[["localidad", "tasa_delitos_100k", "score_ponderado_100k", "nivel_riesgo"]]
-        .sort_values("score_ponderado_100k", ascending=False)
+        df[["localidad", "score_ponderado_100k", "score_ponderado_por_km2", "score_mixto", "nivel_riesgo"]]
+        .sort_values("score_mixto", ascending=False)
         .to_string(index=False)
     )
 
