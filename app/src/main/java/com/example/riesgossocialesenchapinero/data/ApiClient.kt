@@ -39,7 +39,12 @@ object ApiClient {
         val tasaDelitos100k: Double,
     )
 
-    data class MensajeChat(val role: String, val content: String)
+    // toolCalls: JSON crudo (como llega de Ollama) del array "tool_calls" de
+    // un mensaje "assistant", o null si ese mensaje no llamó ninguna
+    // herramienta. Hay que reenviarlo tal cual en el siguiente turno -- si
+    // se pierde, el mensaje "tool" que sigue queda sin el turno que lo
+    // originó y el modelo pierde el hilo en la pregunta de seguimiento.
+    data class MensajeChat(val role: String, val content: String, val toolCalls: String? = null)
 
     data class RespuestaChat(
         val respuesta: String,
@@ -163,7 +168,9 @@ object ApiClient {
     fun enviarMensajeChat(historial: List<MensajeChat>, hechosRecordados: List<String> = emptyList()): RespuestaChat {
         val mensajesJson = JSONArray()
         for (m in historial) {
-            mensajesJson.put(JSONObject().put("role", m.role).put("content", m.content))
+            val o = JSONObject().put("role", m.role).put("content", m.content)
+            if (m.toolCalls != null) o.put("tool_calls", JSONArray(m.toolCalls))
+            mensajesJson.put(o)
         }
         val hechosJson = JSONArray()
         for (h in hechosRecordados) hechosJson.put(h)
@@ -182,7 +189,11 @@ object ApiClient {
             val mensajesResp = json.getJSONArray("mensajes")
             val historialActualizado = List(mensajesResp.length()) { i ->
                 val o = mensajesResp.getJSONObject(i)
-                MensajeChat(role = o.getString("role"), content = o.optString("content", ""))
+                MensajeChat(
+                    role = o.getString("role"),
+                    content = o.optString("content", ""),
+                    toolCalls = o.optJSONArray("tool_calls")?.toString(),
+                )
             }
             val hechosResp = json.optJSONArray("hechos_nuevos") ?: JSONArray()
             val hechosNuevos = List(hechosResp.length()) { i -> hechosResp.getString(i) }

@@ -182,6 +182,24 @@ parecen pero NO son lo mismo — no las confundas:
 (NUSE/C4), no delitos verificados. Es solo contexto (igual que el \
 estrato): NO se usa para calcular nivel_riesgo. Se actualiza mensual, a \
 diferencia de los delitos que son de corte semestral/anual.
+IMPORTANTE: estas dos son TOTALES ABSOLUTOS (un conteo de casos), NO tasas \
+por 100.000 habitantes — nunca les agregues "por 100k habitantes" ni ningún \
+otro sufijo de tasa, eso los convierte en un número inventado sin sentido. \
+Si quieres dar una cifra normalizada por población, usa "tasa_delitos_100k" \
+(que sí es una tasa real, ya calculada) — no inventes tu propia conversión \
+ni una cifra que "suene" parecida. Tampoco muestres los nombres de campo \
+en crudo (ej. "delitos_recientes_total_2023_2025") en tu respuesta — son \
+para ti, tradúcelos a lenguaje natural ("los delitos verificados entre \
+2023 y 2025 fueron...").
+
+Cuando te pregunten qué tipo de delito es más común y uses el bloque \
+"detalle_delitos" de una localidad, cita EXACTAMENTE los nombres de \
+categoría y las cifras que trae ese diccionario — nunca inventes \
+categorías que no están ahí (ej. "robo con fuerza", "robo a transeúnte", \
+"roboteca" no son categorías reales de este dataset) ni inventes números \
+que no vienen literalmente de "detalle_delitos". Si no recuerdas los \
+números exactos de una respuesta anterior en la conversación, vuelve a \
+llamar la herramienta en vez de inventar de memoria.
 
 Sobre el bloque "upz" que traen buscar_barrio y localidad_por_punto: \
 "tasa_llamadas_100k" es un TOTAL ACUMULADO de 2023 a 2025 (3 años, no un \
@@ -203,7 +221,10 @@ localidad completa, ofreciendo ese de la localidad entera si quieren. \
 NUNCA respondas "no tengo información sobre el barrio X" ni "el barrio X \
 no existe" solo porque falte ESE desglose puntual — eso es al revés de lo \
 que hay que decir: sí sabes dónde está y qué tan riesgoso es, solo no el \
-desglose por tipo.
+desglose por tipo. Si el usuario SÍ quiere ese desglose de la localidad \
+entera, llama obtener_localidad con el nombre EXACTO de la localidad que \
+buscar_barrio ya devolvió antes en esta conversación — nunca adivines ni \
+cambies a otra localidad distinta a la que ya se estableció.
 
 Cada localidad trae un bloque "contexto" con señales adicionales que \
 puedes usar para responder preguntas más ricas, no solo repetir el \
@@ -292,14 +313,18 @@ TOOLS = [
             "description": (
                 "Devuelve el detalle completo (delitos por categoría, "
                 "población, contexto urbano) de UNA localidad específica "
-                "por nombre."
+                "por nombre. Si la pregunta es de SEGUIMIENTO sobre una "
+                "localidad que ya se estableció antes en esta misma "
+                "conversación (ej. porque buscar_barrio ya dijo en qué "
+                "localidad cae un barrio), usa EXACTAMENTE ese mismo "
+                "nombre de localidad — nunca otro, ni uno de ejemplo."
             ),
             "parameters": {
                 "type": "object",
                 "properties": {
                     "nombre": {
                         "type": "string",
-                        "description": "Nombre de la localidad, ej. 'Chapinero', 'Los Mártires'",
+                        "description": "Nombre de la localidad, ej. 'Suba', 'Kennedy'",
                     }
                 },
                 "required": ["nombre"],
@@ -500,6 +525,36 @@ def quitar_frases_sin_respaldo(texto: str) -> str:
     return re.sub(r"\n{3,}", "\n\n", limpio).strip()
 
 
+# "delitos_recientes_total_2023_2025" e "incidentes_nuse_recientes_total" son
+# TOTALES absolutos (ver SYSTEM_PROMPT) -- el modelo local a veces los
+# convierte en una tasa inventada tipo "2.115,36 por 100k habitantes" que no
+# sale de ningún cálculo real (ni siquiera es el total dividido por
+# población: es un número de la nada). El prompt ya lo prohíbe pero
+# reaparece igual, así que se recorta el fragmento inventado directamente en
+# vez de confiar en que el modelo obedezca. OJO: se apunta solo al fragmento
+# "campo = número por 100k/100.000 habitantes" (no a la oración completa como
+# _PATRON_FRASES_SIN_RESPALDO) porque estos dos campos suelen aparecer
+# juntos en la MISMA oración (unidos por "y"), y el número decimal
+# ("2,115.36") o el "contexto.algo" con punto de acceso rompen cualquier
+# intento de detectar dónde empieza/termina la oración con un solo patrón.
+_PATRON_TASA_INVENTADA = re.compile(
+    r"(?:contexto\.)?\b(?:delitos_recientes_total_2023_2025|incidentes_nuse_recientes_total)\b"
+    r"\s*[:=]?\s*[\d.,]+\s*por\s*100[.,]?\s*(?:000|k)\s*habitantes",
+    re.IGNORECASE,
+)
+
+
+def quitar_tasas_inventadas(texto: str) -> str:
+    limpio = _PATRON_TASA_INVENTADA.sub("", texto)
+    # Limpieza de lo que queda alrededor del fragmento borrado (una "y" o
+    # ":" colgando sin nada después, dobles espacios).
+    limpio = re.sub(r"\s*\by\b\s*(?=[.,¿?]|$)", "", limpio, flags=re.IGNORECASE)
+    limpio = re.sub(r"\s+([.,;:])", r"\1", limpio)
+    limpio = re.sub(r":\s*\.", ".", limpio)
+    limpio = re.sub(r"\s{2,}", " ", limpio)
+    return re.sub(r"\n{3,}", "\n\n", limpio).strip()
+
+
 def cargar_datos() -> dict:
     if not os.path.exists(ZONAS_PATH):
         raise RuntimeError(
@@ -639,20 +694,33 @@ def tool_localidad_por_punto(datos: dict, lat: float, lng: float) -> dict:
 
 
 # Palabras que a veces el modelo manda como si fueran el "nombre" de un
-# barrio cuando en realidad la pregunta era de seguimiento sobre uno ya
-# mencionado antes en la conversación (ej. "¿dónde queda?" -> nombre="donde").
+# barrio o localidad cuando en realidad la pregunta era de seguimiento sobre
+# uno ya mencionado antes en la conversación (ej. "¿dónde queda?" ->
+# nombre="donde", "¿qué delitos hay en esa zona?" -> nombre="esa zona").
 # Salvaguarda de backend: no depender solo de que el prompt lo evite.
-_PALABRAS_NO_SON_BARRIO = {
-    "donde", "aqui", "alli", "aca", "alla", "eso", "esto", "ese", "esa",
-    "cual", "como", "que", "quien", "ahi",
+_PALABRAS_REFERENCIA_CONVERSACIONAL = {
+    "donde", "aqui", "alli", "aca", "alla",
+    "eso", "esto", "ese", "esa", "esos", "esas", "este", "esta", "estos", "estas",
+    "cual", "cuales", "como", "que", "quien", "ahi",
     "si", "sl", "no", "ok", "vale", "bien", "listo", "gracias",
+    "zona", "sitio", "lugar", "area", "sector", "parte",
 }
 
-# Los nombres reales de barrio en Bogotá no son de 1-2 letras. Sin este
-# piso, una cadena corta (ej. "sl", typo de "sí") hace match parcial con
+# Los nombres reales de barrio/localidad en Bogotá no son de 1-2 letras. Sin
+# este piso, una cadena corta (ej. "sl", typo de "sí") hace match parcial con
 # cualquier barrio que la contenga por casualidad como substring (ej.
 # "Isla Menorca", "SLR 6") y devuelve una lista de opciones sin sentido.
 _LARGO_MINIMO_BARRIO = 3
+
+
+def _es_referencia_conversacional(nombre_norm: str) -> bool:
+    """True si nombre_norm (ya normalizado) es, o está compuesto ÚNICAMENTE
+    de, palabras deícticas/de conversación (ej. "esa zona", "aquí", "donde")
+    en vez de un nombre propio real — señal de que el modelo tomó una
+    referencia a algo ya dicho antes en la conversación como si fuera el
+    argumento, en vez de reusar el dato real ya obtenido antes."""
+    palabras = nombre_norm.split()
+    return not palabras or all(p in _PALABRAS_REFERENCIA_CONVERSACIONAL for p in palabras)
 
 
 def tool_buscar_barrio(datos: dict, nombre: str, localidad: str | None = None) -> dict:
@@ -660,7 +728,7 @@ def tool_buscar_barrio(datos: dict, nombre: str, localidad: str | None = None) -
         return {"error": "No tengo datos de barrios cargados en este servidor (falta Bogota.gpkg de OSM)."}
 
     nombre_check = normalizar(nombre)
-    if nombre_check in _PALABRAS_NO_SON_BARRIO or len(nombre_check) < _LARGO_MINIMO_BARRIO:
+    if _es_referencia_conversacional(nombre_check) or len(nombre_check) < _LARGO_MINIMO_BARRIO:
         return {
             "error": (
                 f"'{nombre}' no es el nombre de un barrio (muy corto o es una "
@@ -760,8 +828,47 @@ def tool_localidad_extrema(datos: dict, cual: str) -> dict:
     return ranking[0] if cual == "mayor" else ranking[-1]
 
 
+def localidad_establecida_reciente(historial: list) -> str | None:
+    """Busca hacia atrás en el historial (empezando por lo más reciente) el
+    último resultado de herramienta con una "localidad" real (de
+    buscar_barrio, localidad_por_punto u obtener_localidad exitosos) — la
+    zona "de la que se está hablando" en esta conversación hasta ahora.
+
+    Salvaguarda de backend (ver _es_referencia_conversacional arriba): un
+    modelo local de 8B, en una pregunta de seguimiento tipo "¿qué delitos
+    son más comunes en esa zona?", a veces no logra recuperar el nombre de
+    localidad correcto de turnos atrás y llama obtener_localidad con OTRA
+    localidad real cualquiera (ej. pregunta sobre Engativá pero llama con
+    "Kennedy") — como esa localidad sí existe, la herramienta no tiene forma
+    de detectar el error por sí sola. Esto permite avisarle al modelo del
+    posible desvío en vez de dejarlo presentar datos de una localidad como
+    si fueran de otra."""
+    for mensaje in reversed(historial):
+        if mensaje.get("role") != "tool":
+            continue
+        try:
+            resultado = json.loads(mensaje.get("content", ""))
+        except (json.JSONDecodeError, TypeError):
+            continue
+        if isinstance(resultado, dict) and "error" not in resultado and isinstance(resultado.get("localidad"), str):
+            return resultado["localidad"]
+    return None
+
+
 def tool_obtener_localidad(datos: dict, nombre: str) -> dict:
     nombre_norm = normalizar(nombre)
+    if _es_referencia_conversacional(nombre_norm):
+        return {
+            "error": (
+                f"'{nombre}' no es el nombre de una localidad real (es una "
+                "palabra de conversación, no un nombre propio). Si es una "
+                "pregunta de seguimiento sobre una localidad ya mencionada "
+                "antes en esta conversación, no llames esta herramienta con "
+                "esa palabra como argumento — usa el nombre EXACTO de la "
+                "localidad que ya se estableció antes (ej. la que devolvió "
+                "buscar_barrio)."
+            )
+        }
     registros = [info for cod, info in datos.items() if cod != "_meta"]
 
     for info in registros:
@@ -829,6 +936,7 @@ def preguntar(modelo: str, historial: list, datos: dict) -> tuple[str, list[str]
         if not tool_calls:
             texto = desenvolver_json_accidental(reparar_mojibake(mensaje.get("content", "")))
             texto = quitar_frases_sin_respaldo(texto)
+            texto = quitar_tasas_inventadas(texto)
             return reemplazar_narracion_meta(texto), hechos_nuevos
 
         for llamada in tool_calls:
@@ -839,6 +947,32 @@ def preguntar(modelo: str, historial: list, datos: dict) -> tuple[str, list[str]
                 if hecho:
                     hechos_nuevos.append(hecho)
             resultado = ejecutar_tool(fn["name"], argumentos, datos)
+            if fn["name"] == "obtener_localidad" and isinstance(resultado, dict):
+                establecida = localidad_establecida_reciente(historial)
+                # Si la llamada tuvo éxito, la localidad pedida es la que
+                # devolvió; si fue error (no existe, ambigua, o la rechazó
+                # _es_referencia_conversacional), es la que el modelo puso
+                # como argumento -- en ambos casos puede ser un invento.
+                localidad_pedida = resultado.get("localidad") if "error" not in resultado else argumentos.get(
+                    "nombre", ""
+                )
+                if establecida and normalizar(establecida) != normalizar(localidad_pedida or ""):
+                    ultimo_usuario = next(
+                        (m.get("content", "") for m in reversed(historial) if m.get("role") == "user"), ""
+                    )
+                    # Si el usuario NO nombró esta localidad explícitamente en su
+                    # último mensaje, es casi seguro que el modelo perdió el hilo
+                    # de la conversación (una pregunta de seguimiento como "¿qué
+                    # delitos hay en esa zona?" no menciona ninguna localidad, así
+                    # que cualquier nombre que el modelo haya puesto -- exista o
+                    # no como localidad real -- es un invento) -- no basta con
+                    # avisarle en el resultado (un modelo local de 8B lo ignora y
+                    # mezcla los datos de la localidad equivocada con el nombre
+                    # correcto, que es peor que no corregir nada), así que se
+                    # sobreescribe directo con la localidad ya establecida en vez
+                    # de relayar un error o datos de otra localidad.
+                    if normalizar(localidad_pedida or "") not in normalizar(ultimo_usuario):
+                        resultado = tool_obtener_localidad(datos, establecida)
             historial.append({"role": "tool", "content": json.dumps(resultado, ensure_ascii=False)})
 
     return "No pude terminar de consultar los datos (demasiadas llamadas a herramientas).", hechos_nuevos
