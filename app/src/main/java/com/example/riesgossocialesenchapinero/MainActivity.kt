@@ -10,7 +10,11 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -23,9 +27,11 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -35,6 +41,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -49,6 +56,9 @@ import com.example.riesgossocialesenchapinero.location.MonitoreoUbicacionService
 import com.example.riesgossocialesenchapinero.ui.RiesgoUiState
 import com.example.riesgossocialesenchapinero.ui.RiesgoViewModel
 import com.example.riesgossocialesenchapinero.ui.theme.RIESGOSSOCIALESENCHAPINEROTheme
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 private enum class Pantalla(val etiqueta: String) {
     RIESGO("Riesgo"),
@@ -94,11 +104,34 @@ class MainActivity : ComponentActivity() {
     }
 }
 
+sealed interface EstadoBusquedaBarrio {
+    object Inactivo : EstadoBusquedaBarrio
+    object Buscando : EstadoBusquedaBarrio
+    data class Resultado(val busqueda: ApiClient.BusquedaBarrio) : EstadoBusquedaBarrio
+    data class Error(val mensaje: String) : EstadoBusquedaBarrio
+}
+
 @Composable
 fun PantallaRiesgo(modifier: Modifier = Modifier, viewModel: RiesgoViewModel = viewModel()) {
     val estado by viewModel.estado.collectAsState()
     val context = LocalContext.current
     var monitoreoActivo by remember { mutableStateOf(false) }
+
+    var textoBusqueda by remember { mutableStateOf("") }
+    var estadoBusqueda by remember { mutableStateOf<EstadoBusquedaBarrio>(EstadoBusquedaBarrio.Inactivo) }
+    val scope = rememberCoroutineScope()
+
+    fun buscarBarrio(nombre: String, localidad: String? = null) {
+        estadoBusqueda = EstadoBusquedaBarrio.Buscando
+        scope.launch {
+            estadoBusqueda = try {
+                val resultado = withContext(Dispatchers.IO) { ApiClient.buscarBarrio(nombre, localidad) }
+                EstadoBusquedaBarrio.Resultado(resultado)
+            } catch (e: Exception) {
+                EstadoBusquedaBarrio.Error(e.message ?: "Error desconocido buscando el barrio")
+            }
+        }
+    }
 
     val lanzadorBackground = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission(),
@@ -144,6 +177,27 @@ fun PantallaRiesgo(modifier: Modifier = Modifier, viewModel: RiesgoViewModel = v
                 }
             },
         )
+
+        BarraBusquedaBarrio(
+            texto = textoBusqueda,
+            onTextoChange = { textoBusqueda = it },
+            onBuscar = { buscarBarrio(textoBusqueda) },
+            onLimpiar = {
+                textoBusqueda = ""
+                estadoBusqueda = EstadoBusquedaBarrio.Inactivo
+            },
+            mostrarLimpiar = estadoBusqueda != EstadoBusquedaBarrio.Inactivo,
+        )
+
+        val busquedaActual = estadoBusqueda
+        if (busquedaActual != EstadoBusquedaBarrio.Inactivo) {
+            ResultadoBusquedaBarrio(
+                estado = busquedaActual,
+                modifier = Modifier.weight(1f).fillMaxWidth(),
+                onElegirOpcion = { opcion -> buscarBarrio(textoBusqueda, opcion.localidad) },
+            )
+            return@Column
+        }
 
         when (val actual = estado) {
             is RiesgoUiState.Cargando -> {
@@ -215,6 +269,138 @@ fun ControlMonitoreo(activo: Boolean, onToggle: () -> Unit) {
             }
             Button(onClick = onToggle) {
                 Text(if (activo) "Detener" else "Activar")
+            }
+        }
+    }
+}
+
+@Composable
+fun BarraBusquedaBarrio(
+    texto: String,
+    onTextoChange: (String) -> Unit,
+    onBuscar: () -> Unit,
+    onLimpiar: () -> Unit,
+    mostrarLimpiar: Boolean,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        OutlinedTextField(
+            value = texto,
+            onValueChange = onTextoChange,
+            modifier = Modifier.weight(1f),
+            placeholder = { Text("Buscar barrio (ej. Acapulco)...") },
+            singleLine = true,
+            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+            keyboardActions = KeyboardActions(onSearch = { if (texto.isNotBlank()) onBuscar() }),
+        )
+        IconButton(onClick = onBuscar, enabled = texto.isNotBlank()) {
+            Text("🔍")
+        }
+        if (mostrarLimpiar) {
+            IconButton(onClick = onLimpiar) {
+                Text("✕")
+            }
+        }
+    }
+}
+
+@Composable
+fun ResultadoBusquedaBarrio(
+    estado: EstadoBusquedaBarrio,
+    modifier: Modifier = Modifier,
+    onElegirOpcion: (ApiClient.ResultadoBarrio) -> Unit,
+) {
+    when (estado) {
+        is EstadoBusquedaBarrio.Inactivo -> Unit
+
+        is EstadoBusquedaBarrio.Buscando -> {
+            Column(
+                modifier = modifier,
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center,
+            ) {
+                CircularProgressIndicator()
+            }
+        }
+
+        is EstadoBusquedaBarrio.Error -> {
+            Column(modifier = modifier.padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                Text("No pude buscar el barrio")
+                Text(estado.mensaje, style = MaterialTheme.typography.bodySmall)
+            }
+        }
+
+        is EstadoBusquedaBarrio.Resultado -> {
+            when (val busqueda = estado.busqueda) {
+                is ApiClient.BusquedaBarrio.Encontrado -> {
+                    Column(modifier = modifier.padding(12.dp)) {
+                        TarjetaResultadoBarrio(busqueda.resultado)
+                    }
+                }
+
+                is ApiClient.BusquedaBarrio.Ambiguo -> {
+                    Column(modifier = modifier.padding(12.dp)) {
+                        Text(
+                            "Hay varios barrios con ese nombre — ¿cuál?",
+                            style = MaterialTheme.typography.titleSmall,
+                            modifier = Modifier.padding(bottom = 8.dp),
+                        )
+                        LazyColumn {
+                            items(busqueda.opciones) { opcion ->
+                                TarjetaResultadoBarrio(
+                                    opcion,
+                                    modifier = Modifier.clickable { onElegirOpcion(opcion) },
+                                )
+                            }
+                        }
+                    }
+                }
+
+                is ApiClient.BusquedaBarrio.NoEncontrado -> {
+                    Column(
+                        modifier = modifier.padding(24.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center,
+                    ) {
+                        Text(busqueda.mensaje, style = MaterialTheme.typography.bodyMedium)
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun TarjetaResultadoBarrio(resultado: ApiClient.ResultadoBarrio, modifier: Modifier = Modifier) {
+    Card(modifier = modifier.fillMaxWidth().padding(vertical = 6.dp)) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(resultado.barrio, style = MaterialTheme.typography.titleMedium)
+                    Text(resultado.localidad, style = MaterialTheme.typography.bodySmall)
+                }
+                Surface(color = colorRiesgo(resultado.nivelRiesgo)) {
+                    Text(
+                        resultado.nivelRiesgo.uppercase(),
+                        color = Color.White,
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+                        style = MaterialTheme.typography.labelMedium,
+                    )
+                }
+            }
+            resultado.upz?.let { upz ->
+                Text(
+                    "UPZ ${upz.upz}: llamadas de emergencia ${upz.nivelLlamadas} " +
+                        "(${"%.0f".format(upz.tasaLlamadas100k)} por 100k hab., acumulado 2023-2025)",
+                    style = MaterialTheme.typography.bodySmall,
+                    modifier = Modifier.padding(top = 8.dp),
+                )
             }
         }
     }

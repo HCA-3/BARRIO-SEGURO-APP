@@ -690,8 +690,20 @@ def tool_buscar_barrio(datos: dict, nombre: str, localidad: str | None = None) -
     # ambiguo de verdad (pasa con ~100 nombres de barrio en Bogotá) — hay
     # que preguntar cuál. Si caen en la misma localidad, no hay ambigüedad
     # real (ej. el mismo barrio con dos puntos OSM cercanos): se deduplica
-    # a una opción por localidad para no confundir con entradas repetidas.
-    opciones_por_localidad = {r["localidad"]: r for r in resultados}
+    # a una opción por localidad, prefiriendo el nombre más limpio (sin
+    # paréntesis/referencias de calle de un paradero de bus, ej. "Palo
+    # Blanco" en vez de "Palo Blanco (Av. Boyacá - Cl69b) (B)") — importa
+    # más aquí que en el chat, donde el LLM lo redactaba disimulando el
+    # nombre feo, pero un buscador directo lo muestra tal cual.
+    def _legibilidad(r: dict) -> tuple:
+        nombre = r["barrio"]
+        return (nombre.count("("), len(nombre))
+
+    opciones_por_localidad: dict[str, dict] = {}
+    for r in resultados:
+        actual = opciones_por_localidad.get(r["localidad"])
+        if actual is None or _legibilidad(r) < _legibilidad(actual):
+            opciones_por_localidad[r["localidad"]] = r
     if len(opciones_por_localidad) > 1:
         return {
             "error": f"Hay varios barrios llamados '{nombre}' en localidades distintas — pregunta cuál.",
@@ -871,6 +883,28 @@ def riesgo_por_punto(lat: float, lng: float):
     if "error" in resultado:
         raise HTTPException(status_code=404, detail=resultado)
     return resultado
+
+
+@app.get("/barrios/buscar")
+def barrios_buscar(nombre: str, localidad: str | None = None):
+    """Búsqueda directa de barrio -> localidad/riesgo, SIN pasar por el
+    agente conversacional (determinístico, mismo tool_buscar_barrio que
+    usa el chat, ver ahí la lógica de desambiguación). Pensado para un
+    buscador en la pantalla de Riesgo de la app: más confiable que
+    preguntarle al modelo local, que a veces se equivoca de herramienta o
+    responde de forma inconsistente para algo que debería ser un lookup
+    directo.
+
+    Respuesta siempre 200, con una de estas formas (el cliente decide qué
+    hacer según qué campos trae):
+      - Encontrado: {"barrio", "codigo", "localidad", "nivel_riesgo",
+        "score_mixto", "upz": {...} | null}
+      - Ambiguo (varios barrios con ese nombre en localidades distintas):
+        {"error": "...", "opciones": [...]} -- cada opción tiene la misma
+        forma que "Encontrado", úsense para dejar elegir cuál.
+      - No encontrado: {"error": "..."} (sin "opciones").
+    """
+    return tool_buscar_barrio(DATOS, nombre, localidad)
 
 
 @app.get("/zonas/{nombre}")
