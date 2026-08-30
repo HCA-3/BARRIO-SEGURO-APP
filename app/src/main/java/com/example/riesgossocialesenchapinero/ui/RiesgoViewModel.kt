@@ -27,11 +27,23 @@ class RiesgoViewModel : ViewModel() {
         _estado.value = RiesgoUiState.Cargando
         viewModelScope.launch {
             _estado.value = try {
+                // ApiClient ya reintenta solo con autodetección si la URL
+                // guardada dejó de responder.
                 val ranking = withContext(Dispatchers.IO) { ApiClient.obtenerRanking() }
                 RiesgoUiState.Listo(ranking)
             } catch (e: Exception) {
-                RiesgoUiState.Error(e.message ?: "Error desconocido consultando el backend")
+                RiesgoUiState.Error(
+                    "No respondió ninguna de estas direcciones: " +
+                        ApiClient.CANDIDATOS.joinToString() + ". Detalle: " +
+                        (e.message ?: "error desconocido"),
+                )
             }
         }
+    }
+
+    /** Fija la URL que el usuario escribió y recarga. */
+    fun cambiarServidor(url: String) {
+        ApiClient.baseUrl = url
+        cargarRanking()
     }
 }

@@ -1,33 +1,130 @@
 package com.example.riesgossocialesenchapinero.data
 
+import android.content.Context
+import android.content.SharedPreferences
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONArray
 import org.json.JSONObject
+import java.io.IOException
 import java.net.URLEncoder
 import java.util.concurrent.TimeUnit
 
 /**
  * Cliente HTTP hacia backend_riesgo.py (ver ../../../../../../../Api/backend_riesgo.py).
  *
- * BASE_URL por defecto apunta al emulador de Android Studio (10.0.2.2 es la
- * IP especial que el emulador usa para llegar al "localhost" de la máquina
- * host). Para un celular físico en la misma wifi que el PC, cambiar por la
- * IP local del PC, ej. "http://192.168.1.23:8000/" (se ve con "ipconfig").
+ * La URL del backend ya no está fija en el código: se guarda en
+ * SharedPreferences y se puede cambiar desde la propia app (pantalla de error
+ * -> campo "Servidor"), porque la IP del PC cambia según dónde se pruebe y
+ * recompilar por cada cambio de red es un estorbo. Si no hay ninguna guardada,
+ * [autodetectar] recorre [CANDIDATOS] y se queda con el primero que responda.
  */
 object ApiClient {
-    var baseUrl: String = "http://10.0.2.2:8000/"
+    private const val PREFS = "barrio_seguro_ajustes"
+    private const val CLAVE_URL = "base_url"
+
+    /**
+     * Se prueban en este orden cuando no hay una URL guardada:
+     *  - 10.0.2.2  emulador de Android Studio (su alias del localhost del PC).
+     *  - 127.0.0.1 celular por USB con "adb reverse tcp:8000 tcp:8000". Es el
+     *    único que sirve si el celular y el PC están en redes distintas.
+     *  - 192.168.x celular en la MISMA wifi que el PC (la IP sale con
+     *    "ipconfig"; también se puede escribir a mano desde la app).
+     */
+    val CANDIDATOS = listOf(
+        "http://10.0.2.2:8000/",
+        "http://127.0.0.1:8000/",
+        "http://192.168.0.107:8000/",
+    )
+
+    private var prefs: SharedPreferences? = null
+
+    var baseUrl: String = CANDIDATOS.first()
+        set(valor) {
+            field = normalizar(valor)
+            prefs?.edit()?.putString(CLAVE_URL, field)?.apply()
+        }
+
+    /** Llamar una vez al arrancar (MainActivity) para recuperar la URL guardada. */
+    fun inicializar(context: Context) {
+        val guardadas = context.applicationContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+        prefs = guardadas
+        guardadas.getString(CLAVE_URL, null)?.let { baseUrl = it }
+    }
+
+    /** Acepta "192.168.0.107", "192.168.0.107:8000" o la URL completa. */
+    private fun normalizar(valor: String): String {
+        var url = valor.trim()
+        if (url.isEmpty()) return CANDIDATOS.first()
+        if (!url.startsWith("http://") && !url.startsWith("https://")) url = "http://" + url
+        if (!url.substringAfter("://").contains(":")) url = url + ":8000"
+        if (!url.endsWith("/")) url = url + "/"
+        return url
+    }
 
     // El chat con el modelo local (CPU) puede tardar varios minutos en la
-    // primera respuesta: timeouts largos a propósito, no es un valor por
-    // descuido.
+    // primera respuesta: los timeouts de lectura/escritura son largos a
+    // propósito, no es un valor por descuido. El de conexión sí es corto: el
+    // backend está en la red local, y si no contesta rápido es que no está ahí
+    // y conviene pasar cuanto antes a probar las otras direcciones.
     private val client = OkHttpClient.Builder()
-        .connectTimeout(10, TimeUnit.SECONDS)
-        .readTimeout(300, TimeUnit.SECONDS)
-        .writeTimeout(300, TimeUnit.SECONDS)
+        .connectTimeout(4, TimeUnit.SECONDS)
+        // 660s > los 600s que el backend le da a Ollama (ver preguntar() en
+        // backend_riesgo.py). Estaba en 300s, y con el modelo corriendo en CPU
+        // eso hacía que la app se rindiera a mitad de una respuesta que el
+        // backend sí iba a entregar. Al ser mayor, si algo falla gana el
+        // timeout del backend y llega su mensaje de error en vez de un corte seco.
+        .readTimeout(660, TimeUnit.SECONDS)
+        .writeTimeout(660, TimeUnit.SECONDS)
         .build()
+
+    // Para sondear candidatos: si el PC no está en esa red el intento tiene que
+    // fallar rápido, o recorrer la lista tardaría medio minuto.
+    private val clientSondeo = client.newBuilder()
+        .connectTimeout(2, TimeUnit.SECONDS)
+        .readTimeout(3, TimeUnit.SECONDS)
+        .build()
+
+    /** true si hay un backend vivo en [url] (responde /health). */
+    fun servidorResponde(url: String): Boolean = try {
+        val request = Request.Builder().url(normalizar(url) + "health").get().build()
+        clientSondeo.newCall(request).execute().use { it.isSuccessful }
+    } catch (e: Exception) {
+        false
+    }
+
+    /**
+     * Prueba la URL actual y luego [CANDIDATOS]; fija y devuelve la primera que
+     * responda, o null si ninguna lo hace.
+     */
+    fun autodetectar(): String? {
+        for (url in listOf(baseUrl) + CANDIDATOS) {
+            if (servidorResponde(url)) {
+                baseUrl = url
+                return baseUrl
+            }
+        }
+        return null
+    }
+
+    /**
+     * Envuelve una petición: si falla por no poder conectar (la URL guardada
+     * dejó de servir porque se cambió de emulador a celular, de wifi, etc.),
+     * busca el backend en los otros candidatos y reintenta una vez.
+     *
+     * Va aquí y no en los ViewModel a propósito: así lo aprovechan por igual el
+     * ranking, el chat y el servicio de ubicación, sin repetir la lógica en cada
+     * uno. Solo reintenta ante IOException (fallo de conexión); un error HTTP
+     * del backend significa que sí lo encontramos y reintentar no arreglaría nada.
+     */
+    private fun <T> conAutodeteccion(peticion: () -> T): T = try {
+        peticion()
+    } catch (e: IOException) {
+        if (autodetectar() == null) throw e
+        peticion()
+    }
 
     private val jsonMediaType = "application/json; charset=utf-8".toMediaType()
 
@@ -77,7 +174,9 @@ object ApiClient {
 
     class ApiException(message: String) : Exception(message)
 
-    fun obtenerRanking(): List<Localidad> {
+    fun obtenerRanking(): List<Localidad> = conAutodeteccion { obtenerRankingUnaVez() }
+
+    private fun obtenerRankingUnaVez(): List<Localidad> {
         val request = Request.Builder().url(baseUrl + "zonas/ranking").get().build()
         client.newCall(request).execute().use { resp ->
             if (!resp.isSuccessful) throw ApiException("Error ${resp.code} consultando el ranking")
@@ -96,7 +195,10 @@ object ApiClient {
     }
 
     /** null si el punto no cae dentro de ninguna localidad de Bogotá (ej. fuera de la ciudad). */
-    fun consultarRiesgoPorPunto(lat: Double, lng: Double): RiesgoPorPunto? {
+    fun consultarRiesgoPorPunto(lat: Double, lng: Double): RiesgoPorPunto? =
+        conAutodeteccion { consultarRiesgoPorPuntoUnaVez(lat, lng) }
+
+    private fun consultarRiesgoPorPuntoUnaVez(lat: Double, lng: Double): RiesgoPorPunto? {
         val request = Request.Builder().url(baseUrl + "riesgo?lat=$lat&lng=$lng").get().build()
         client.newCall(request).execute().use { resp ->
             if (resp.code == 404) return null
@@ -122,7 +224,10 @@ object ApiClient {
      * Búsqueda directa de barrio -> localidad/riesgo, SIN pasar por el chat
      * conversacional (determinístico, mismo tool_buscar_barrio del backend).
      */
-    fun buscarBarrio(nombre: String, localidad: String? = null): BusquedaBarrio {
+    fun buscarBarrio(nombre: String, localidad: String? = null): BusquedaBarrio =
+        conAutodeteccion { buscarBarrioUnaVez(nombre, localidad) }
+
+    private fun buscarBarrioUnaVez(nombre: String, localidad: String? = null): BusquedaBarrio {
         val url = buildString {
             append(baseUrl)
             append("barrios/buscar?nombre=")
@@ -165,7 +270,10 @@ object ApiClient {
         )
     }
 
-    fun enviarMensajeChat(historial: List<MensajeChat>, hechosRecordados: List<String> = emptyList()): RespuestaChat {
+    fun enviarMensajeChat(historial: List<MensajeChat>, hechosRecordados: List<String> = emptyList()): RespuestaChat =
+        conAutodeteccion { enviarMensajeChatUnaVez(historial, hechosRecordados) }
+
+    private fun enviarMensajeChatUnaVez(historial: List<MensajeChat>, hechosRecordados: List<String>): RespuestaChat {
         val mensajesJson = JSONArray()
         for (m in historial) {
             val o = JSONObject().put("role", m.role).put("content", m.content)

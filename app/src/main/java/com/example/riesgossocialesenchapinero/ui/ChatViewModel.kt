@@ -126,6 +126,14 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
                     hechosRecordados = _estado.value.hechosRecordados + respuesta.hechosNuevos,
                     enviando = false,
                 )
+            } catch (e: java.io.IOException) {
+                // No se pudo conectar: ApiClient ya probó las otras direcciones
+                // sin suerte, así que el arreglo está en la pestaña Riesgo.
+                _estado.value.copy(
+                    enviando = false,
+                    error = "No hay conexión con el backend (${ApiClient.baseUrl}). " +
+                        "Configúralo en la pestaña Riesgo, campo Servidor.",
+                )
             } catch (e: Exception) {
                 _estado.value.copy(enviando = false, error = e.message ?: "Error desconocido hablando con el agente")
             }

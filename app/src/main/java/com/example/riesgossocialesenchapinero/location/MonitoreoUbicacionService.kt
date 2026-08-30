@@ -7,6 +7,7 @@ import android.app.PendingIntent
 import android.app.Service
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.content.pm.ServiceInfo
 import android.os.Build
 import android.os.IBinder
 import android.util.Log
@@ -36,6 +37,15 @@ class MonitoreoUbicacionService : Service() {
     companion object {
         const val ACTION_INICIAR = "com.example.riesgossocialesenchapinero.INICIAR_MONITOREO"
         const val ACTION_DETENER = "com.example.riesgossocialesenchapinero.DETENER_MONITOREO"
+
+        /**
+         * Si el servicio está corriendo ahora mismo. La UI lo consulta para
+         * pintar el botón: antes guardaba ese estado en un `remember` de la
+         * pantalla, que se pierde al cambiar de pestaña y hacía que el botón
+         * dijera "Activar" con el monitoreo ya encendido.
+         */
+        var activo: Boolean = false
+            private set
 
         private const val TAG = "MonitoreoUbicacion"
         private const val CANAL_MONITOREO = "monitoreo_ubicacion"
@@ -93,7 +103,15 @@ class MonitoreoUbicacionService : Service() {
     }
 
     private fun iniciarMonitoreo() {
-        startForeground(ID_NOTIFICACION_MONITOREO, notificacionMonitoreo())
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            startForeground(
+                ID_NOTIFICACION_MONITOREO,
+                notificacionMonitoreo(),
+                ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION,
+            )
+        } else {
+            startForeground(ID_NOTIFICACION_MONITOREO, notificacionMonitoreo())
+        }
 
         if (ActivityCompat.checkSelfPermission(
                 this,
@@ -103,6 +121,7 @@ class MonitoreoUbicacionService : Service() {
             stopSelf()
             return
         }
+        activo = true
 
         // PRIORITY_HIGH_ACCURACY (GPS) en vez de balanced/network: en zonas
         // urbanas densas (justo el caso de uso de esta app) la ubicación por
@@ -126,6 +145,7 @@ class MonitoreoUbicacionService : Service() {
     }
 
     private fun detenerMonitoreo() {
+        activo = false
         clienteUbicacion.removeLocationUpdates(locationCallback)
         stopForeground(STOP_FOREGROUND_REMOVE)
         stopSelf()
@@ -267,6 +287,7 @@ class MonitoreoUbicacionService : Service() {
     }
 
     override fun onDestroy() {
+        activo = false
         clienteUbicacion.removeLocationUpdates(locationCallback)
         super.onDestroy()
     }

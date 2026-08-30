@@ -6,16 +6,12 @@ plugins {
 
 android {
     namespace = "com.example.riesgossocialesenchapinero"
-    compileSdk {
-        version = release(36) {
-            minorApiLevel = 1
-        }
-    }
+    compileSdk = 35
 
     defaultConfig {
         applicationId = "com.example.riesgossocialesenchapinero"
         minSdk = 29
-        targetSdk = 36
+        targetSdk = 35
         versionCode = 1
         versionName = "1.0"
 
