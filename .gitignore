@@ -19,3 +19,12 @@ Agente/manzanaestratificacion/manzanaestratificacion.json
 Agente/estratificación_socioeconómica_por_manzana/
 Agente/incidente_reportado_(nuse/
 Agente/actualizacion.log
+
+# Entornos virtuales y basura de Python
+/venv/
+Agente/.venv/
+__pycache__/
+*.pyc
+
+# Salidas locales de pruebas
+/.artifacts/

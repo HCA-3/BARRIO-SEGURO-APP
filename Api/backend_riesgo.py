@@ -69,7 +69,31 @@ if not OSM_GPKG_PATH:
     )
     OSM_GPKG_PATH = _candidatos_gpkg[0] if _candidatos_gpkg else None
 OLLAMA_URL = "http://localhost:11434/api/chat"
-MODELO_DEFECTO = "llama3.1"
+
+# llama3.2:3b en vez de llama3.1 (8B): este backend corre en un portátil sin
+# GPU utilizable (Intel UHD), o sea 100% CPU, donde el 8B tardaba ~3 minutos por
+# respuesta. El 3B da respuestas comparables para lo que se le pide aquí (elegir
+# una herramienta y redactar una frase con lo que devuelve) a una fracción del
+# coste. Se puede volver al 8B sin tocar código:
+#     set BARRIO_SEGURO_MODELO=llama3.1
+MODELO_DEFECTO = os.environ.get("BARRIO_SEGURO_MODELO", "llama3.2:3b")
+
+# Cuánto se queda el modelo cargado en RAM tras la última petición. Por defecto
+# Ollama lo descarga a los 5 minutos, y volver a cargarlo cuesta más que la
+# propia respuesta. Con esto, la primera pregunta paga la carga y las demás no.
+KEEP_ALIVE = os.environ.get("BARRIO_SEGURO_KEEP_ALIVE", "30m")
+
+# SYSTEM_PROMPT (~1.8k tokens) + TOOLS (~3.4k tokens) se mandan en cada ronda,
+# así que con los 4096 por defecto de Ollama el contexto se truncaba y el modelo
+# perdía parte de las herramientas. 8192 deja sitio para el prompt, el historial
+# y los resultados de las tools.
+NUM_CTX = int(os.environ.get("BARRIO_SEGURO_NUM_CTX", "8192"))
+
+# Tope de tokens de la respuesta. Las respuestas útiles aquí son de dos o tres
+# frases; sin tope, el modelo a veces se enrolla y cada token extra son décimas
+# de segundo en CPU.
+NUM_PREDICT = int(os.environ.get("BARRIO_SEGURO_NUM_PREDICT", "400"))
+
 MAX_RONDAS_TOOLS = 4
 
 SYSTEM_PROMPT = """Eres el asistente de la app "Barrio Seguro" sobre riesgo \
@@ -918,7 +942,21 @@ def preguntar(modelo: str, historial: list, datos: dict) -> tuple[str, list[str]
         try:
             resp = requests.post(
                 OLLAMA_URL,
-                json={"model": modelo, "messages": historial, "tools": TOOLS, "stream": False},
+                json={
+                    "model": modelo,
+                    "messages": historial,
+                    "tools": TOOLS,
+                    "stream": False,
+                    "keep_alive": KEEP_ALIVE,
+                    "options": {
+                        "num_ctx": NUM_CTX,
+                        "num_predict": NUM_PREDICT,
+                        # Aquí no se quiere creatividad: se trata de elegir bien
+                        # la herramienta y repetir cifras sin adornarlas. Bajar
+                        # la temperatura también reduce las respuestas largas.
+                        "temperature": 0.2,
+                    },
+                },
                 timeout=600,
             )
         except requests.exceptions.ConnectionError:

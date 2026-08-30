@@ -3,6 +3,9 @@ package com.example.riesgossocialesenchapinero
 import android.Manifest
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
+import android.net.Uri
+import android.provider.Settings
 import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -38,6 +41,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -66,13 +70,80 @@ private enum class Pantalla(val etiqueta: String) {
 }
 
 class MainActivity : ComponentActivity() {
+    // Se revalidan en onResume porque pueden cambiar fuera de la app: el
+    // usuario puede conceder o quitar el permiso desde Ajustes, y el servicio
+    // puede haberse detenido solo. Guardarlos en un `remember` de la pantalla
+    // dejaba el botón mostrando un estado viejo.
+    private val permisoUbicacion = mutableStateOf(false)
+    private val monitoreoActivo = mutableStateOf(false)
+
+    override fun onResume() {
+        super.onResume()
+        permisoUbicacion.value = hayPermisoUbicacion(this)
+        monitoreoActivo.value = MonitoreoUbicacionService.activo
+    }
+
     @OptIn(ExperimentalMaterial3Api::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        // Recupera la URL del backend que el usuario haya guardado antes; sin
+        // esto siempre volvería al candidato del emulador tras reinstalar.
+        ApiClient.inicializar(this)
+        android.util.Log.d("BarrioSeguro", "MainActivity iniciada. Backend: ${ApiClient.baseUrl}")
         setContent {
             RIESGOSSOCIALESENCHAPINEROTheme {
                 var pantallaActual by remember { mutableStateOf(Pantalla.RIESGO) }
+
+                val actividad = this
+                // true cuando el diálogo lo pidió el usuario pulsando "Activar",
+                // no el arranque automático: solo en ese caso tiene sentido
+                // mandarlo a Ajustes si Android ya no muestra el diálogo.
+                var pedidoPorElUsuario by remember { mutableStateOf(false) }
+
+                val lanzadorPermisos = rememberLauncherForActivityResult(
+                    ActivityResultContracts.RequestMultiplePermissions(),
+                ) { resultados ->
+                    val concedido = resultados[Manifest.permission.ACCESS_FINE_LOCATION] == true ||
+                        resultados[Manifest.permission.ACCESS_COARSE_LOCATION] == true
+                    permisoUbicacion.value = concedido
+                    if (concedido) {
+                        // Lo pidió para activar el monitoreo: arráncalo ya, sin
+                        // obligarle a pulsar "Activar" una segunda vez.
+                        if (pedidoPorElUsuario) {
+                            iniciarServicioMonitoreo(actividad)
+                            monitoreoActivo.value = true
+                        }
+                    } else if (pedidoPorElUsuario &&
+                        !actividad.shouldShowRequestPermissionRationale(
+                            Manifest.permission.ACCESS_FINE_LOCATION,
+                        )
+                    ) {
+                        // Negado de forma permanente: Android ya no volverá a
+                        // mostrar el diálogo, así que la única vía es Ajustes.
+                        abrirAjustesDeLaApp(actividad)
+                    }
+                    pedidoPorElUsuario = false
+                }
+
+                val pedirPermisoUbicacion = {
+                    val permisos = mutableListOf(
+                        Manifest.permission.ACCESS_FINE_LOCATION,
+                        Manifest.permission.ACCESS_COARSE_LOCATION,
+                    )
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                        permisos.add(Manifest.permission.POST_NOTIFICATIONS)
+                    }
+                    lanzadorPermisos.launch(permisos.toTypedArray())
+                }
+
+                // Se pide al entrar, y solo si todavía no está concedido: si el
+                // usuario ya dijo que sí, el diálogo no vuelve a salir. Va en la
+                // raíz y no dentro de PantallaRiesgo para que no dependa de en
+                // qué pestaña esté.
+                LaunchedEffect(Unit) {
+                    if (!hayPermisoUbicacion(actividad)) pedirPermisoUbicacion()
+                }
 
                 Scaffold(
                     modifier = Modifier.fillMaxSize(),
@@ -95,7 +166,25 @@ class MainActivity : ComponentActivity() {
                     },
                 ) { innerPadding ->
                     when (pantallaActual) {
-                        Pantalla.RIESGO -> PantallaRiesgo(modifier = Modifier.padding(innerPadding))
+                        Pantalla.RIESGO -> PantallaRiesgo(
+                            modifier = Modifier.padding(innerPadding),
+                            monitoreoActivo = monitoreoActivo.value,
+                            onToggleMonitoreo = {
+                                if (monitoreoActivo.value) {
+                                    detenerServicioMonitoreo(actividad)
+                                    monitoreoActivo.value = false
+                                } else if (permisoUbicacion.value) {
+                                    iniciarServicioMonitoreo(actividad)
+                                    monitoreoActivo.value = true
+                                } else {
+                                    // Falta el permiso: se pide aquí porque lo
+                                    // pidió el usuario explícitamente, no de
+                                    // forma automática.
+                                    pedidoPorElUsuario = true
+                                    pedirPermisoUbicacion()
+                                }
+                            },
+                        )
                         Pantalla.CHAT -> PantallaChat(modifier = Modifier.padding(innerPadding))
                     }
                 }
@@ -112,11 +201,13 @@ sealed interface EstadoBusquedaBarrio {
 }
 
 @Composable
-fun PantallaRiesgo(modifier: Modifier = Modifier, viewModel: RiesgoViewModel = viewModel()) {
+fun PantallaRiesgo(
+    modifier: Modifier = Modifier,
+    monitoreoActivo: Boolean,
+    onToggleMonitoreo: () -> Unit,
+    viewModel: RiesgoViewModel = viewModel(),
+) {
     val estado by viewModel.estado.collectAsState()
-    val context = LocalContext.current
-    var monitoreoActivo by remember { mutableStateOf(false) }
-
     var textoBusqueda by remember { mutableStateOf("") }
     var estadoBusqueda by remember { mutableStateOf<EstadoBusquedaBarrio>(EstadoBusquedaBarrio.Inactivo) }
     val scope = rememberCoroutineScope()
@@ -133,50 +224,8 @@ fun PantallaRiesgo(modifier: Modifier = Modifier, viewModel: RiesgoViewModel = v
         }
     }
 
-    val lanzadorBackground = rememberLauncherForActivityResult(
-        ActivityResultContracts.RequestPermission(),
-    ) {
-        // Se arranca el servicio se haya concedido "todo el tiempo" o no: sin
-        // permiso en segundo plano, Android puede pausar el monitoreo cuando
-        // la app no está visible, pero sigue funcionando mientras está abierta.
-        iniciarServicioMonitoreo(context)
-        monitoreoActivo = true
-    }
-
-    val lanzadorPrimerPlano = rememberLauncherForActivityResult(
-        ActivityResultContracts.RequestMultiplePermissions(),
-    ) { resultados ->
-        val ubicacionConcedida = resultados[Manifest.permission.ACCESS_FINE_LOCATION] == true ||
-            resultados[Manifest.permission.ACCESS_COARSE_LOCATION] == true
-        if (ubicacionConcedida) {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                lanzadorBackground.launch(Manifest.permission.ACCESS_BACKGROUND_LOCATION)
-            } else {
-                iniciarServicioMonitoreo(context)
-                monitoreoActivo = true
-            }
-        }
-    }
-
     Column(modifier = modifier.fillMaxSize()) {
-        ControlMonitoreo(
-            activo = monitoreoActivo,
-            onToggle = {
-                if (monitoreoActivo) {
-                    detenerServicioMonitoreo(context)
-                    monitoreoActivo = false
-                } else {
-                    val permisos = mutableListOf(
-                        Manifest.permission.ACCESS_FINE_LOCATION,
-                        Manifest.permission.ACCESS_COARSE_LOCATION,
-                    )
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                        permisos.add(Manifest.permission.POST_NOTIFICATIONS)
-                    }
-                    lanzadorPrimerPlano.launch(permisos.toTypedArray())
-                }
-            },
-        )
+        ControlMonitoreo(activo = monitoreoActivo, onToggle = onToggleMonitoreo)
 
         BarraBusquedaBarrio(
             texto = textoBusqueda,
@@ -224,11 +273,28 @@ fun PantallaRiesgo(modifier: Modifier = Modifier, viewModel: RiesgoViewModel = v
                         modifier = Modifier.padding(vertical = 8.dp),
                     )
                     Text(
-                        "Verifica que backend_riesgo.py esté corriendo y que ApiClient.baseUrl " +
-                            "apunte a la IP correcta (10.0.2.2 para el emulador).",
+                        "Verifica que el backend esté corriendo (run_api.py). Si estás en un " +
+                            "celular físico, escribe aquí la IP del PC que sale con \"ipconfig\", " +
+                            "o conéctalo por USB y corre \"adb reverse tcp:8000 tcp:8000\".",
                         style = MaterialTheme.typography.bodySmall,
                     )
-                    Button(onClick = { viewModel.cargarRanking() }, modifier = Modifier.padding(top = 16.dp)) {
+
+                    var servidor by remember { mutableStateOf(ApiClient.baseUrl) }
+                    OutlinedTextField(
+                        value = servidor,
+                        onValueChange = { servidor = it },
+                        label = { Text("Servidor") },
+                        placeholder = { Text("192.168.0.107:8000") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
+                    )
+                    Button(
+                        onClick = { viewModel.cambiarServidor(servidor) },
+                        modifier = Modifier.padding(top = 12.dp),
+                    ) {
+                        Text("Conectar")
+                    }
+                    Button(onClick = { viewModel.cargarRanking() }, modifier = Modifier.padding(top = 8.dp)) {
                         Text("Reintentar")
                     }
                 }
@@ -267,6 +333,9 @@ fun ControlMonitoreo(activo: Boolean, onToggle: () -> Unit) {
                     style = MaterialTheme.typography.bodySmall,
                 )
             }
+            // Siempre Activar/Detener: el botón nunca deja de ofrecer el toggle.
+            // Si falta el permiso, al pulsar "Activar" se pide (y si ya estaba
+            // negado a perpetuidad, se abre Ajustes) — ver MainActivity.
             Button(onClick = onToggle) {
                 Text(if (activo) "Detener" else "Activar")
             }
@@ -404,6 +473,21 @@ fun TarjetaResultadoBarrio(resultado: ApiClient.ResultadoBarrio, modifier: Modif
             }
         }
     }
+}
+
+private fun hayPermisoUbicacion(context: Context): Boolean =
+    ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) ==
+        PackageManager.PERMISSION_GRANTED ||
+        ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) ==
+        PackageManager.PERMISSION_GRANTED
+
+/** Pantalla de ajustes de la app, para conceder a mano un permiso ya negado. */
+private fun abrirAjustesDeLaApp(context: Context) {
+    val intent = Intent(
+        Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+        Uri.fromParts("package", context.packageName, null),
+    ).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+    context.startActivity(intent)
 }
 
 private fun iniciarServicioMonitoreo(context: Context) {
