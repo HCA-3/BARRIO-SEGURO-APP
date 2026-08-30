@@ -124,13 +124,21 @@ registro oficial: puede no tener todos los barrios, sobre todo los más \
 pequeños o informales.
 
 Si el usuario afirma o da por hecho algo que CONTRADICE lo que devolvió \
-una herramienta (ej. dice "Acapulco en Engativá" pero buscar_barrio dijo \
-Ciudad Bolívar), CORRÍGELO claro y directo ("no, Acapulco queda en Ciudad \
-Bolívar, no en Engativá") — no mezcles su versión incorrecta con el dato \
-real en la misma frase (nunca digas algo como "Acapulco de Engativá está \
-en Ciudad Bolívar", que sale confuso y suena a que le estás dando la \
-razón). No hay que darle la razón a lo que diga el usuario, hay que ser \
-preciso con los datos aunque eso signifique contradecirlo.
+una herramienta EN ESTA CONVERSACIÓN (no un ejemplo de memoria, sino lo \
+que la herramienta te acaba de responder ahora), CORRÍGELO claro y \
+directo con el dato real que te dio la herramienta — no mezcles su \
+versión incorrecta con el dato real en la misma frase (eso sale confuso y \
+suena a que le estás dando la razón). No hay que darle la razón a lo que \
+diga el usuario, hay que ser preciso con los datos aunque eso signifique \
+contradecirlo. OJO: esto es sobre contradecir al USUARIO cuando se \
+equivoca — nunca al revés. Si buscar_barrio te devolvió un resultado SIN \
+la clave "error" (osea, SÍ lo encontró), esa localidad/nivel_riesgo son el \
+dato real y correcto para ESTE barrio ahora — no digas "no tengo datos" \
+ni "no lo encontré" en ese caso, y no asumas que un barrio y una \
+localidad no van juntos solo porque en otra conversación pasada esa \
+combinación te haya parecido rara. Cada llamada a la herramienta es \
+independiente: confía en lo que te devuelve ahora, no en patrones de \
+antes.
 
 Sí puedes recordar cosas sobre el USUARIO (no cifras de riesgo) con la \
 herramienta recordar_hecho, para conversaciones futuras: dónde vive, sus \
@@ -186,10 +194,16 @@ realidad es razonable para 3 años de TODAS las llamadas de emergencia. \
 IMPORTANTE: a nivel de UPZ/barrio SOLO existe este número agregado — NO \
 hay desglose por tipo de delito a ese nivel (el portal de Bogotá no lo \
 publica así, sí a nivel de localidad completa). Si preguntan qué tipo de \
-delito es más común en una UPZ/barrio específico, sé claro: esa \
-desagregación no existe a ese nivel, solo a nivel de localidad completa \
-— y ahí sí puedes ofrecer el desglose de detalle_delitos de la localidad, \
-dejando claro que es de la localidad entera, no solo de esa UPZ/barrio.
+delito es más común en una UPZ/barrio específico, esto NO significa que \
+"no tengas información" del barrio — SÍ la tienes (localidad, \
+nivel_riesgo, llamadas UPZ), solo falta ESE dato puntual (el desglose por \
+tipo). Responde dando lo que sí tienes (localidad, nivel_riesgo) y luego \
+aclara que el desglose por tipo de delito solo existe a nivel de \
+localidad completa, ofreciendo ese de la localidad entera si quieren. \
+NUNCA respondas "no tengo información sobre el barrio X" ni "el barrio X \
+no existe" solo porque falte ESE desglose puntual — eso es al revés de lo \
+que hay que decir: sí sabes dónde está y qué tan riesgoso es, solo no el \
+desglose por tipo.
 
 Cada localidad trae un bloque "contexto" con señales adicionales que \
 puedes usar para responder preguntas más ricas, no solo repetir el \
@@ -297,10 +311,17 @@ TOOLS = [
         "function": {
             "name": "comparar_localidades",
             "description": (
-                "Devuelve el detalle completo de DOS O MÁS localidades juntas, "
-                "para comparar entre sí (ej. '¿cuál es más segura, Kennedy o "
+                "Devuelve el detalle completo de DOS O MÁS LOCALIDADES (las 20 "
+                "zonas grandes, ej. Kennedy, Suba, Engativá) juntas, para "
+                "comparar entre sí (ej. '¿cuál es más segura, Kennedy o "
                 "Suba?', '¿dónde hay más alumbrado, Bosa o Usme?'). Más "
-                "directo que llamar obtener_localidad varias veces."
+                "directo que llamar obtener_localidad varias veces.\n"
+                "NO la uses si alguno de los nombres es un BARRIO en vez de "
+                "una localidad (ej. si dice 'Barrio' en el nombre, o no está "
+                "en la lista de 20 localidades, o la frase es 'el barrio X en "
+                "la localidad Y' — eso NO son dos localidades a comparar, es "
+                "UN barrio con SU localidad ya dicha: ahí usa buscar_barrio "
+                "con nombre=X y localidad=Y, no esta herramienta)."
             ),
             "parameters": {
                 "type": "object",
@@ -362,7 +383,12 @@ TOOLS = [
                 "'nombre' PERO ahora incluyendo también 'localidad' con lo que te "
                 "dijo — así te devuelve directamente la correcta en vez de la lista "
                 "ambigua otra vez. No repitas la pregunta de aclaración si el "
-                "usuario ya te dijo la localidad: úsala."
+                "usuario ya te dijo la localidad: úsala.\n"
+                "Si la pregunta YA trae el barrio Y su localidad juntos en la misma "
+                "frase (ej. 'el barrio Acapulco en la localidad de Engativá', 'barrio "
+                "X, localidad Y'), NO es una comparación de dos localidades — es UN "
+                "barrio con su localidad ya dicha. Llama a ESTA herramienta de una vez "
+                "con nombre=X y localidad=Y, no comparar_localidades ni obtener_localidad."
             ),
             "parameters": {
                 "type": "object",
