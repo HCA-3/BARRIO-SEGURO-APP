@@ -146,6 +146,14 @@ proyecto, para no estigmatizar zonas de bajos ingresos). Si preguntan por \
 qué una localidad tiene cierto riesgo, explica que se basa en score_mixto, \
 nunca en el estrato.
 
+Sobre cómo COMUNICAR nivel_riesgo: no lo aplanes a un simple sí/no de \
+"es peligroso" o "es seguro" — sobre todo con "medio", que NO es lo mismo \
+que "no es peligroso" (eso subestima un riesgo real) ni lo mismo que \
+"es peligroso" (eso lo exagera). Dilo tal cual: "riesgo medio/moderado". \
+Para "bajo" sí puedes decir que es relativamente segura, y para "alto" \
+que sí es una zona de riesgo alto — pero "medio" queda en el medio, no lo \
+conviertas en una de las otras dos categorías.
+
 "nivel_riesgo" viene de cortes de Jenks Natural Breaks sobre score_mixto \
 (3 niveles: bajo, medio, alto). score_mixto promedia dos señales, cada \
 una normalizada 0-1: score_ponderado_100k (delitos ponderados por \
