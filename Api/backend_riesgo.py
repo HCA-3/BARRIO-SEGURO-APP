@@ -86,6 +86,23 @@ obtener_localidad, comparar_localidades, buscar_barrio). Nunca inventes ni \
 herramienta, no la uses. Responde en español, breve y concreto (esto se \
 muestra en un celular, no en una pantalla grande).
 
+Esta regla de "usa herramientas, nunca inventes" es SOLO para datos de \
+riesgo/localidades/barrios. Un saludo ("hola, cómo estás?"), una \
+despedida, o una charla normal NO necesitan ninguna herramienta — \
+respóndelos de forma natural y amable, como cualquier conversación. NUNCA \
+digas "no tengo función para responder eso" ni "no tengo suficiente \
+información" ante un saludo o comentario casual: eso es solo para cuando \
+de verdad preguntan un dato que requiere una herramienta. Tampoco \
+NARRES tu propia decisión de usar o no una herramienta ("no hay \
+necesidad de llamar una herramienta para esto", "no hay herramienta que \
+llamar") — eso es tu proceso interno, no algo para decirle al usuario. \
+Solo responde directo, como si la decisión ni existiera.
+
+SIEMPRE responde en texto plano, natural, como si estuvieras escribiendo \
+un mensaje de chat. NUNCA envuelvas tu respuesta en JSON ni en un formato \
+tipo {"type": "message", "text": "..."} — eso rompe la app, que espera \
+texto normal, no una estructura de datos.
+
 IMPORTANTE sobre BARRIOS: cuando NOMBREN un barrio nuevo (ej. "¿es seguro \
 el barrio Acapulco?", "vivo en Galerías"), usa SIEMPRE buscar_barrio \
 primero, pasando el NOMBRE PROPIO del barrio — te dice en qué localidad \
@@ -377,6 +394,44 @@ def reparar_mojibake_argumentos(argumentos: dict) -> dict:
         else:
             reparado[clave] = valor
     return reparado
+
+
+def desenvolver_json_accidental(texto: str) -> str:
+    """El modelo local a veces (no siempre) envuelve su respuesta en algo
+    como {"type": "message", "text": "..."} en vez de texto plano — un tic
+    del modelo, no algo que pedimos. Si pasa, la app mostraría el JSON
+    crudo en la burbuja de chat. Se intenta desenvolver; si el texto no es
+    JSON o no tiene esa forma, se devuelve tal cual (no es un error)."""
+    texto = texto.strip()
+    if not texto.startswith("{"):
+        return texto
+    try:
+        datos = json.loads(texto)
+    except json.JSONDecodeError:
+        return texto
+    if not isinstance(datos, dict):
+        return texto
+    for clave in ("text", "content", "message", "respuesta"):
+        valor = datos.get(clave)
+        if isinstance(valor, str) and valor.strip():
+            return valor
+    return texto
+
+
+# Palabras que una respuesta real (sobre riesgo/localidades/barrios, o un
+# saludo/despedida normal) nunca necesita usar — si aparecen, es casi
+# seguro que el modelo se puso a narrar su propia decisión de usar o no
+# una herramienta ("no hay función que llamar...") en vez de responder de
+# verdad. Salvaguarda de backend: el prompt ya se lo pide, pero este
+# modelo local no siempre obedece.
+_PISTAS_NARRACION_META = ("herramienta", "función", "funcion", "no hay nada que hacer", "puedo irme")
+
+
+def reemplazar_narracion_meta(texto: str) -> str:
+    minusculas = texto.lower()
+    if any(pista in minusculas for pista in _PISTAS_NARRACION_META):
+        return "¡De nada! Si tienes otra pregunta sobre el riesgo de alguna zona, aquí estoy."
+    return texto
 
 
 def cargar_datos() -> dict:
@@ -694,7 +749,8 @@ def preguntar(modelo: str, historial: list, datos: dict) -> tuple[str, list[str]
 
         tool_calls = mensaje.get("tool_calls")
         if not tool_calls:
-            return reparar_mojibake(mensaje.get("content", "")), hechos_nuevos
+            texto = desenvolver_json_accidental(reparar_mojibake(mensaje.get("content", "")))
+            return reemplazar_narracion_meta(texto), hechos_nuevos
 
         for llamada in tool_calls:
             fn = llamada["function"]
