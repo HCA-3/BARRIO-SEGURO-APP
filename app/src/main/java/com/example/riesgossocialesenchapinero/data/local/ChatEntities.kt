@@ -13,8 +13,38 @@ import androidx.room.PrimaryKey
 @Entity(tableName = "mensajes")
 data class MensajeEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    // A qué conversación pertenece (ver ConversacionEntity). No se declara
+    // como @ForeignKey formal para no forzar un orden de borrado estricto --
+    // MensajeDao.borrarPorConversacion ya se encarga de limpiar los mensajes
+    // antes de borrar la conversación.
+    val conversacionId: Long,
     val role: String,
     val content: String,
+    // JSON crudo del array "tool_calls" de Ollama (ver ApiClient.MensajeChat):
+    // null si este mensaje no llamó ninguna herramienta. Sin esto, un mensaje
+    // "assistant" que llamó una herramienta se guardaba como si no hubiera
+    // pasado nada, dejando el "tool" que le sigue sin el turno que lo
+    // originó -- el modelo perdía el hilo en la siguiente pregunta de
+    // seguimiento porque el historial que se le reenviaba ya no tenía
+    // sentido para su formato de tool-calling.
+    val toolCallsJson: String? = null,
+    val timestampMs: Long = System.currentTimeMillis(),
+)
+
+/**
+ * Una conversación de chat independiente (ver ChatViewModel): el historial
+ * de mensajes ya no es un único hilo continuo, sino que se agrupa por
+ * conversación para poder mostrar un historial de chats en la app (como en
+ * ChatGPT/Claude) y cambiar entre ellas.
+ */
+@Entity(tableName = "conversaciones")
+data class ConversacionEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    // Se arranca con un título genérico y se reemplaza por un resumen del
+    // primer mensaje del usuario en cuanto lo manda (ver
+    // ChatViewModel.tituloDesde) -- así la lista de conversaciones es
+    // identificable de un vistazo, no todas dicen lo mismo.
+    val titulo: String = "Nueva conversación",
     val timestampMs: Long = System.currentTimeMillis(),
 )
 

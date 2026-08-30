@@ -5,11 +5,13 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.riesgossocialesenchapinero.data.ApiClient
 import com.example.riesgossocialesenchapinero.data.local.AppDatabase
+import com.example.riesgossocialesenchapinero.data.local.ConversacionEntity
 import com.example.riesgossocialesenchapinero.data.local.HechoEntity
 import com.example.riesgossocialesenchapinero.data.local.MensajeEntity
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -19,18 +21,24 @@ data class ChatUiState(
     val enviando: Boolean = false,
     val error: String? = null,
     val cargandoHistorial: Boolean = true,
+    val conversaciones: List<ConversacionEntity> = emptyList(),
+    val conversacionActualId: Long = 0L,
 )
 
 /**
- * A diferencia de la primera versión, el historial y los hechos recordados
- * ahora persisten en una base de datos local (Room) en vez de vivir solo en
- * memoria: sobreviven a cerrar la app. No hay cuenta de usuario/backend con
- * estado -- todo vive en el celular de cada quien.
+ * El historial de chat vive agrupado por conversación (Room) en vez de un
+ * único hilo continuo: así la app puede mostrar un historial de chats (como
+ * ChatGPT/Claude) y cambiar entre ellos. Los hechos recordados (ver
+ * recordar_hecho en el backend) siguen siendo globales a propósito -- son
+ * sobre el usuario, no sobre una conversación puntual, así que aplican en
+ * todas. No hay cuenta de usuario/backend con estado -- todo vive en el
+ * celular de cada quien.
  */
 class ChatViewModel(application: Application) : AndroidViewModel(application) {
     private val db = AppDatabase.obtener(application)
     private val mensajeDao = db.mensajeDao()
     private val hechoDao = db.hechoDao()
+    private val conversacionDao = db.conversacionDao()
 
     private val _estado = MutableStateFlow(ChatUiState())
     val estado: StateFlow<ChatUiState> = _estado
@@ -45,27 +53,48 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
 
     init {
         viewModelScope.launch {
-            val (mensajesGuardados, hechosGuardados) = withContext(Dispatchers.IO) {
-                mensajeDao.obtenerTodos() to hechoDao.obtenerTextos()
+            val hechosGuardados = withContext(Dispatchers.IO) { hechoDao.obtenerTextos() }
+            val conversacionInicialId = withContext(Dispatchers.IO) {
+                conversacionDao.obtenerTodas().firstOrNull()?.id
+                    ?: conversacionDao.insertar(ConversacionEntity())
+            }
+            val mensajesGuardados = withContext(Dispatchers.IO) {
+                mensajeDao.obtenerPorConversacion(conversacionInicialId)
             }
             _estado.value = _estado.value.copy(
-                historial = mensajesGuardados.map { ApiClient.MensajeChat(it.role, it.content) },
+                historial = mensajesGuardados.map { it.aMensajeChat() },
                 hechosRecordados = hechosGuardados,
+                conversacionActualId = conversacionInicialId,
                 cargandoHistorial = false,
             )
+        }
+        viewModelScope.launch {
+            conversacionDao.observarTodas().collectLatest { lista ->
+                _estado.value = _estado.value.copy(conversaciones = lista)
+            }
         }
     }
 
     fun enviarMensaje(texto: String) {
         if (texto.isBlank() || _estado.value.enviando) return
 
+        val conversacionId = _estado.value.conversacionActualId
+        val esPrimerMensaje = _estado.value.historial.isEmpty()
         val mensajeUsuario = ApiClient.MensajeChat("user", texto)
         val historialConPregunta = _estado.value.historial + mensajeUsuario
         _estado.value = _estado.value.copy(historial = historialConPregunta, enviando = true, error = null)
 
         viewModelScope.launch {
             withContext(Dispatchers.IO) {
-                mensajeDao.insertar(MensajeEntity(role = mensajeUsuario.role, content = mensajeUsuario.content))
+                mensajeDao.insertar(
+                    MensajeEntity(
+                        conversacionId = conversacionId,
+                        role = mensajeUsuario.role,
+                        content = mensajeUsuario.content,
+                    )
+                )
+                conversacionDao.tocar(conversacionId)
+                if (esPrimerMensaje) conversacionDao.actualizarTitulo(conversacionId, tituloDesde(texto))
             }
 
             _estado.value = try {
@@ -78,7 +107,14 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
                     // usuario que mandamos (más lo nuevo: assistant/tool/etc):
                     // persistimos solo lo NUEVO para no duplicar lo ya guardado.
                     respuesta.mensajes.drop(historialConPregunta.size).forEach {
-                        mensajeDao.insertar(MensajeEntity(role = it.role, content = it.content))
+                        mensajeDao.insertar(
+                            MensajeEntity(
+                                conversacionId = conversacionId,
+                                role = it.role,
+                                content = it.content,
+                                toolCallsJson = it.toolCalls,
+                            )
+                        )
                     }
                     respuesta.hechosNuevos.forEach { hecho ->
                         if (hechoDao.existeTexto(hecho) == 0) hechoDao.insertar(HechoEntity(texto = hecho))
@@ -96,10 +132,49 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    fun borrarConversacion() {
-        viewModelScope.launch(Dispatchers.IO) {
-            mensajeDao.borrarTodos()
-            withContext(Dispatchers.Main) { _estado.value = _estado.value.copy(historial = emptyList()) }
+    /** Crea una conversación nueva y cambia a ella (queda vacía hasta el primer mensaje). */
+    fun nuevaConversacion() {
+        if (_estado.value.historial.isEmpty()) return // ya está en una conversación vacía, no crear otra igual
+        viewModelScope.launch {
+            val id = withContext(Dispatchers.IO) { conversacionDao.insertar(ConversacionEntity()) }
+            _estado.value = _estado.value.copy(conversacionActualId = id, historial = emptyList(), error = null)
+        }
+    }
+
+    fun seleccionarConversacion(id: Long) {
+        if (id == _estado.value.conversacionActualId) return
+        viewModelScope.launch {
+            val mensajes = withContext(Dispatchers.IO) { mensajeDao.obtenerPorConversacion(id) }
+            _estado.value = _estado.value.copy(
+                conversacionActualId = id,
+                historial = mensajes.map { it.aMensajeChat() },
+                error = null,
+            )
+        }
+    }
+
+    /** Sin id borra la conversación ACTUAL (ver botón "Borrar conversación" en el diálogo de memoria). */
+    fun borrarConversacion(id: Long? = null) {
+        val objetivo = id ?: _estado.value.conversacionActualId
+        val esLaActual = objetivo == _estado.value.conversacionActualId
+        viewModelScope.launch {
+            withContext(Dispatchers.IO) {
+                mensajeDao.borrarPorConversacion(objetivo)
+                conversacionDao.borrar(objetivo)
+            }
+            if (!esLaActual) return@launch
+
+            // Si se borró la conversación que se estaba viendo, hay que
+            // pararse en otra -- la más reciente que quede, o una nueva si no
+            // queda ninguna.
+            val siguienteId = withContext(Dispatchers.IO) {
+                conversacionDao.obtenerTodas().firstOrNull()?.id ?: conversacionDao.insertar(ConversacionEntity())
+            }
+            val mensajesSiguiente = withContext(Dispatchers.IO) { mensajeDao.obtenerPorConversacion(siguienteId) }
+            _estado.value = _estado.value.copy(
+                conversacionActualId = siguienteId,
+                historial = mensajesSiguiente.map { it.aMensajeChat() },
+            )
         }
     }
 
@@ -107,4 +182,11 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
         _estado.value = _estado.value.copy(hechosRecordados = _estado.value.hechosRecordados - texto)
         viewModelScope.launch(Dispatchers.IO) { hechoDao.borrarPorTexto(texto) }
     }
+}
+
+private fun MensajeEntity.aMensajeChat() = ApiClient.MensajeChat(role, content, toolCalls = toolCallsJson)
+
+private fun tituloDesde(texto: String): String {
+    val limpio = texto.trim().replace("\n", " ")
+    return if (limpio.length <= 40) limpio else limpio.take(40) + "…"
 }
