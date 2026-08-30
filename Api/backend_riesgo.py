@@ -175,6 +175,22 @@ parecen pero NO son lo mismo — no las confundas:
 estrato): NO se usa para calcular nivel_riesgo. Se actualiza mensual, a \
 diferencia de los delitos que son de corte semestral/anual.
 
+Sobre el bloque "upz" que traen buscar_barrio y localidad_por_punto: \
+"tasa_llamadas_100k" es un TOTAL ACUMULADO de 2023 a 2025 (3 años, no un \
+año), de TODAS las llamadas de emergencia (médicas, accidentes, riñas, \
+incendios, etc. — no solo delito) por 100k habitantes de esa UPZ \
+específica. Si la citas, ACLARA que es un acumulado de 3 años y de \
+llamadas en general, no delito verificado — si no lo aclaras, un número \
+como "49.000 por 100k" suena exagerado o como un error cuando en \
+realidad es razonable para 3 años de TODAS las llamadas de emergencia. \
+IMPORTANTE: a nivel de UPZ/barrio SOLO existe este número agregado — NO \
+hay desglose por tipo de delito a ese nivel (el portal de Bogotá no lo \
+publica así, sí a nivel de localidad completa). Si preguntan qué tipo de \
+delito es más común en una UPZ/barrio específico, sé claro: esa \
+desagregación no existe a ese nivel, solo a nivel de localidad completa \
+— y ahí sí puedes ofrecer el desglose de detalle_delitos de la localidad, \
+dejando claro que es de la localidad entera, no solo de esa UPZ/barrio.
+
 Cada localidad trae un bloque "contexto" con señales adicionales que \
 puedes usar para responder preguntas más ricas, no solo repetir el \
 nivel_riesgo:
@@ -440,6 +456,22 @@ def reemplazar_narracion_meta(texto: str) -> str:
     if any(pista in minusculas for pista in _PISTAS_NARRACION_META):
         return "¡De nada! Si tienes otra pregunta sobre el riesgo de alguna zona, aquí estoy."
     return texto
+
+
+# Frases que el modelo repite como si fueran un dato más, pero no salen de
+# ninguna herramienta (no hay ningún campo de "estabilidad" en los datos):
+# el prompt ya pide no inventarlas, pero reaparecen igual. En vez de tirar
+# toda la respuesta (el resto del mensaje suele ser correcto), se recorta
+# solo la oración con la frase inventada.
+_PATRON_FRASES_SIN_RESPALDO = re.compile(
+    r"[^.\n]*\bseguridad\b[^.\n]*\bconsiderad[ao]\s+estable\b[^.\n]*[.\n]?",
+    re.IGNORECASE,
+)
+
+
+def quitar_frases_sin_respaldo(texto: str) -> str:
+    limpio = _PATRON_FRASES_SIN_RESPALDO.sub("", texto)
+    return re.sub(r"\n{3,}", "\n\n", limpio).strip()
 
 
 def cargar_datos() -> dict:
@@ -758,6 +790,7 @@ def preguntar(modelo: str, historial: list, datos: dict) -> tuple[str, list[str]
         tool_calls = mensaje.get("tool_calls")
         if not tool_calls:
             texto = desenvolver_json_accidental(reparar_mojibake(mensaje.get("content", "")))
+            texto = quitar_frases_sin_respaldo(texto)
             return reemplazar_narracion_meta(texto), hechos_nuevos
 
         for llamada in tool_calls:
