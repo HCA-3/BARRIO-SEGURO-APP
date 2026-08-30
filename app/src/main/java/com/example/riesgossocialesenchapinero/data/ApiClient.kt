@@ -6,6 +6,7 @@ import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONArray
 import org.json.JSONObject
+import java.net.URLEncoder
 import java.util.concurrent.TimeUnit
 
 /**
@@ -55,6 +56,20 @@ object ApiClient {
         val upz: RiesgoUpz?,
     )
 
+    data class ResultadoBarrio(
+        val barrio: String,
+        val localidad: String,
+        val nivelRiesgo: String,
+        val scoreMixto: Double,
+        val upz: RiesgoUpz?,
+    )
+
+    sealed interface BusquedaBarrio {
+        data class Encontrado(val resultado: ResultadoBarrio) : BusquedaBarrio
+        data class Ambiguo(val opciones: List<ResultadoBarrio>) : BusquedaBarrio
+        data class NoEncontrado(val mensaje: String) : BusquedaBarrio
+    }
+
     class ApiException(message: String) : Exception(message)
 
     fun obtenerRanking(): List<Localidad> {
@@ -96,6 +111,53 @@ object ApiClient {
                 },
             )
         }
+    }
+
+    /**
+     * Búsqueda directa de barrio -> localidad/riesgo, SIN pasar por el chat
+     * conversacional (determinístico, mismo tool_buscar_barrio del backend).
+     */
+    fun buscarBarrio(nombre: String, localidad: String? = null): BusquedaBarrio {
+        val url = buildString {
+            append(baseUrl)
+            append("barrios/buscar?nombre=")
+            append(URLEncoder.encode(nombre, "UTF-8"))
+            if (!localidad.isNullOrBlank()) {
+                append("&localidad=")
+                append(URLEncoder.encode(localidad, "UTF-8"))
+            }
+        }
+        val request = Request.Builder().url(url).get().build()
+        client.newCall(request).execute().use { resp ->
+            if (!resp.isSuccessful) throw ApiException("Error ${resp.code} buscando el barrio")
+            val o = JSONObject(resp.body?.string() ?: "{}")
+            if (o.has("opciones")) {
+                val arr = o.getJSONArray("opciones")
+                val opciones = List(arr.length()) { i -> parseResultadoBarrio(arr.getJSONObject(i)) }
+                return BusquedaBarrio.Ambiguo(opciones)
+            }
+            if (o.has("error")) {
+                return BusquedaBarrio.NoEncontrado(o.getString("error"))
+            }
+            return BusquedaBarrio.Encontrado(parseResultadoBarrio(o))
+        }
+    }
+
+    private fun parseResultadoBarrio(o: JSONObject): ResultadoBarrio {
+        val upzJson = o.optJSONObject("upz")
+        return ResultadoBarrio(
+            barrio = o.getString("barrio"),
+            localidad = o.getString("localidad"),
+            nivelRiesgo = o.getString("nivel_riesgo"),
+            scoreMixto = o.getDouble("score_mixto"),
+            upz = upzJson?.let {
+                RiesgoUpz(
+                    upz = it.getString("upz"),
+                    nivelLlamadas = it.getString("nivel_llamadas"),
+                    tasaLlamadas100k = it.getDouble("tasa_llamadas_100k"),
+                )
+            },
+        )
     }
 
     fun enviarMensajeChat(historial: List<MensajeChat>, hechosRecordados: List<String> = emptyList()): RespuestaChat {
