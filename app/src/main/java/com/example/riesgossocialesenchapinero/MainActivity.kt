@@ -20,9 +20,13 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.animation.*
+import androidx.compose.animation.core.*
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.runtime.CompositionLocalProvider
 import java.util.Locale
+import com.example.riesgossocialesenchapinero.ui.traducirNivelRiesgo
+import androidx.compose.material3.CardDefaults
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -225,31 +229,41 @@ class MainActivity : AppCompatActivity() {
                         }
                     },
                 ) { innerPadding ->
-                    when (pantallaActual) {
-                        Pantalla.RIESGO -> PantallaRiesgo(
-                            modifier = Modifier.padding(innerPadding),
-                            monitoreoActivo = monitoreoActivo.value,
-                            onToggleMonitoreo = {
-                                if (monitoreoActivo.value) {
-                                    detenerServicioMonitoreo(actividad)
-                                    monitoreoActivo.value = false
-                                } else if (permisoUbicacion.value) {
-                                    iniciarServicioMonitoreo(actividad)
-                                    monitoreoActivo.value = true
-                                } else {
-                                    // Falta el permiso: se pide aquí porque lo
-                                    // pidió el usuario explícitamente, no de
-                                    // forma automática.
-                                    pedidoPorElUsuario = true
-                                    pedirPermisoUbicacion()
-                                }
-                            },
-                        )
-                        Pantalla.CHAT -> PantallaChat(modifier = Modifier.padding(innerPadding))
-                        Pantalla.AJUSTES -> AjustesScreen(
-                            modifier = Modifier.padding(innerPadding),
-                            viewModel = ajustesViewModel
-                        )
+                    AnimatedContent(
+                        targetState = pantallaActual,
+                        transitionSpec = {
+                            (fadeIn(animationSpec = tween(220)) + scaleIn(initialScale = 0.96f, animationSpec = tween(220)))
+                                .togetherWith(fadeOut(animationSpec = tween(180)))
+                        },
+                        label = "animacion_pestanas",
+                        modifier = Modifier.padding(innerPadding)
+                    ) { pantalla ->
+                        when (pantalla) {
+                            Pantalla.RIESGO -> PantallaRiesgo(
+                                modifier = Modifier.fillMaxSize(),
+                                monitoreoActivo = monitoreoActivo.value,
+                                onToggleMonitoreo = {
+                                    if (monitoreoActivo.value) {
+                                        detenerServicioMonitoreo(actividad)
+                                        monitoreoActivo.value = false
+                                    } else if (permisoUbicacion.value) {
+                                        iniciarServicioMonitoreo(actividad)
+                                        monitoreoActivo.value = true
+                                    } else {
+                                        // Falta el permiso: se pide aquí porque lo
+                                        // pidió el usuario explícitamente, no de
+                                        // forma automática.
+                                        pedidoPorElUsuario = true
+                                        pedirPermisoUbicacion()
+                                    }
+                                },
+                            )
+                            Pantalla.CHAT -> PantallaChat(modifier = Modifier.fillMaxSize())
+                            Pantalla.AJUSTES -> AjustesScreen(
+                                modifier = Modifier.fillMaxSize(),
+                                viewModel = ajustesViewModel
+                            )
+                        }
                     }
                 }
             }
@@ -470,7 +484,7 @@ fun BarraBusquedaBarrio(
             value = texto,
             onValueChange = onTextoChange,
             modifier = Modifier.weight(1f),
-            placeholder = { Text("Buscar barrio (ej. Acapulco)...") },
+            placeholder = { Text(stringResource(R.string.buscar_barrio_hint)) },
             singleLine = true,
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
             keyboardActions = KeyboardActions(onSearch = { if (texto.isNotBlank()) onBuscar() }),
@@ -508,7 +522,7 @@ fun ResultadoBusquedaBarrio(
 
         is EstadoBusquedaBarrio.Error -> {
             Column(modifier = modifier.padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                Text("No pude buscar el barrio")
+                Text(stringResource(R.string.error_buscar_barrio))
                 Text(estado.mensaje, style = MaterialTheme.typography.bodySmall)
             }
         }
@@ -516,13 +530,13 @@ fun ResultadoBusquedaBarrio(
         is EstadoBusquedaBarrio.Resultado -> {
             when (val busqueda = estado.busqueda) {
                 is ApiClient.BusquedaBarrio.Encontrado -> {
-                    Column(modifier = modifier.padding(12.dp)) {
+                    Column(modifier = modifier.padding(12.dp).animateContentSize()) {
                         TarjetaResultadoBarrio(
                             busqueda.resultado,
                             modifier = Modifier.clickable { onAbrirDetalle(busqueda.resultado) },
                         )
                         Text(
-                            "Toca el recuadro para ver todos los datos de la zona.",
+                            stringResource(R.string.toca_para_detalle),
                             style = MaterialTheme.typography.bodySmall,
                             modifier = Modifier.padding(top = 8.dp),
                         )
@@ -530,9 +544,9 @@ fun ResultadoBusquedaBarrio(
                 }
 
                 is ApiClient.BusquedaBarrio.Ambiguo -> {
-                    Column(modifier = modifier.padding(12.dp)) {
+                    Column(modifier = modifier.padding(12.dp).animateContentSize()) {
                         Text(
-                            "Hay varios barrios con ese nombre — ¿cuál?",
+                            stringResource(R.string.varios_barrios_titulo),
                             style = MaterialTheme.typography.titleSmall,
                             modifier = Modifier.padding(bottom = 8.dp),
                         )
@@ -549,7 +563,7 @@ fun ResultadoBusquedaBarrio(
 
                 is ApiClient.BusquedaBarrio.NoEncontrado -> {
                     Column(
-                        modifier = modifier.padding(24.dp),
+                        modifier = modifier.padding(24.dp).animateContentSize(),
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.Center,
                     ) {
@@ -563,7 +577,10 @@ fun ResultadoBusquedaBarrio(
 
 @Composable
 fun TarjetaResultadoBarrio(resultado: ApiClient.ResultadoBarrio, modifier: Modifier = Modifier) {
-    Card(modifier = modifier.fillMaxWidth().padding(vertical = 6.dp)) {
+    Card(
+        modifier = modifier.fillMaxWidth().padding(vertical = 6.dp).animateContentSize(),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -577,9 +594,9 @@ fun TarjetaResultadoBarrio(resultado: ApiClient.ResultadoBarrio, modifier: Modif
                 BadgeRiesgo(resultado.nivelRiesgo)
             }
             resultado.upz?.let { upz ->
+                val nivelTraducido = traducirNivelRiesgo(upz.nivelLlamadas)
                 Text(
-                    "UPZ ${upz.upz}: llamadas de emergencia ${upz.nivelLlamadas} " +
-                        "(${"%.0f".format(upz.tasaLlamadas100k)} por 100k hab., acumulado 2023-2025)",
+                    stringResource(R.string.upz_resumen_formato, upz.upz, nivelTraducido, upz.tasaLlamadas100k),
                     style = MaterialTheme.typography.bodySmall,
                     modifier = Modifier.padding(top = 8.dp),
                 )
@@ -600,11 +617,6 @@ data class SeleccionDetalle(
 
 /**
  * Ficha con todo lo que el pipeline recopiló de la zona.
- *
- * Las cifras se agrupan y etiquetan por la capa de la que salen (localidad o
- * UPZ) porque NO existen datos por barrio: OpenStreetMap solo aporta el nombre
- * y un punto. Presentar los delitos de la localidad bajo el título del barrio,
- * sin decirlo, daría a entender una precisión que los datos no tienen.
  */
 @Composable
 fun DialogoDetalle(
@@ -615,13 +627,13 @@ fun DialogoDetalle(
 ) {
     AlertDialog(
         onDismissRequest = onCerrar,
-        confirmButton = { TextButton(onClick = onCerrar) { Text("Cerrar") } },
+        confirmButton = { TextButton(onClick = onCerrar) { Text(stringResource(R.string.btn_cerrar)) } },
         title = {
             Column {
                 Text(seleccion.barrio ?: seleccion.localidad)
                 if (seleccion.barrio != null) {
                     Text(
-                        "Barrio de ${seleccion.localidad}",
+                        stringResource(R.string.barrio_de_localidad, seleccion.localidad),
                         style = MaterialTheme.typography.bodySmall,
                     )
                 }
@@ -676,7 +688,7 @@ fun DialogoDetalle(
                                 ) {
                                     TileDato(
                                         stringResource(R.string.nivel_llamadas_label),
-                                        upz.nivelLlamadas.uppercase(),
+                                        traducirNivelRiesgo(upz.nivelLlamadas),
                                         Modifier.weight(1f),
                                     )
                                     TileDato(
@@ -776,12 +788,19 @@ private fun detenerServicioMonitoreo(context: Context) {
 
 @Composable
 fun TarjetaLocalidad(localidad: ApiClient.Localidad, modifier: Modifier = Modifier) {
-    Card(modifier = modifier.fillMaxWidth().padding(vertical = 6.dp)) {
+    Card(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(vertical = 6.dp)
+            .animateContentSize(),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+    ) {
         Row(
             modifier = Modifier.fillMaxWidth().padding(16.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
         ) {
-            Column {
+            Column(modifier = Modifier.weight(1f)) {
                 Text("${localidad.posicion}. ${localidad.nombre}", style = MaterialTheme.typography.titleMedium)
                 Text(
                     stringResource(R.string.tasa_formato, localidad.tasaDelitos100k),

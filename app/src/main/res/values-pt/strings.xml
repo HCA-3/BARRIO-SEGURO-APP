@@ -68,4 +68,37 @@
     <string name="idioma_pt">Português</string>
     <string name="idioma_de">Alemão (Deutsch)</string>
     <string name="idioma_it">Italiano (Italiano)</string>
+
+    <!-- Níveis de risco -->
+    <string name="riesgo_alto">ALTO</string>
+    <string name="riesgo_medio">MÉDIO</string>
+    <string name="riesgo_bajo">BAIXO</string>
+
+    <!-- Busca e detalhes -->
+    <string name="varios_barrios_titulo">Existem vários bairros com esse nome — qual deles?</string>
+    <string name="toca_para_detalle">Toque no cartão para ver todos os dados da área.</string>
+    <string name="error_buscar_barrio">Não foi possível buscar o bairro</string>
+    <string name="barrio_de_localidad">Bairro de %1$s</string>
+    <string name="btn_cerrar">Fechar</string>
+    <string name="upz_resumen_formato">UPZ %1$s: chamadas de emergência %2$s (%3$.0f por 100k hab., 2023-2025)</string>
+
+    <!-- Tipos de crimes -->
+    <string name="delito_hurto_personas">Furto a pessoas</string>
+    <string name="delito_hurto_residencias">Furto a residências</string>
+    <string name="delito_hurto_comercio">Furto a comércio</string>
+    <string name="delito_hurto_automotores">Furto de veículos</string>
+    <string name="delito_hurto_motocicletas">Furto de motocicletas</string>
+    <string name="delito_hurto_bicicletas">Furto de bicicletas</string>
+    <string name="delito_hurto_celulares">Furto de celulares</string>
+    <string name="delito_homicidio">Homicídio</string>
+    <string name="delito_lesiones">Lesões corporais</string>
+    <string name="delito_extorsion">Extorsão</string>
+    <string name="delito_sexuales">Crimes sexuais</string>
+    <string name="delito_violencia_intrafamiliar">Violência doméstica</string>
+
+    <!-- Sugestões Chat -->
+    <string name="chat_sugerida_1">Qual é a localidade mais perigosa?</string>
+    <string name="chat_sugerida_2">Qual é a mais segura?</string>
+    <string name="chat_sugerida_3">Conte-me sobre Chapinero</string>
+    <string name="chat_sugerida_4">Como o risco é calculado?</string>
 </resources>

@@ -21,6 +21,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -289,11 +290,17 @@ fun PanelConversaciones(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FilaSugerencias(onSugerenciaClick: (String) -> Unit) {
+    val sugerencias = listOf(
+        stringResource(R.string.chat_sugerida_1),
+        stringResource(R.string.chat_sugerida_2),
+        stringResource(R.string.chat_sugerida_3),
+        stringResource(R.string.chat_sugerida_4),
+    )
     LazyRow(
         contentPadding = PaddingValues(horizontal = 12.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        items(PREGUNTAS_SUGERIDAS) { pregunta ->
+        items(sugerencias) { pregunta ->
             SuggestionChip(onClick = { onSugerenciaClick(pregunta) }, label = { Text(pregunta) })
         }
     }
@@ -345,11 +352,20 @@ fun DialogoMemoria(
 fun BurbujaMensaje(mensaje: ApiClient.MensajeChat) {
     val esUsuario = mensaje.role == "user"
     Row(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .animateContentSize(),
         horizontalArrangement = if (esUsuario) Arrangement.End else Arrangement.Start,
     ) {
         Card(
-            modifier = Modifier.widthIn(max = 280.dp),
+            modifier = Modifier.widthIn(max = 290.dp),
+            shape = RoundedCornerShape(
+                topStart = 16.dp,
+                topEnd = 16.dp,
+                bottomStart = if (esUsuario) 16.dp else 4.dp,
+                bottomEnd = if (esUsuario) 4.dp else 16.dp
+            ),
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
             colors = CardDefaults.cardColors(
                 containerColor = if (esUsuario) {
                     MaterialTheme.colorScheme.primaryContainer

@@ -30,21 +30,53 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
+import com.example.riesgossocialesenchapinero.R
 import com.example.riesgossocialesenchapinero.ui.theme.ColoresDatos
 
+@Composable
+fun traducirNivelRiesgo(nivel: String): String {
+    return when (nivel.lowercase().trim()) {
+        "alto" -> stringResource(R.string.riesgo_alto)
+        "medio" -> stringResource(R.string.riesgo_medio)
+        "bajo" -> stringResource(R.string.riesgo_bajo)
+        else -> nivel.uppercase()
+    }
+}
+
+@Composable
+fun traducirDelito(tipo: String): String {
+    val norm = tipo.uppercase().trim()
+    return when {
+        norm.contains("PERSONA") -> stringResource(R.string.delito_hurto_personas)
+        norm.contains("RESIDENCIA") -> stringResource(R.string.delito_hurto_residencias)
+        norm.contains("COMERCIO") -> stringResource(R.string.delito_hurto_comercio)
+        norm.contains("AUTOMOTOR") -> stringResource(R.string.delito_hurto_automotores)
+        norm.contains("MOTO") -> stringResource(R.string.delito_hurto_motocicletas)
+        norm.contains("BICICLETA") -> stringResource(R.string.delito_hurto_bicicletas)
+        norm.contains("CELULAR") -> stringResource(R.string.delito_hurto_celulares)
+        norm.contains("HOMICIDIO") -> stringResource(R.string.delito_homicidio)
+        norm.contains("LESION") -> stringResource(R.string.delito_lesiones)
+        norm.contains("EXTORSION") -> stringResource(R.string.delito_extorsion)
+        norm.contains("SEXUAL") -> stringResource(R.string.delito_sexuales)
+        norm.contains("INTRAFAMILIAR") || norm.contains("FAMILIAR") -> stringResource(R.string.delito_violencia_intrafamiliar)
+        else -> tipo
+    }
+}
+
 /**
- * Etiqueta del nivel de riesgo. El texto va SIEMPRE ("ALTO"/"MEDIO"/"BAJO"):
- * el color es refuerzo, no el único portador del significado.
+ * Etiqueta del nivel de riesgo. El texto se traduce según el idioma seleccionado.
  */
 @Composable
 fun BadgeRiesgo(nivel: String, modifier: Modifier = Modifier) {
+    val texto = traducirNivelRiesgo(nivel)
     Surface(
         color = ColoresDatos.relleno(nivel),
         shape = RoundedCornerShape(6.dp),
         modifier = modifier,
     ) {
         Text(
-            nivel.uppercase(),
+            texto,
             color = ColoresDatos.tinta(nivel),
             style = MaterialTheme.typography.labelMedium,
             fontWeight = FontWeight.SemiBold,
@@ -91,7 +123,7 @@ fun BarraDelito(
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {
             Text(
-                tipo,
+                traducirDelito(tipo),
                 style = MaterialTheme.typography.bodySmall,
                 modifier = Modifier.weight(1f),
             )

@@ -68,4 +68,37 @@
     <string name="idioma_pt">Portugiesisch (Português)</string>
     <string name="idioma_de">Deutsch</string>
     <string name="idioma_it">Italienisch (Italiano)</string>
+
+    <!-- Risikostufen -->
+    <string name="riesgo_alto">HOCH</string>
+    <string name="riesgo_medio">MITTEL</string>
+    <string name="riesgo_bajo">NIEDRIG</string>
+
+    <!-- Suche und Details -->
+    <string name="varios_barrios_titulo">Mehrere Stadtteile mit diesem Namen — welcher?</string>
+    <string name="toca_para_detalle">Tippen Sie auf die Karte, um alle Daten für das Gebiet anzuzeigen.</string>
+    <string name="error_buscar_barrio">Stadtteil konnte nicht gefunden werden</string>
+    <string name="barrio_de_localidad">Stadtteil von %1$s</string>
+    <string name="btn_cerrar">Schließen</string>
+    <string name="upz_resumen_formato">UPZ %1$s: Notrufe %2$s (%3$.0f pro 100k Einw., 2023-2025)</string>
+
+    <!-- Straftatentypen -->
+    <string name="delito_hurto_personas">Diebstahl von Personen</string>
+    <string name="delito_hurto_residencias">Wohnungseinbruch</string>
+    <string name="delito_hurto_comercio">Gewerbeeinbruch</string>
+    <string name="delito_hurto_automotores">Kraftfahrzeugdiebstahl</string>
+    <string name="delito_hurto_motocicletas">Motorraddiebstahl</string>
+    <string name="delito_hurto_bicicletas">Fahrraddiebstahl</string>
+    <string name="delito_hurto_celulares">Handydiebstahl</string>
+    <string name="delito_homicidio">Tötungsdelikt</string>
+    <string name="delito_lesiones">Körperverletzung</string>
+    <string name="delito_extorsion">Erpressung</string>
+    <string name="delito_sexuales">Sexualstraftaten</string>
+    <string name="delito_violencia_intrafamiliar">Häusliche Gewalt</string>
+
+    <!-- Chat-Vorschläge -->
+    <string name="chat_sugerida_1">Welcher Bezirk ist am gefährlichsten?</string>
+    <string name="chat_sugerida_2">Welcher ist am sichersten?</string>
+    <string name="chat_sugerida_3">Erzähle mir von Chapinero</string>
+    <string name="chat_sugerida_4">Wie wird das Risiko berechnet?</string>
 </resources>
