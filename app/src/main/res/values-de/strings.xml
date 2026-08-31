@@ -1,9 +1,13 @@
 <resources>
     <string name="app_name">Sicheres Viertel</string>
     <string name="pantalla_riesgo">Risiko</string>
+    <string name="pantalla_desastres">Katastrophen</string>
     <string name="pantalla_emergencias">Notfälle</string>
     <string name="pantalla_agente">Agent</string>
     <string name="pantalla_ajustes">Einstellungen</string>
+
+    <string name="lineas_titulo_banner">Notrufnummern und Notdienste</string>
+    <string name="lineas_desc_banner">Offizielles Verzeichnis von Bogotá. Tippen Sie auf einen Dienst, um sofort anzurufen.</string>
 
     <!-- Notfall-Tabs -->
     <string name="tab_sismos">Erdbeben</string>

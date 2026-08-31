@@ -1,9 +1,13 @@
 <resources>
     <string name="app_name">Quartiere Sicuro</string>
     <string name="pantalla_riesgo">Rischio</string>
+    <string name="pantalla_desastres">Disastri</string>
     <string name="pantalla_emergencias">Emergenze</string>
     <string name="pantalla_agente">Agente</string>
     <string name="pantalla_ajustes">Impostazioni</string>
+
+    <string name="lineas_titulo_banner">Linee di Emergenza e Soccorso</string>
+    <string name="lineas_desc_banner">Elenco ufficiale di Bogotá. Tocca qualsiasi servizio per chiamare subito.</string>
 
     <!-- Schede di emergenza -->
     <string name="tab_sismos">Terremoti</string>

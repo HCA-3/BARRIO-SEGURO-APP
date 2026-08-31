@@ -1,9 +1,13 @@
 <resources>
     <string name="app_name">Safe Neighborhood</string>
     <string name="pantalla_riesgo">Risk</string>
+    <string name="pantalla_desastres">Disasters</string>
     <string name="pantalla_emergencias">Emergencies</string>
     <string name="pantalla_agente">Agent</string>
     <string name="pantalla_ajustes">Settings</string>
+
+    <string name="lineas_titulo_banner">Emergency Hotlines and Dispatch</string>
+    <string name="lineas_desc_banner">Official directory of Bogotá. Tap any service to call immediately.</string>
 
     <!-- Emergency Tabs -->
     <string name="tab_sismos">Earthquakes</string>
