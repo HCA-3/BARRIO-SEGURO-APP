@@ -6,6 +6,7 @@ import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -22,6 +23,8 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -357,6 +360,7 @@ data class GuiaDesastre(
     val icono: String,
     val titulo: String,
     val descripcion: String,
+    val resIdImagen: Int,
     val lineaContacto: String = "123",
     val entidadContacto: String = "Línea 123",
     val antes: List<String>,
@@ -374,6 +378,7 @@ fun VistaGuiasDesastres() {
                 icono = "🏢",
                 titulo = "Sismos y Terremotos",
                 descripcion = "Protocolo de autoprotección ante movimientos telúricos en la sabana de Bogotá.",
+                resIdImagen = R.drawable.img_guia_sismo,
                 lineaContacto = "123",
                 entidadContacto = "Emergencias 123",
                 antes = listOf(
@@ -402,6 +407,7 @@ fun VistaGuiasDesastres() {
                 icono = "🌊",
                 titulo = "Inundaciones y Desbordamientos",
                 descripcion = "Manejo de emergencias por lluvias torrenciales, crecientes de ríos y encharcamientos.",
+                resIdImagen = R.drawable.img_guia_inundacion,
                 lineaContacto = "116",
                 entidadContacto = "Acueducto 116",
                 antes = listOf(
@@ -429,6 +435,7 @@ fun VistaGuiasDesastres() {
                 icono = "🔥",
                 titulo = "Incendios Forestales y Urbanos",
                 descripcion = "Prevención y combate inicial de conflagraciones en Cerros Orientales y áreas urbanas.",
+                resIdImagen = R.drawable.img_guia_incendio,
                 lineaContacto = "119",
                 entidadContacto = "Bomberos 119",
                 antes = listOf(
@@ -456,6 +463,7 @@ fun VistaGuiasDesastres() {
                 icono = "⛰️",
                 titulo = "Deslizamientos y Remoción en Masa",
                 descripcion = "Acción ante movimientos de tierra, caída de rocas y fallas de taludes en laderas.",
+                resIdImagen = R.drawable.img_guia_deslizamiento,
                 lineaContacto = "123",
                 entidadContacto = "IDIGER / 123",
                 antes = listOf(
@@ -481,6 +489,7 @@ fun VistaGuiasDesastres() {
                 icono = "💨",
                 titulo = "Fugas de Gas y Monóxido de Carbono",
                 descripcion = "Protocolo ante escape de gas natural, olor a mercaptano o fallas en gasodomésticos.",
+                resIdImagen = R.drawable.img_guia_gas,
                 lineaContacto = "164",
                 entidadContacto = "Vanti 164",
                 antes = listOf(
@@ -505,6 +514,7 @@ fun VistaGuiasDesastres() {
                 icono = "🌪️",
                 titulo = "Vendavales y Granizadas Severas",
                 descripcion = "Protección frente a ráfagas de viento huracanadas y acumulación de granizo en techos.",
+                resIdImagen = R.drawable.img_guia_vendaval,
                 lineaContacto = "115",
                 entidadContacto = "Enel 115",
                 antes = listOf(
@@ -528,6 +538,7 @@ fun VistaGuiasDesastres() {
                 icono = "⚡",
                 titulo = "Tormentas Eléctricas y Rayos",
                 descripcion = "Medidas de seguridad ante descargas eléctricas atmosféricas en la sabana.",
+                resIdImagen = R.drawable.img_guia_rayos,
                 lineaContacto = "123",
                 entidadContacto = "Línea 123",
                 antes = listOf(
@@ -551,6 +562,7 @@ fun VistaGuiasDesastres() {
                 icono = "🩹",
                 titulo = "Primeros Auxilios y RCP Básica",
                 descripcion = "Soporte vital inicial ante paros cardíacos, asfixia, quemaduras y hemorragias.",
+                resIdImagen = R.drawable.img_guia_primeros_auxilios,
                 lineaContacto = "132",
                 entidadContacto = "Cruz Roja 132",
                 antes = listOf(
@@ -575,6 +587,7 @@ fun VistaGuiasDesastres() {
                 icono = "🧪",
                 titulo = "Emergencias Químicas y Materiales Peligrosos",
                 descripcion = "Procedimiento ante derrames de sustancias tóxicas, vapores químicos o explosivos.",
+                resIdImagen = R.drawable.img_guia_quimicos,
                 lineaContacto = "119",
                 entidadContacto = "Bomberos HazMat",
                 antes = listOf(
@@ -598,6 +611,7 @@ fun VistaGuiasDesastres() {
                 icono = "🚗",
                 titulo = "Accidentes de Tránsito y Choques Múltiples",
                 descripcion = "Protocolo P.A.S. (Proteger, Avisar, Socorrer) en vías principales y autopistas.",
+                resIdImagen = R.drawable.img_guia_accidente,
                 lineaContacto = "123",
                 entidadContacto = "Policía Tránsito 123",
                 antes = listOf(
@@ -660,6 +674,18 @@ fun TarjetaGuiaInteractiva(guia: GuiaDesastre) {
                 exit = shrinkVertically() + fadeOut()
             ) {
                 Column(modifier = Modifier.padding(top = 12.dp)) {
+                    // ILUSTRACIÓN VISUAL DEL PROTOCOLO DE EMERGENCIA
+                    Image(
+                        painter = painterResource(id = guia.resIdImagen),
+                        contentDescription = guia.titulo,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(110.dp)
+                            .clip(RoundedCornerShape(10.dp)),
+                        contentScale = ContentScale.FillWidth
+                    )
+
+                    Spacer(modifier = Modifier.height(12.dp))
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(6.dp)
