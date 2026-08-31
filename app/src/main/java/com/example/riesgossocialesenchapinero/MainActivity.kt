@@ -55,6 +55,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
@@ -63,6 +64,7 @@ import com.example.riesgossocialesenchapinero.data.ApiClient
 import com.example.riesgossocialesenchapinero.location.MonitoreoUbicacionService
 import com.example.riesgossocialesenchapinero.ui.BadgeRiesgo
 import com.example.riesgossocialesenchapinero.ui.BarraDelito
+import com.example.riesgossocialesenchapinero.ui.AjustesViewModel
 import com.example.riesgossocialesenchapinero.ui.FilaDato
 import com.example.riesgossocialesenchapinero.ui.RiesgoUiState
 import com.example.riesgossocialesenchapinero.ui.SeccionPlegable
@@ -73,9 +75,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-private enum class Pantalla(val etiqueta: String) {
-    RIESGO("Riesgo"),
-    CHAT("Agente"),
+private enum class Pantalla {
+    RIESGO, CHAT, AJUSTES
 }
 
 class MainActivity : ComponentActivity() {
@@ -101,7 +102,10 @@ class MainActivity : ComponentActivity() {
         ApiClient.inicializar(this)
         android.util.Log.d("BarrioSeguro", "MainActivity iniciada. Backend: ${ApiClient.baseUrl}")
         setContent {
-            RIESGOSSOCIALESENCHAPINEROTheme {
+            val ajustesViewModel: AjustesViewModel = viewModel()
+            val ajustesEstado by ajustesViewModel.estado.collectAsState()
+
+            RIESGOSSOCIALESENCHAPINEROTheme(tema = ajustesEstado.tema) {
                 var pantallaActual by remember { mutableStateOf(Pantalla.RIESGO) }
 
                 val actividad = this
@@ -156,20 +160,38 @@ class MainActivity : ComponentActivity() {
 
                 Scaffold(
                     modifier = Modifier.fillMaxSize(),
-                    topBar = { TopAppBar(title = { Text("Barrio Seguro") }) },
+                    topBar = {
+                        TopAppBar(
+                            title = {
+                                Text(
+                                    when (pantallaActual) {
+                                        Pantalla.RIESGO -> stringResource(R.string.pantalla_riesgo)
+                                        Pantalla.CHAT -> stringResource(R.string.pantalla_agente)
+                                        Pantalla.AJUSTES -> stringResource(R.string.pantalla_ajustes)
+                                    }
+                                )
+                            }
+                        )
+                    },
                     bottomBar = {
                         NavigationBar {
                             NavigationBarItem(
                                 selected = pantallaActual == Pantalla.RIESGO,
                                 onClick = { pantallaActual = Pantalla.RIESGO },
                                 icon = { Text("⚠") },
-                                label = { Text(Pantalla.RIESGO.etiqueta) },
+                                label = { Text(stringResource(R.string.pantalla_riesgo)) },
                             )
                             NavigationBarItem(
                                 selected = pantallaActual == Pantalla.CHAT,
                                 onClick = { pantallaActual = Pantalla.CHAT },
                                 icon = { Text("💬") },
-                                label = { Text(Pantalla.CHAT.etiqueta) },
+                                label = { Text(stringResource(R.string.pantalla_agente)) },
+                            )
+                            NavigationBarItem(
+                                selected = pantallaActual == Pantalla.AJUSTES,
+                                onClick = { pantallaActual = Pantalla.AJUSTES },
+                                icon = { Text("⚙") },
+                                label = { Text(stringResource(R.string.pantalla_ajustes)) },
                             )
                         }
                     },
@@ -195,6 +217,10 @@ class MainActivity : ComponentActivity() {
                             },
                         )
                         Pantalla.CHAT -> PantallaChat(modifier = Modifier.padding(innerPadding))
+                        Pantalla.AJUSTES -> AjustesScreen(
+                            modifier = Modifier.padding(innerPadding),
+                            viewModel = ajustesViewModel
+                        )
                     }
                 }
             }
@@ -295,7 +321,7 @@ fun PantallaRiesgo(
                     verticalArrangement = Arrangement.Center,
                 ) {
                     CircularProgressIndicator()
-                    Text("Consultando riesgo por localidad...", modifier = Modifier.padding(top = 12.dp))
+                    Text(stringResource(R.string.cargando_riesgo), modifier = Modifier.padding(top = 12.dp))
                 }
             }
 
@@ -305,16 +331,14 @@ fun PantallaRiesgo(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.Center,
                 ) {
-                    Text("No pude conectarme al backend")
+                    Text(stringResource(R.string.error_backend))
                     Text(
                         actual.mensaje,
                         style = MaterialTheme.typography.bodySmall,
                         modifier = Modifier.padding(vertical = 8.dp),
                     )
                     Text(
-                        "Verifica que el backend esté corriendo (run_api.py). Si estás en un " +
-                            "celular físico, escribe aquí la IP del PC que sale con \"ipconfig\", " +
-                            "o conéctalo por USB y corre \"adb reverse tcp:8000 tcp:8000\".",
+                        stringResource(R.string.error_ayuda),
                         style = MaterialTheme.typography.bodySmall,
                     )
 
@@ -322,7 +346,7 @@ fun PantallaRiesgo(
                     OutlinedTextField(
                         value = servidor,
                         onValueChange = { servidor = it },
-                        label = { Text("Servidor") },
+                        label = { Text(stringResource(R.string.servidor_label)) },
                         placeholder = { Text("192.168.0.107:8000") },
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
@@ -331,10 +355,10 @@ fun PantallaRiesgo(
                         onClick = { viewModel.cambiarServidor(servidor) },
                         modifier = Modifier.padding(top = 12.dp),
                     ) {
-                        Text("Conectar")
+                        Text(stringResource(R.string.btn_conectar))
                     }
                     Button(onClick = { viewModel.cargarRanking() }, modifier = Modifier.padding(top = 8.dp)) {
-                        Text("Reintentar")
+                        Text(stringResource(R.string.btn_reintentar))
                     }
                 }
             }
@@ -346,7 +370,7 @@ fun PantallaRiesgo(
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Text(
-                            "Sin conexión: mostrando datos guardados",
+                            stringResource(R.string.sin_conexion_cache),
                             style = MaterialTheme.typography.labelSmall,
                             modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
                             color = MaterialTheme.colorScheme.onSecondaryContainer
@@ -380,12 +404,12 @@ fun ControlMonitoreo(activo: Boolean, onToggle: () -> Unit) {
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Column(modifier = Modifier.weight(1f).padding(end = 8.dp)) {
-                Text("Monitoreo de ubicación", style = MaterialTheme.typography.titleSmall)
+                Text(stringResource(R.string.monitoreo_titulo), style = MaterialTheme.typography.titleSmall)
                 Text(
                     if (activo) {
-                        "Activo: te avisamos si entras a una zona de riesgo alto"
+                        stringResource(R.string.monitoreo_activo)
                     } else {
-                        "Actívalo para recibir una alerta si entras a una zona de riesgo alto"
+                        stringResource(R.string.monitoreo_inactivo)
                     },
                     style = MaterialTheme.typography.bodySmall,
                 )
@@ -394,7 +418,7 @@ fun ControlMonitoreo(activo: Boolean, onToggle: () -> Unit) {
             // Si falta el permiso, al pulsar "Activar" se pide (y si ya estaba
             // negado a perpetuidad, se abre Ajustes) — ver MainActivity.
             Button(onClick = onToggle) {
-                Text(if (activo) "Detener" else "Activar")
+                Text(if (activo) stringResource(R.string.btn_detener) else stringResource(R.string.btn_activar))
             }
         }
     }
@@ -580,15 +604,13 @@ fun DialogoDetalle(
 
                     detalle == null -> Row(verticalAlignment = Alignment.CenterVertically) {
                         CircularProgressIndicator(modifier = Modifier.padding(end = 12.dp))
-                        Text("Cargando datos...")
+                        Text(stringResource(R.string.detalle_cargando))
                     }
 
                     else -> {
                         if (seleccion.barrio != null) {
                             Text(
-                                "No hay estadísticas por barrio: los delitos y el contexto se " +
-                                    "miden por localidad, y las llamadas de emergencia por UPZ. " +
-                                    "Estos son los datos de las zonas que contienen este barrio.",
+                                stringResource(R.string.detalle_nota_barrio),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 modifier = Modifier.padding(bottom = 4.dp),
@@ -609,7 +631,7 @@ fun DialogoDetalle(
                                     style = MaterialTheme.typography.headlineSmall,
                                 )
                                 Text(
-                                    "delitos por 100k hab.",
+                                    stringResource(R.string.delitos_100k_label),
                                     style = MaterialTheme.typography.labelSmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
@@ -617,18 +639,18 @@ fun DialogoDetalle(
                         }
 
                         seleccion.upz?.let { upz ->
-                            SeccionPlegable("UPZ ${upz.upz} — llamadas de emergencia") {
+                            SeccionPlegable(stringResource(R.string.seccion_upz, upz.upz)) {
                                 Row(
                                     modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
                                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                                 ) {
                                     TileDato(
-                                        "Nivel de llamadas",
+                                        stringResource(R.string.nivel_llamadas_label),
                                         upz.nivelLlamadas.uppercase(),
                                         Modifier.weight(1f),
                                     )
                                     TileDato(
-                                        "Por 100k hab.",
+                                        stringResource(R.string.por_100k_label),
                                         "%,.0f".format(upz.tasaLlamadas100k),
                                         Modifier.weight(1f),
                                     )
@@ -636,26 +658,26 @@ fun DialogoDetalle(
                             }
                         }
 
-                        SeccionPlegable("Localidad ${detalle.localidad}") {
+                        SeccionPlegable(stringResource(R.string.seccion_localidad, detalle.localidad)) {
                             Row(
                                 modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
                                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                             ) {
                                 TileDato(
-                                    "Población 2025",
+                                    stringResource(R.string.poblacion_label),
                                     "%,d".format(detalle.poblacion),
                                     Modifier.weight(1f),
                                 )
                                 TileDato(
-                                    "Delitos 2023-2025",
+                                    stringResource(R.string.delitos_periodo_label),
                                     "%,d".format(detalle.delitosTotal),
                                     Modifier.weight(1f),
                                 )
                             }
-                            FilaDato("Score mixto", "%.4f".format(detalle.scoreMixto))
+                            FilaDato(stringResource(R.string.score_mixto_label), "%.4f".format(detalle.scoreMixto))
                         }
 
-                        SeccionPlegable("Delitos por tipo (2023-2025)") {
+                        SeccionPlegable(stringResource(R.string.seccion_delitos_tipo)) {
                             val maximo = detalle.detalleDelitos.maxOfOrNull { it.second } ?: 0
                             detalle.detalleDelitos.forEachIndexed { i, (tipo, cantidad) ->
                                 BarraDelito(
@@ -667,22 +689,22 @@ fun DialogoDetalle(
                             }
                         }
 
-                        SeccionPlegable("Contexto de la localidad", abiertaPorDefecto = false) {
+                        SeccionPlegable(stringResource(R.string.seccion_contexto), abiertaPorDefecto = false) {
                             Row(
                                 modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
                                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                             ) {
                                 TileDato(
-                                    "Estrato promedio",
+                                    stringResource(R.string.estrato_label),
                                     "%.2f".format(detalle.estratoPromedio),
                                     Modifier.weight(1f),
                                 )
-                                TileDato("Área", "%,.1f km²".format(detalle.areaKm2), Modifier.weight(1f))
+                                TileDato(stringResource(R.string.area_label), "%,.1f km²".format(detalle.areaKm2), Modifier.weight(1f))
                             }
-                            FilaDato("Luminarias estimadas", "%,d".format(detalle.luminarias))
-                            FilaDato("Luminarias por km²", "%.1f".format(detalle.luminariasPorKm2))
-                            FilaDato("Longitud de vías", "%,.1f km".format(detalle.longitudViasKm))
-                            FilaDato("Incidentes NUSE", "%,d".format(detalle.incidentesNuse))
+                            FilaDato(stringResource(R.string.luminarias_label), "%,d".format(detalle.luminarias))
+                            FilaDato(stringResource(R.string.luminarias_km2_label), "%.1f".format(detalle.luminariasPorKm2))
+                            FilaDato(stringResource(R.string.vias_label), "%,.1f km".format(detalle.longitudViasKm))
+                            FilaDato(stringResource(R.string.incidentes_label), "%,d".format(detalle.incidentesNuse))
                         }
                     }
                 }
@@ -732,7 +754,7 @@ fun TarjetaLocalidad(localidad: ApiClient.Localidad, modifier: Modifier = Modifi
             Column {
                 Text("${localidad.posicion}. ${localidad.nombre}", style = MaterialTheme.typography.titleMedium)
                 Text(
-                    "Tasa: ${"%.1f".format(localidad.tasaDelitos100k)} por 100k hab.",
+                    stringResource(R.string.tasa_formato, localidad.tasaDelitos100k),
                     style = MaterialTheme.typography.bodySmall,
                 )
             }

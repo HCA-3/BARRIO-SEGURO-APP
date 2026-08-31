@@ -1,3 +1,6 @@
+import java.net.URI
+import java.net.HttpURLConnection
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
@@ -37,6 +40,7 @@ android {
 dependencies {
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.activity.compose)
+    implementation(libs.androidx.appcompat)
     implementation(libs.androidx.compose.material3)
     implementation(libs.androidx.compose.ui)
     implementation(libs.androidx.compose.ui.graphics)
@@ -57,4 +61,29 @@ dependencies {
     androidTestImplementation(libs.androidx.junit)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
     debugImplementation(libs.androidx.compose.ui.tooling)
+}
+
+tasks.register("ensureBackendRunning") {
+    doLast {
+        try {
+            val url = URI.create("http://127.0.0.1:8000/health").toURL()
+            val conn = url.openConnection() as HttpURLConnection
+            conn.connectTimeout = 1000
+            conn.readTimeout = 1000
+            conn.requestMethod = "GET"
+            if (conn.responseCode == 200) {
+                return@doLast
+            }
+        } catch (_: Exception) {
+            // El backend no está corriendo, iniciarlo en segundo plano
+        }
+        val script = rootProject.rootDir.resolve("iniciar.ps1").absolutePath
+        ProcessBuilder("powershell.exe", "-ExecutionPolicy", "Bypass", "-WindowStyle", "Hidden", "-File", script)
+            .directory(rootProject.rootDir)
+            .start()
+    }
+}
+
+tasks.matching { it.name.startsWith("preBuild") }.configureEach {
+    dependsOn("ensureBackendRunning")
 }

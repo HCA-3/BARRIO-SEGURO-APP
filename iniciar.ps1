@@ -13,7 +13,12 @@
 
 $ErrorActionPreference = "Stop"
 $raiz = $PSScriptRoot
-$python = Join-Path $raiz "venv\Scripts\python.exe"
+$candidatosPython = @(
+    (Join-Path $raiz "Agente\.venv\Scripts\python.exe"),
+    (Join-Path $raiz "venv\Scripts\python.exe"),
+    (Join-Path $raiz "venv_app\Scripts\python.exe")
+)
+$python = $candidatosPython | Where-Object { Test-Path $_ } | Select-Object -First 1
 $adb = Join-Path $env:LOCALAPPDATA "Android\Sdk\platform-tools\adb.exe"
 
 function Responde($url) {
@@ -39,8 +44,8 @@ if (Responde "http://localhost:11434/api/tags") {
 if (Responde "http://127.0.0.1:8000/health") {
     Write-Host "[ok] El backend ya esta corriendo en el puerto 8000."
 } else {
-    if (-not (Test-Path $python)) {
-        Write-Host "[!!] No encuentro $python. Crea el entorno con: python -m venv venv"
+    if (-not $python -or -not (Test-Path $python)) {
+        Write-Host "[!!] No encuentro el entorno Python virtual. Crea el entorno con: python -m venv venv"
         exit 1
     }
     Write-Host "[..] Arrancando el backend (tarda ~20s en cargar los datos geo)..."

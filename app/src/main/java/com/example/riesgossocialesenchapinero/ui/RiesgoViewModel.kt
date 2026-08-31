@@ -1,6 +1,7 @@
 package com.example.riesgossocialesenchapinero.ui
 
 import android.app.Application
+import com.example.riesgossocialesenchapinero.R
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.riesgossocialesenchapinero.data.ApiClient
@@ -55,8 +56,7 @@ class RiesgoViewModel(application: Application) : AndroidViewModel(application) 
                     )
                 } else {
                     _estado.value = RiesgoUiState.Error(
-                        "No pude conectar con el servidor y no hay datos guardados. " +
-                            "Verifica la URL en el campo 'Servidor' abajo."
+                        getApplication<Application>().getString(R.string.error_no_conexion_no_cache)
                     )
                 }
             }

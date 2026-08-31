@@ -1,0 +1,67 @@
+<resources>
+    <string name="app_name">Safe Neighborhood</string>
+    <string name="pantalla_riesgo">Risk</string>
+    <string name="pantalla_agente">Agent</string>
+    <string name="pantalla_ajustes">Settings</string>
+
+    <!-- Monitoring -->
+    <string name="monitoreo_titulo">Location Monitoring</string>
+    <string name="monitoreo_activo">Active: we will notify you if you enter a high-risk area</string>
+    <string name="monitoreo_inactivo">Activate it to receive an alert if you enter a high-risk area</string>
+    <string name="btn_activar">Activate</string>
+    <string name="btn_detener">Stop</string>
+
+    <!-- Risk -->
+    <string name="buscar_barrio_hint">Search neighborhood (e.g. Acapulco)…</string>
+    <string name="cargando_riesgo">Consulting risk by locality...</string>
+    <string name="error_ayuda">Verify that the backend is running (run_api.py). If you are on a physical phone, enter the PC IP address from "ipconfig" here, or connect it via USB and run "adb reverse tcp:8000 tcp:8000".</string>
+    <string name="error_no_conexion_no_cache">Could not connect to the server and there are no saved data. Check the URL in the \'Server\' field below.</string>
+    <string name="tasa_formato">Rate: %1$.1f per 100k inhab.</string>
+    <string name="detalle_cargando">Loading data…</string>
+    <string name="detalle_nota_barrio">There are no statistics by neighborhood: crimes and context are measured by locality, and emergency calls by UPZ. These are the data for the areas containing this neighborhood.</string>
+    <string name="delitos_100k_label">crimes per 100k inhab.</string>
+    <string name="seccion_upz">UPZ %1$s — emergency calls</string>
+    <string name="nivel_llamadas_label">Call level</string>
+    <string name="por_100k_label">Per 100k inhab.</string>
+    <string name="seccion_localidad">Locality %1$s</string>
+    <string name="poblacion_label">2025 Population</string>
+    <string name="delitos_periodo_label">2023–2025 Crimes</string>
+    <string name="score_mixto_label">Mixed score</string>
+    <string name="seccion_delitos_tipo">Crimes by type (2023-2025)</string>
+    <string name="seccion_contexto">Locality context</string>
+    <string name="estrato_label">Average stratum</string>
+    <string name="area_label">Area</string>
+    <string name="luminarias_label">Estimated streetlights</string>
+    <string name="luminarias_km2_label">Streetlights per km²</string>
+    <string name="vias_label">Road length</string>
+    <string name="incidentes_label">NUSE incidents</string>
+    <string name="error_backend">Could not connect to backend</string>
+    <string name="btn_reintentar">Retry</string>
+    <string name="btn_conectar">Connect</string>
+    <string name="servidor_label">Server</string>
+    <string name="sin_conexion_cache">No connection: showing saved data</string>
+
+    <!-- Chat -->
+    <string name="chat_memoria">Memory</string>
+    <string name="chat_hint">Type your question...</string>
+    <string name="chat_bienvenida">Ask the agent about the risk of a locality, or which one is more or less safe.</string>
+    <string name="btn_borrar_conversacion">Clear conversation</string>
+    <string name="btn_listo">Done</string>
+    <string name="error_chat">Could not talk to the agent: %1$s</string>
+    <string name="chat_conversaciones">Conversations</string>
+    <string name="chat_nueva_conversacion">+ New conversation</string>
+    <string name="chat_no_conversaciones">No saved conversations yet.</string>
+    <string name="chat_memoria_titulo">What the agent remembers about you</string>
+    <string name="chat_memoria_vacia">Nothing remembered yet. As you chat, it will save relevant things you tell it (e.g. where you live) to avoid asking the same thing every time.</string>
+
+    <!-- Settings -->
+    <string name="ajustes_titulo">Settings</string>
+    <string name="ajustes_tema">Application Theme</string>
+    <string name="tema_sistema">System default</string>
+    <string name="tema_claro">Light</string>
+    <string name="tema_oscuro">Dark</string>
+    <string name="ajustes_idioma">Language</string>
+    <string name="idioma_sistema">System default</string>
+    <string name="idioma_es">Spanish</string>
+    <string name="idioma_en">English</string>
+</resources>
