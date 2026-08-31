@@ -1,0 +1,27 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="48dp"
+    android:height="48dp"
+    android:viewportWidth="48"
+    android:viewportHeight="48">
+    <!-- Fondo circular verde policía -->
+    <path
+        android:fillColor="#1B5E20"
+        android:pathData="M24,2A22,22 0,1,0 46,24,22,22 0,0,0 24,2Z" />
+    <!-- Borde dorado policial -->
+    <path
+        android:strokeColor="#FFD54F"
+        android:strokeWidth="2"
+        android:pathData="M24,5A19,19 0,1,0 43,24,19,19 0,0,0 24,5Z" />
+    <!-- Estrella de 7 puntas policial (Dorado) -->
+    <path
+        android:fillColor="#FFC107"
+        android:pathData="M24,9L26.5,16.5L34,16.5L28,21.5L30.5,29L24,24.5L17.5,29L20,21.5L14,16.5L21.5,16.5Z" />
+    <!-- Escudo central verde oscuro -->
+    <path
+        android:fillColor="#0D3B13"
+        android:pathData="M24,17L29,20V26C29,29.5 26.8,32.5 24,33.5C21.2,32.5 19,29.5 19,26V20L24,17Z" />
+    <!-- Letras GAULA o espadas cruzadas -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M23,20H25V28H23ZM20,22H28V24H20Z" />
+</vector>
