@@ -14,6 +14,7 @@ import android.util.Log
 import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
 import com.example.riesgossocialesenchapinero.MainActivity
+import com.example.riesgossocialesenchapinero.data.AjustesManager
 import com.example.riesgossocialesenchapinero.data.ApiClient
 import com.google.android.gms.location.LocationCallback
 import com.google.android.gms.location.LocationRequest
@@ -127,15 +128,17 @@ class MonitoreoUbicacionService : Service() {
         // urbanas densas (justo el caso de uso de esta app) la ubicación por
         // red puede ser demasiado imprecisa para saber en qué localidad
         // exacta está alguien cerca de un límite.
-        val solicitud = LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, INTERVALO_MS)
-            .setMinUpdateIntervalMillis(INTERVALO_MS)
+        val ajustes = AjustesManager(this)
+        val intervaloMs = (ajustes.intervaloMinutos.coerceAtLeast(1)) * 60 * 1000L
+        val solicitud = LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, intervaloMs)
+            .setMinUpdateIntervalMillis(intervaloMs)
             .build()
         clienteUbicacion.requestLocationUpdates(solicitud, locationCallback, mainLooper)
-            .addOnSuccessListener { Log.d(TAG, "requestLocationUpdates registrado correctamente") }
+            .addOnSuccessListener { Log.d(TAG, "requestLocationUpdates registrado con intervalo ${intervaloMs}ms") }
             .addOnFailureListener { e -> Log.e(TAG, "requestLocationUpdates falló", e) }
 
         // Chequeo inmediato al activar el monitoreo, en vez de esperar el
-        // primer intervalo completo (2 min) para la primera señal.
+        // primer intervalo completo para la primera señal.
         clienteUbicacion.lastLocation
             .addOnSuccessListener { ubicacion ->
                 Log.d(TAG, "lastLocation al iniciar: $ubicacion")
@@ -153,6 +156,12 @@ class MonitoreoUbicacionService : Service() {
 
     private fun revisarRiesgo(lat: Double, lng: Double) {
         scope.launch {
+            val alertasHabilitadas = AjustesManager(this@MonitoreoUbicacionService).alertasHabilitadas
+            if (!alertasHabilitadas) {
+                Log.d(TAG, "Alertas desactivadas por el usuario en Ajustes (RF-003/RN-02)")
+                return@launch
+            }
+
             val resultado = try {
                 ApiClient.consultarRiesgoPorPunto(lat, lng)
             } catch (e: Exception) {

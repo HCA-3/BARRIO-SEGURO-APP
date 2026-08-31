@@ -24,6 +24,10 @@ import androidx.compose.ui.unit.dp
 import com.example.riesgossocialesenchapinero.data.TemaApp
 import com.example.riesgossocialesenchapinero.ui.AjustesViewModel
 
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Switch
+
 @Composable
 fun AjustesScreen(
     modifier: Modifier = Modifier,
@@ -34,13 +38,77 @@ fun AjustesScreen(
     Column(
         modifier = modifier
             .fillMaxSize()
+            .verticalScroll(rememberScrollState())
             .padding(16.dp)
     ) {
         Text(
             text = stringResource(R.string.ajustes_titulo),
             style = MaterialTheme.typography.headlineMedium
         )
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(modifier = Modifier.height(20.dp))
+
+        // SECCIÓN NOTIFICACIONES DE RIESGO (RF-003)
+        Text(
+            text = stringResource(R.string.ajustes_alertas_titulo),
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.primary
+        )
+        Spacer(modifier = Modifier.height(4.dp))
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = stringResource(R.string.ajustes_alertas_subtitulo),
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            }
+            Switch(
+                checked = estado.alertasHabilitadas,
+                onCheckedChange = { viewModel.cambiarAlertas(it) }
+            )
+        }
+
+        Spacer(modifier = Modifier.height(12.dp))
+        HorizontalDivider()
+        Spacer(modifier = Modifier.height(12.dp))
+
+        // SECCIÓN FRECUENCIA GPS (RF-004)
+        Text(
+            text = stringResource(R.string.ajustes_frecuencia_titulo),
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.primary
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        Column(Modifier.selectableGroup()) {
+            OpcionRadio(
+                texto = stringResource(R.string.ajustes_frecuencia_1m),
+                seleccionado = estado.intervaloMinutos == 1,
+                onClick = { viewModel.cambiarIntervalo(1) }
+            )
+            OpcionRadio(
+                texto = stringResource(R.string.ajustes_frecuencia_2m),
+                seleccionado = estado.intervaloMinutos == 2,
+                onClick = { viewModel.cambiarIntervalo(2) }
+            )
+            OpcionRadio(
+                texto = stringResource(R.string.ajustes_frecuencia_5m),
+                seleccionado = estado.intervaloMinutos == 5,
+                onClick = { viewModel.cambiarIntervalo(5) }
+            )
+            OpcionRadio(
+                texto = stringResource(R.string.ajustes_frecuencia_10m),
+                seleccionado = estado.intervaloMinutos == 10,
+                onClick = { viewModel.cambiarIntervalo(10) }
+            )
+        }
+
+        Spacer(modifier = Modifier.height(12.dp))
+        HorizontalDivider()
+        Spacer(modifier = Modifier.height(12.dp))
 
         // SECCIÓN TEMA
         Text(
@@ -67,9 +135,9 @@ fun AjustesScreen(
             )
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(12.dp))
         HorizontalDivider()
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(12.dp))
 
         // SECCIÓN IDIOMA
         Text(

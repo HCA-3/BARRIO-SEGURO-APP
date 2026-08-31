@@ -11,7 +11,9 @@ import kotlinx.coroutines.flow.StateFlow
 
 data class AjustesUiState(
     val tema: TemaApp = TemaApp.SISTEMA,
-    val idioma: String = "" // "" para sistema
+    val idioma: String = "", // "" para sistema
+    val intervaloMinutos: Int = 2,
+    val alertasHabilitadas: Boolean = true
 )
 
 /**
@@ -23,7 +25,9 @@ class AjustesViewModel(application: Application) : AndroidViewModel(application)
     private val _estado = MutableStateFlow(
         AjustesUiState(
             tema = ajustesManager.tema,
-            idioma = ajustesManager.idioma
+            idioma = ajustesManager.idioma,
+            intervaloMinutos = ajustesManager.intervaloMinutos,
+            alertasHabilitadas = ajustesManager.alertasHabilitadas
         )
     )
     val estado: StateFlow<AjustesUiState> = _estado
@@ -53,5 +57,15 @@ class AjustesViewModel(application: Application) : AndroidViewModel(application)
             LocaleListCompat.forLanguageTags(nuevoIdioma)
         }
         AppCompatDelegate.setApplicationLocales(appLocales)
+    }
+
+    fun cambiarIntervalo(minutos: Int) {
+        ajustesManager.intervaloMinutos = minutos
+        _estado.value = _estado.value.copy(intervaloMinutos = minutos)
+    }
+
+    fun cambiarAlertas(habilitadas: Boolean) {
+        ajustesManager.alertasHabilitadas = habilitadas
+        _estado.value = _estado.value.copy(alertasHabilitadas = habilitadas)
     }
 }

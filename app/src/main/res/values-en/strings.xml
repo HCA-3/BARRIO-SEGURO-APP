@@ -1,8 +1,33 @@
 <resources>
     <string name="app_name">Safe Neighborhood</string>
     <string name="pantalla_riesgo">Risk</string>
+    <string name="pantalla_emergencias">Emergencies</string>
     <string name="pantalla_agente">Agent</string>
     <string name="pantalla_ajustes">Settings</string>
+
+    <!-- Emergency Tabs -->
+    <string name="tab_sismos">Earthquakes</string>
+    <string name="tab_guias">Guides</string>
+    <string name="tab_mochila">72h Kit</string>
+    <string name="tab_lineas">Hotlines</string>
+
+    <!-- Live Earthquakes -->
+    <string name="sismos_recientes_titulo">Recent earthquakes in the region</string>
+    <string name="sismos_actualizar">Refresh</string>
+    <string name="sismos_magnitud">Mag. %1$.1f</string>
+    <string name="sismos_profundidad">Depth: %1$.1f km</string>
+    <string name="sismos_distancia">%1$.1f km from Bogotá</string>
+    <string name="sismos_sin_datos">No recent earthquakes recorded in the region.</string>
+    <string name="sismos_cargando">Checking live earthquakes...</string>
+    <string name="sismo_hace_minutos">%1$d min ago</string>
+    <string name="sismo_hace_horas">%1$d h ago</string>
+
+    <!-- Guide Phases -->
+    <string name="guia_fase_antes">Before</string>
+    <string name="guia_fase_durante">During</string>
+    <string name="guia_fase_despues">After</string>
+    <string name="mochila_progreso">Readiness: %1$d of %2$d items ready (%3$d%%)</string>
+    <string name="linea_llamar">Call</string>
 
     <!-- Monitoring -->
     <string name="monitoreo_titulo">Location Monitoring</string>
@@ -68,6 +93,15 @@
     <string name="idioma_pt">Portuguese (Português)</string>
     <string name="idioma_de">German (Deutsch)</string>
     <string name="idioma_it">Italian (Italiano)</string>
+
+    <!-- Verification frequency (RF-004) and Alerts (RF-003) -->
+    <string name="ajustes_frecuencia_titulo">GPS monitoring frequency</string>
+    <string name="ajustes_frecuencia_1m">Every 1 minute (Higher accuracy)</string>
+    <string name="ajustes_frecuencia_2m">Every 2 minutes (Recommended)</string>
+    <string name="ajustes_frecuencia_5m">Every 5 minutes (Battery saver)</string>
+    <string name="ajustes_frecuencia_10m">Every 10 minutes (Low battery use)</string>
+    <string name="ajustes_alertas_titulo">High-risk notifications</string>
+    <string name="ajustes_alertas_subtitulo">Automatically alert when entering a high-risk area</string>
 
     <!-- Risk levels -->
     <string name="riesgo_alto">HIGH</string>
