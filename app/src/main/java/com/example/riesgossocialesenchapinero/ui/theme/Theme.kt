@@ -10,6 +10,7 @@ import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalContext
+import com.example.riesgossocialesenchapinero.data.TemaApp
 
 private val DarkColorScheme = darkColorScheme(
     primary = Purple80,
@@ -35,7 +36,12 @@ private val LightColorScheme = lightColorScheme(
 
 @Composable
 fun RIESGOSSOCIALESENCHAPINEROTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
+    tema: TemaApp = TemaApp.SISTEMA,
+    darkTheme: Boolean = when (tema) {
+        TemaApp.SISTEMA -> isSystemInDarkTheme()
+        TemaApp.CLARO -> false
+        TemaApp.OSCURO -> true
+    },
     // Dynamic color is available on Android 12+
     dynamicColor: Boolean = true,
     content: @Composable () -> Unit

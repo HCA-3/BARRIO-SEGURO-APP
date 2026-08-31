@@ -1,3 +1,67 @@
 <resources>
-    <string name="app_name">RIESGOS SOCIALES EN CHAPINERO</string>
+    <string name="app_name">Barrio Seguro</string>
+    <string name="pantalla_riesgo">Riesgo</string>
+    <string name="pantalla_agente">Agente</string>
+    <string name="pantalla_ajustes">Ajustes</string>
+
+    <!-- Monitoreo -->
+    <string name="monitoreo_titulo">Monitoreo de ubicación</string>
+    <string name="monitoreo_activo">Activo: te avisamos si entras a una zona de riesgo alto</string>
+    <string name="monitoreo_inactivo">Actívalo para recibir una alerta si entras a una zona de riesgo alto</string>
+    <string name="btn_activar">Activar</string>
+    <string name="btn_detener">Detener</string>
+
+    <!-- Riesgo -->
+    <string name="buscar_barrio_hint">Buscar barrio (ej. Acapulco)…</string>
+    <string name="cargando_riesgo">Consultando riesgo por localidad...</string>
+    <string name="error_ayuda">Verifica que el backend esté corriendo (run_api.py). Si estás en un celular físico, escribe aquí la IP del PC que sale con "ipconfig", o conéctalo por USB y corre "adb reverse tcp:8000 tcp:8000".</string>
+    <string name="error_no_conexion_no_cache">No pude conectar con el servidor y no hay datos guardados. Verifica la URL en el campo \'Servidor\' abajo.</string>
+    <string name="tasa_formato">Tasa: %1$.1f por 100k hab.</string>
+    <string name="detalle_cargando">Cargando datos…</string>
+    <string name="detalle_nota_barrio">No hay estadísticas por barrio: los delitos y el contexto se miden por localidad, y las llamadas de emergencia por UPZ. Estos son los datos de las zonas que contienen este barrio.</string>
+    <string name="delitos_100k_label">delitos por 100k hab.</string>
+    <string name="seccion_upz">UPZ %1$s — llamadas de emergencia</string>
+    <string name="nivel_llamadas_label">Nivel de llamadas</string>
+    <string name="por_100k_label">Por 100k hab.</string>
+    <string name="seccion_localidad">Localidad %1$s</string>
+    <string name="poblacion_label">Población 2025</string>
+    <string name="delitos_periodo_label">Delitos 2023–2025</string>
+    <string name="score_mixto_label">Score mixto</string>
+    <string name="seccion_delitos_tipo">Delitos por tipo (2023-2025)</string>
+    <string name="seccion_contexto">Contexto de la localidad</string>
+    <string name="estrato_label">Estrato promedio</string>
+    <string name="area_label">Área</string>
+    <string name="luminarias_label">Luminarias estimadas</string>
+    <string name="luminarias_km2_label">Luminarias por km²</string>
+    <string name="vias_label">Longitud de vías</string>
+    <string name="incidentes_label">Incidentes NUSE</string>
+    <string name="error_backend">No pude conectarme al backend</string>
+    <string name="btn_reintentar">Reintentar</string>
+    <string name="btn_conectar">Conectar</string>
+    <string name="servidor_label">Servidor</string>
+    <string name="sin_conexion_cache">Sin conexión: mostrando datos guardados</string>
+
+    <!-- Chat -->
+    <string name="chat_memoria">Memoria</string>
+    <string name="chat_hint">Escribe tu pregunta...</string>
+    <string name="chat_bienvenida">Pregúntale al agente por el riesgo de una localidad, o cuál es la más o menos segura.</string>
+    <string name="btn_borrar_conversacion">Borrar conversación</string>
+    <string name="btn_listo">Listo</string>
+    <string name="error_chat">No pude hablar con el agente: %1$s</string>
+    <string name="chat_conversaciones">Conversaciones</string>
+    <string name="chat_nueva_conversacion">+ Nueva conversación</string>
+    <string name="chat_no_conversaciones">Todavía no hay conversaciones guardadas.</string>
+    <string name="chat_memoria_titulo">Lo que recuerda el agente de ti</string>
+    <string name="chat_memoria_vacia">Todavía no recuerda nada. A medida que converses, va a ir guardando cosas relevantes que le cuentes (ej. dónde vives) para no preguntarte lo mismo cada vez.</string>
+
+    <!-- Ajustes -->
+    <string name="ajustes_titulo">Configuración</string>
+    <string name="ajustes_tema">Tema de la aplicación</string>
+    <string name="tema_sistema">Predeterminado del sistema</string>
+    <string name="tema_claro">Claro</string>
+    <string name="tema_oscuro">Oscuro</string>
+    <string name="ajustes_idioma">Idioma</string>
+    <string name="idioma_sistema">Predeterminado del sistema</string>
+    <string name="idioma_es">Español</string>
+    <string name="idioma_en">English (Inglés)</string>
 </resources>

@@ -53,6 +53,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
@@ -154,9 +155,9 @@ fun PantallaChat(modifier: Modifier = Modifier, viewModel: ChatViewModel = viewM
                     TextButton(onClick = { mostrarMemoria = true }) {
                         Text(
                             if (estado.hechosRecordados.isEmpty()) {
-                                "🧠 Memoria"
+                                "🧠 " + stringResource(R.string.chat_memoria)
                             } else {
-                                "🧠 Memoria (${estado.hechosRecordados.size})"
+                                "🧠 " + stringResource(R.string.chat_memoria) + " (${estado.hechosRecordados.size})"
                             },
                         )
                     }
@@ -174,8 +175,7 @@ fun PantallaChat(modifier: Modifier = Modifier, viewModel: ChatViewModel = viewM
                 ) {
                     Box(modifier = Modifier.fillMaxWidth().padding(24.dp), contentAlignment = Alignment.Center) {
                         Text(
-                            "Pregúntale al agente por el riesgo de una localidad, o cuál es " +
-                                "la más o menos segura.",
+                            stringResource(R.string.chat_bienvenida),
                             style = MaterialTheme.typography.bodyMedium,
                         )
                     }
@@ -201,7 +201,7 @@ fun PantallaChat(modifier: Modifier = Modifier, viewModel: ChatViewModel = viewM
 
             if (estado.error != null) {
                 Text(
-                    "No pude hablar con el agente: ${estado.error}",
+                    stringResource(R.string.error_chat, estado.error ?: ""),
                     color = MaterialTheme.colorScheme.error,
                     style = MaterialTheme.typography.bodySmall,
                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
@@ -216,7 +216,7 @@ fun PantallaChat(modifier: Modifier = Modifier, viewModel: ChatViewModel = viewM
                     value = texto,
                     onValueChange = { texto = it },
                     modifier = Modifier.weight(1f),
-                    placeholder = { Text("Escribe tu pregunta...") },
+                    placeholder = { Text(stringResource(R.string.chat_hint)) },
                     enabled = !estado.enviando,
                 )
                 IconButton(
@@ -242,15 +242,15 @@ fun PanelConversaciones(
     onBorrar: (Long) -> Unit,
 ) {
     Column(modifier = Modifier.fillMaxHeight().width(280.dp).padding(16.dp)) {
-        Text("Conversaciones", style = MaterialTheme.typography.titleMedium)
+        Text(stringResource(R.string.chat_conversaciones), style = MaterialTheme.typography.titleMedium)
         Spacer(modifier = Modifier.height(12.dp))
         TextButton(onClick = onNuevaConversacion, modifier = Modifier.fillMaxWidth()) {
-            Text("+ Nueva conversación")
+            Text(stringResource(R.string.chat_nueva_conversacion))
         }
         HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
         if (conversaciones.isEmpty()) {
             Text(
-                "Todavía no hay conversaciones guardadas.",
+                stringResource(R.string.chat_no_conversaciones),
                 style = MaterialTheme.typography.bodySmall,
                 modifier = Modifier.padding(8.dp),
             )
@@ -308,14 +308,12 @@ fun DialogoMemoria(
 ) {
     AlertDialog(
         onDismissRequest = onCerrar,
-        title = { Text("Lo que recuerda el agente de ti") },
+        title = { Text(stringResource(R.string.chat_memoria_titulo)) },
         text = {
             Column {
                 if (hechos.isEmpty()) {
                     Text(
-                        "Todavía no recuerda nada. A medida que converses, va a ir guardando " +
-                            "cosas relevantes que le cuentes (ej. dónde vives) para no preguntarte " +
-                            "lo mismo cada vez.",
+                        stringResource(R.string.chat_memoria_vacia),
                         style = MaterialTheme.typography.bodySmall,
                     )
                 } else {
@@ -335,10 +333,10 @@ fun DialogoMemoria(
             }
         },
         confirmButton = {
-            TextButton(onClick = onCerrar) { Text("Listo") }
+            TextButton(onClick = onCerrar) { Text(stringResource(R.string.btn_listo)) }
         },
         dismissButton = {
-            TextButton(onClick = { onBorrarConversacion(); onCerrar() }) { Text("Borrar conversación") }
+            TextButton(onClick = { onBorrarConversacion(); onCerrar() }) { Text(stringResource(R.string.btn_borrar_conversacion)) }
         },
     )
 }
