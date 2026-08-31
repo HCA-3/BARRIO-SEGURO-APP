@@ -15,6 +15,14 @@
     <string name="tab_mochila">Sac 72h</string>
     <string name="tab_lineas">Lignes 123</string>
 
+    <!-- Carte thermique et vues -->
+    <string name="mapa_calor_titulo">Carte thermique des risques</string>
+    <string name="mapa_ver_todo">Tout le district</string>
+    <string name="mapa_ver_urbano">Zone urbaine</string>
+    <string name="btn_ver_detalle">Voir détails</string>
+    <string name="pestana_mapa">Carte thermique</string>
+    <string name="pestana_ranking">Classement</string>
+
     <!-- Séismes en Direct -->
     <string name="sismos_recientes_titulo">Séismes récents dans la région</string>
     <string name="sismos_actualizar">Actualiser</string>

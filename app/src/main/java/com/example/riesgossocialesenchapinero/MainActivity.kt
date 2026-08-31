@@ -42,6 +42,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
@@ -442,17 +443,50 @@ fun PantallaRiesgo(
                         )
                     }
                 }
-                LazyColumn(
-                    modifier = Modifier.weight(1f).fillMaxWidth(),
-                    contentPadding = PaddingValues(12.dp),
+
+                var vistaMapa by remember { mutableStateOf(true) }
+
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 4.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    items(actual.localidades) { localidad ->
-                        TarjetaLocalidad(
-                            localidad,
-                            modifier = Modifier.clickable {
-                                seleccion = SeleccionDetalle(localidad = localidad.nombre)
-                            },
-                        )
+                    FilterChip(
+                        selected = vistaMapa,
+                        onClick = { vistaMapa = true },
+                        label = { Text("🗺️ " + stringResource(R.string.pestana_mapa)) },
+                        modifier = Modifier.weight(1f)
+                    )
+                    FilterChip(
+                        selected = !vistaMapa,
+                        onClick = { vistaMapa = false },
+                        label = { Text("📋 " + stringResource(R.string.pestana_ranking)) },
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+
+                if (vistaMapa) {
+                    com.example.riesgossocialesenchapinero.ui.MapaCalorBogota(
+                        modifier = Modifier.weight(1f).fillMaxWidth(),
+                        ranking = actual.localidades,
+                        onSeleccionarLocalidad = { nombre ->
+                            seleccion = SeleccionDetalle(localidad = nombre)
+                        }
+                    )
+                } else {
+                    LazyColumn(
+                        modifier = Modifier.weight(1f).fillMaxWidth(),
+                        contentPadding = PaddingValues(12.dp),
+                    ) {
+                        items(actual.localidades) { localidad ->
+                            TarjetaLocalidad(
+                                localidad,
+                                modifier = Modifier.clickable {
+                                    seleccion = SeleccionDetalle(localidad = localidad.nombre)
+                                },
+                            )
+                        }
                     }
                 }
             }

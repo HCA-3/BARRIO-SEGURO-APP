@@ -15,6 +15,14 @@
     <string name="tab_mochila">72h Kit</string>
     <string name="tab_lineas">Hotlines</string>
 
+    <!-- Heatmap & Views -->
+    <string name="mapa_calor_titulo">Risk Heatmap</string>
+    <string name="mapa_ver_todo">Full District</string>
+    <string name="mapa_ver_urbano">Urban Area</string>
+    <string name="btn_ver_detalle">View data</string>
+    <string name="pestana_mapa">Heatmap</string>
+    <string name="pestana_ranking">Ranking</string>
+
     <!-- Live Earthquakes -->
     <string name="sismos_recientes_titulo">Recent earthquakes in the region</string>
     <string name="sismos_actualizar">Refresh</string>

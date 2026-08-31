@@ -15,6 +15,14 @@
     <string name="tab_mochila">Mochila 72h</string>
     <string name="tab_lineas">Líneas 123</string>
 
+    <!-- Mapa de Calor y Vistas -->
+    <string name="mapa_calor_titulo">Mapa de Calor de Riesgo</string>
+    <string name="mapa_ver_todo">Todo el Distrito</string>
+    <string name="mapa_ver_urbano">Área Urbana</string>
+    <string name="btn_ver_detalle">Ver datos</string>
+    <string name="pestana_mapa">Mapa de calor</string>
+    <string name="pestana_ranking">Ranking</string>
+
     <!-- Sismos en Vivo -->
     <string name="sismos_recientes_titulo">Sismos recientes en la región</string>
     <string name="sismos_actualizar">Actualizar</string>
