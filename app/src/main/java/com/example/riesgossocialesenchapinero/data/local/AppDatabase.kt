@@ -5,11 +5,15 @@ import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 
-@Database(entities = [MensajeEntity::class, HechoEntity::class, ConversacionEntity::class], version = 3)
+@Database(
+    entities = [MensajeEntity::class, HechoEntity::class, ConversacionEntity::class, LocalidadEntity::class],
+    version = 4
+)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun mensajeDao(): MensajeDao
     abstract fun hechoDao(): HechoDao
     abstract fun conversacionDao(): ConversacionDao
+    abstract fun localidadDao(): LocalidadDao
 
     companion object {
         @Volatile private var instancia: AppDatabase? = null
