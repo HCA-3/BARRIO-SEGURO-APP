@@ -1,0 +1,71 @@
+<resources>
+    <string name="app_name">Quartier Sûr</string>
+    <string name="pantalla_riesgo">Risque</string>
+    <string name="pantalla_agente">Agent</string>
+    <string name="pantalla_ajustes">Paramètres</string>
+
+    <!-- Surveillance -->
+    <string name="monitoreo_titulo">Surveillance de localisation</string>
+    <string name="monitoreo_activo">Actif : nous vous alerterons si vous entrez dans une zone à haut risque</string>
+    <string name="monitoreo_inactivo">Activez-le pour recevoir une alerte si vous entrez dans une zone à haut risque</string>
+    <string name="btn_activar">Activer</string>
+    <string name="btn_detener">Arrêter</string>
+
+    <!-- Risque -->
+    <string name="buscar_barrio_hint">Rechercher un quartier (ex. Acapulco)…</string>
+    <string name="cargando_riesgo">Consultation du risque par localité...</string>
+    <string name="error_ayuda">Vérifiez que le backend fonctionne (run_api.py). Si vous êtes sur un téléphone physique, saisissez l\'adresse IP de votre PC depuis "ipconfig" ici, ou connectez-le par USB et lancez "adb reverse tcp:8000 tcp:8000".</string>
+    <string name="error_no_conexion_no_cache">Impossible de se connecter au serveur et aucune donnée enregistrée. Vérifiez l\'URL dans le champ \'Serveur\' ci-dessous.</string>
+    <string name="tasa_formato">Taux : %1$.1f pour 100k hab.</string>
+    <string name="detalle_cargando">Chargement des données…</string>
+    <string name="detalle_nota_barrio">Il n\'y a pas de statistiques par quartier : la criminalité et le contexte sont mesurés par localité, et les appels d\'urgence par UPZ. Voici les données pour les zones contenant ce quartier.</string>
+    <string name="delitos_100k_label">délits pour 100k hab.</string>
+    <string name="seccion_upz">UPZ %1$s — appels d\'urgence</string>
+    <string name="nivel_llamadas_label">Niveau d\'appels</string>
+    <string name="por_100k_label">Pour 100k hab.</string>
+    <string name="seccion_localidad">Localité %1$s</string>
+    <string name="poblacion_label">Population 2025</string>
+    <string name="delitos_periodo_label">Délits 2023–2025</string>
+    <string name="score_mixto_label">Score mixte</string>
+    <string name="seccion_delitos_tipo">Délits par type (2023-2025)</string>
+    <string name="seccion_contexto">Contexte de la localité</string>
+    <string name="estrato_label">Strate moyenne</string>
+    <string name="area_label">Superficie</string>
+    <string name="luminarias_label">Lampadaires estimés</string>
+    <string name="luminarias_km2_label">Lampadaires par km²</string>
+    <string name="vias_label">Longueur des voies</string>
+    <string name="incidentes_label">Incidents NUSE</string>
+    <string name="error_backend">Impossible de se connecter au backend</string>
+    <string name="btn_reintentar">Réessayer</string>
+    <string name="btn_conectar">Connecter</string>
+    <string name="servidor_label">Serveur</string>
+    <string name="sin_conexion_cache">Hors ligne : affichage des données enregistrées</string>
+
+    <!-- Chat -->
+    <string name="chat_memoria">Mémoire</string>
+    <string name="chat_hint">Posez votre question...</string>
+    <string name="chat_bienvenida">Demandez à l\'agent le niveau de risque d\'une localité, ou laquelle est la plus ou moins sûre.</string>
+    <string name="btn_borrar_conversacion">Effacer la conversation</string>
+    <string name="btn_listo">Terminé</string>
+    <string name="error_chat">Impossible de communiquer avec l\'agent : %1$s</string>
+    <string name="chat_conversaciones">Conversations</string>
+    <string name="chat_nueva_conversacion">+ Nouvelle conversation</string>
+    <string name="chat_no_conversaciones">Aucune conversation enregistrée pour le moment.</string>
+    <string name="chat_memoria_titulo">Ce que l\'agent retient de vous</string>
+    <string name="chat_memoria_vacia">Rien en mémoire pour l\'instant. Au fil de vos discussions, l\'agent enregistrera les informations importantes que vous partagez (ex. où vous habitez) pour ne pas vous le redemander.</string>
+
+    <!-- Paramètres -->
+    <string name="ajustes_titulo">Paramètres</string>
+    <string name="ajustes_tema">Thème de l\'application</string>
+    <string name="tema_sistema">Par défaut du système</string>
+    <string name="tema_claro">Clair</string>
+    <string name="tema_oscuro">Sombre</string>
+    <string name="ajustes_idioma">Langue</string>
+    <string name="idioma_sistema">Par défaut du système</string>
+    <string name="idioma_es">Espagnol (Español)</string>
+    <string name="idioma_en">Anglais (English)</string>
+    <string name="idioma_fr">Français</string>
+    <string name="idioma_pt">Portugais (Português)</string>
+    <string name="idioma_de">Allemand (Deutsch)</string>
+    <string name="idioma_it">Italien (Italiano)</string>
+</resources>

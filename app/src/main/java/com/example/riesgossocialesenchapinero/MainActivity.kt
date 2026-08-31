@@ -6,9 +6,10 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.provider.Settings
+import android.content.res.Configuration
 import android.os.Build
 import android.os.Bundle
-import androidx.activity.ComponentActivity
+import androidx.appcompat.app.AppCompatActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -18,6 +19,9 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.runtime.CompositionLocalProvider
+import java.util.Locale
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -79,7 +83,7 @@ private enum class Pantalla {
     RIESGO, CHAT, AJUSTES
 }
 
-class MainActivity : ComponentActivity() {
+class MainActivity : AppCompatActivity() {
     // Se revalidan en onResume porque pueden cambiar fuera de la app: el
     // usuario puede conceder o quitar el permiso desde Ajustes, y el servicio
     // puede haberse detenido solo. Guardarlos en un `remember` de la pantalla
@@ -105,7 +109,30 @@ class MainActivity : ComponentActivity() {
             val ajustesViewModel: AjustesViewModel = viewModel()
             val ajustesEstado by ajustesViewModel.estado.collectAsState()
 
-            RIESGOSSOCIALESENCHAPINEROTheme(tema = ajustesEstado.tema) {
+            val locale = remember(ajustesEstado.idioma) {
+                if (ajustesEstado.idioma.isEmpty()) {
+                    Locale.getDefault()
+                } else {
+                    Locale.forLanguageTag(ajustesEstado.idioma)
+                }
+            }
+            val currentConfiguration = LocalConfiguration.current
+            val currentContext = LocalContext.current
+            val localizedConfiguration = remember(locale, currentConfiguration) {
+                Configuration(currentConfiguration).apply {
+                    setLocale(locale)
+                    setLayoutDirection(locale)
+                }
+            }
+            val localizedContext = remember(locale, currentContext) {
+                currentContext.createConfigurationContext(localizedConfiguration)
+            }
+
+            CompositionLocalProvider(
+                LocalConfiguration provides localizedConfiguration,
+                LocalContext provides localizedContext
+            ) {
+                RIESGOSSOCIALESENCHAPINEROTheme(tema = ajustesEstado.tema) {
                 var pantallaActual by remember { mutableStateOf(Pantalla.RIESGO) }
 
                 val actividad = this
@@ -226,6 +253,7 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
+}
 }
 
 sealed interface EstadoBusquedaBarrio {

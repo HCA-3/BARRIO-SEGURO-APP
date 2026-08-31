@@ -1,0 +1,71 @@
+<resources>
+    <string name="app_name">Sicheres Viertel</string>
+    <string name="pantalla_riesgo">Risiko</string>
+    <string name="pantalla_agente">Agent</string>
+    <string name="pantalla_ajustes">Einstellungen</string>
+
+    <!-- Standortüberwachung -->
+    <string name="monitoreo_titulo">Standortüberwachung</string>
+    <string name="monitoreo_activo">Aktiv: Wir benachrichtigen Sie beim Betreten eines Hochrisikobereichs</string>
+    <string name="monitoreo_inactivo">Aktivieren, um Warnungen beim Betreten von Hochrisikobereichen zu erhalten</string>
+    <string name="btn_activar">Aktivieren</string>
+    <string name="btn_detener">Stoppen</string>
+
+    <!-- Risiko -->
+    <string name="buscar_barrio_hint">Stadtteil suchen (z. B. Acapulco)…</string>
+    <string name="cargando_riesgo">Risiko nach Bezirk wird abgefragt...</string>
+    <string name="error_ayuda">Überprüfen Sie, ob das Backend ausgeführt wird (run_api.py). Geben Sie auf einem physischen Smartphone die PC-IP-Adresse von "ipconfig" ein, oder verbinden Sie es über USB und führen Sie "adb reverse tcp:8000 tcp:8000" aus.</string>
+    <string name="error_no_conexion_no_cache">Verbindung zum Server fehlgeschlagen und keine gespeicherten Daten. Überprüfen Sie die URL im Feld \'Server\' unten.</string>
+    <string name="tasa_formato">Rate: %1$.1f pro 100k Einw.</string>
+    <string name="detalle_cargando">Daten werden geladen…</string>
+    <string name="detalle_nota_barrio">Es gibt keine Statistiken nach Stadtteilen: Straftaten und Kontext werden nach Bezirk gemessen, Notrufe nach UPZ. Dies sind die Daten der übergeordneten Gebiete.</string>
+    <string name="delitos_100k_label">Straftaten pro 100k Einw.</string>
+    <string name="seccion_upz">UPZ %1$s — Notrufe</string>
+    <string name="nivel_llamadas_label">Notruf-Level</string>
+    <string name="por_100k_label">Pro 100k Einw.</string>
+    <string name="seccion_localidad">Bezirk %1$s</string>
+    <string name="poblacion_label">Bevölkerung 2025</string>
+    <string name="delitos_periodo_label">Straftaten 2023–2025</string>
+    <string name="score_mixto_label">Kombinierte Bewertung</string>
+    <string name="seccion_delitos_tipo">Straftaten nach Typ (2023-2025)</string>
+    <string name="seccion_contexto">Kontext des Bezirks</string>
+    <string name="estrato_label">Durchschnittliche Schicht</string>
+    <string name="area_label">Fläche</string>
+    <string name="luminarias_label">Geschätzte Straßenlaternen</string>
+    <string name="luminarias_km2_label">Straßenlaternen pro km²</string>
+    <string name="vias_label">Straßenlänge</string>
+    <string name="incidentes_label">NUSE-Vorfälle</string>
+    <string name="error_backend">Verbindung zum Backend fehlgeschlagen</string>
+    <string name="btn_reintentar">Wiederholen</string>
+    <string name="btn_conectar">Verbinden</string>
+    <string name="servidor_label">Server</string>
+    <string name="sin_conexion_cache">Keine Verbindung: Gespeicherte Daten werden angezeigt</string>
+
+    <!-- Chat -->
+    <string name="chat_memoria">Gedächtnis</string>
+    <string name="chat_hint">Frage eingeben...</string>
+    <string name="chat_bienvenida">Fragen Sie den Agenten nach dem Risiko eines Bezirks oder welcher am sichersten ist.</string>
+    <string name="btn_borrar_conversacion">Chat löschen</string>
+    <string name="btn_listo">Fertig</string>
+    <string name="error_chat">Kommunikation mit dem Agenten fehlgeschlagen: %1$s</string>
+    <string name="chat_conversaciones">Unterhaltungen</string>
+    <string name="chat_nueva_conversacion">+ Neue Unterhaltung</string>
+    <string name="chat_no_conversaciones">Noch keine Unterhaltungen gespeichert.</string>
+    <string name="chat_memoria_titulo">Was der Agent über Sie weiß</string>
+    <string name="chat_memoria_vacia">Noch keine Erinnerungen vorhanden. Während Sie chatten, speichert der Agent wichtige Angaben (z. B. Ihren Wohnort), um nicht jedes Mal nachzufragen.</string>
+
+    <!-- Einstellungen -->
+    <string name="ajustes_titulo">Einstellungen</string>
+    <string name="ajustes_tema">App-Design</string>
+    <string name="tema_sistema">Systemstandard</string>
+    <string name="tema_claro">Hell</string>
+    <string name="tema_oscuro">Dunkel</string>
+    <string name="ajustes_idioma">Sprache</string>
+    <string name="idioma_sistema">Systemstandard</string>
+    <string name="idioma_es">Spanisch (Español)</string>
+    <string name="idioma_en">Englisch (English)</string>
+    <string name="idioma_fr">Französisch (Français)</string>
+    <string name="idioma_pt">Portugiesisch (Português)</string>
+    <string name="idioma_de">Deutsch</string>
+    <string name="idioma_it">Italienisch (Italiano)</string>
+</resources>

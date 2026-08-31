@@ -94,6 +94,26 @@ fun AjustesScreen(
                 seleccionado = estado.idioma == "en",
                 onClick = { viewModel.cambiarIdioma("en") }
             )
+            OpcionRadio(
+                texto = stringResource(R.string.idioma_fr),
+                seleccionado = estado.idioma == "fr",
+                onClick = { viewModel.cambiarIdioma("fr") }
+            )
+            OpcionRadio(
+                texto = stringResource(R.string.idioma_pt),
+                seleccionado = estado.idioma == "pt",
+                onClick = { viewModel.cambiarIdioma("pt") }
+            )
+            OpcionRadio(
+                texto = stringResource(R.string.idioma_de),
+                seleccionado = estado.idioma == "de",
+                onClick = { viewModel.cambiarIdioma("de") }
+            )
+            OpcionRadio(
+                texto = stringResource(R.string.idioma_it),
+                seleccionado = estado.idioma == "it",
+                onClick = { viewModel.cambiarIdioma("it") }
+            )
         }
     }
 }

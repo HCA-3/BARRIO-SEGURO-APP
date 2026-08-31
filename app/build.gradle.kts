@@ -1,5 +1,6 @@
 import java.net.URI
 import java.net.HttpURLConnection
+import java.io.File
 
 plugins {
     alias(libs.plugins.android.application)
@@ -63,8 +64,15 @@ dependencies {
     debugImplementation(libs.androidx.compose.ui.tooling)
 }
 
-tasks.register("ensureBackendRunning") {
-    doLast {
+abstract class EnsureBackendTask : DefaultTask() {
+    @get:Input
+    abstract val scriptPath: Property<String>
+
+    @get:Input
+    abstract val workingDirPath: Property<String>
+
+    @TaskAction
+    fun run() {
         try {
             val url = URI.create("http://127.0.0.1:8000/health").toURL()
             val conn = url.openConnection() as HttpURLConnection
@@ -72,16 +80,23 @@ tasks.register("ensureBackendRunning") {
             conn.readTimeout = 1000
             conn.requestMethod = "GET"
             if (conn.responseCode == 200) {
-                return@doLast
+                return
             }
         } catch (_: Exception) {
             // El backend no está corriendo, iniciarlo en segundo plano
         }
-        val script = rootProject.rootDir.resolve("iniciar.ps1").absolutePath
+        val script = scriptPath.get()
+        val workDir = File(workingDirPath.get())
         ProcessBuilder("powershell.exe", "-ExecutionPolicy", "Bypass", "-WindowStyle", "Hidden", "-File", script)
-            .directory(rootProject.rootDir)
+            .directory(workDir)
             .start()
     }
+}
+
+val rootDirFile = layout.projectDirectory.asFile.parentFile
+tasks.register<EnsureBackendTask>("ensureBackendRunning") {
+    scriptPath.set(rootDirFile.resolve("iniciar.ps1").absolutePath)
+    workingDirPath.set(rootDirFile.absolutePath)
 }
 
 tasks.matching { it.name.startsWith("preBuild") }.configureEach {
