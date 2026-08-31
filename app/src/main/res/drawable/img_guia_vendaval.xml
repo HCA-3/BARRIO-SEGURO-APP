@@ -1,0 +1,30 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="300dp"
+    android:height="120dp"
+    android:viewportWidth="300"
+    android:viewportHeight="120">
+    <!-- Fondo gris tormentoso -->
+    <path
+        android:fillColor="#ECEFF1"
+        android:pathData="M0,0H300V120H0Z" />
+    <!-- Ráfagas de viento huracanado -->
+    <path
+        android:strokeColor="#78909C"
+        android:strokeWidth="2.5"
+        android:pathData="M20,30 C60,30 90,20 120,28 C150,35 160,25 180,25 M40,50 C80,50 110,42 150,48 C180,54 200,45 230,45 M10,70 C50,70 80,62 130,68" />
+    <!-- Bolas de granizo cayendo -->
+    <path
+        android:fillColor="#B0BEC5"
+        android:pathData="M70,85 A5,5 0,1,0 80,85 A5,5 0,1,0 70,85 Z M100,75 A6,6 0,1,0 112,75 A6,6 0,1,0 100,75 Z M130,90 A5,5 0,1,0 140,90 A5,5 0,1,0 130,90 Z M160,80 A6,6 0,1,0 172,80 A6,6 0,1,0 160,80 Z M190,88 A5,5 0,1,0 200,88 A5,5 0,1,0 190,88 Z" />
+    <!-- Techo reforzado con anclajes -->
+    <path
+        android:fillColor="#455A64"
+        android:pathData="M210,65 L255,40 L300,65 H210 Z" />
+    <path
+        android:fillColor="#90A4AE"
+        android:pathData="M220,65 H290 V105 H220 Z" />
+    <!-- Granizo acumulado sobre techo -->
+    <path
+        android:fillColor="#ECEFF1"
+        android:pathData="M220,62 L255,42 L290,62 Z" />
+</vector>

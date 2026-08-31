@@ -59,10 +59,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Fill
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.nativeCanvas
@@ -230,8 +233,8 @@ fun MapaCalorBogota(
 
     val infiniteTransition = rememberInfiniteTransition(label = "pulso_termico")
     val radioPulso by infiniteTransition.animateFloat(
-        initialValue = 4f,
-        targetValue = 28f,
+        initialValue = 6f,
+        targetValue = 32f,
         animationSpec = infiniteRepeatable(
             animation = tween(2200, easing = LinearEasing),
             repeatMode = RepeatMode.Restart
@@ -239,7 +242,7 @@ fun MapaCalorBogota(
         label = "radio_pulso"
     )
     val alfaPulso by infiniteTransition.animateFloat(
-        initialValue = 0.85f,
+        initialValue = 0.90f,
         targetValue = 0.0f,
         animationSpec = infiniteRepeatable(
             animation = tween(2200, easing = LinearEasing),
@@ -248,10 +251,10 @@ fun MapaCalorBogota(
         label = "alfa_pulso"
     )
     val brilloNeon by infiniteTransition.animateFloat(
-        initialValue = 0.6f,
+        initialValue = 0.65f,
         targetValue = 1.0f,
         animationSpec = infiniteRepeatable(
-            animation = tween(1200, easing = FastOutSlowInEasing),
+            animation = tween(1100, easing = FastOutSlowInEasing),
             repeatMode = RepeatMode.Reverse
         ),
         label = "brillo_neon"
@@ -295,12 +298,13 @@ fun MapaCalorBogota(
     val rangoLat = max(maxLat - minLat, 0.0001)
 
     Column(modifier = modifier.fillMaxWidth()) {
+        // ENCABEZADO Y FILTROS
         Card(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 10.dp, vertical = 4.dp),
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
-            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+            elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
         ) {
             Column(modifier = Modifier.padding(10.dp)) {
                 Row(
@@ -310,11 +314,11 @@ fun MapaCalorBogota(
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Surface(
-                            color = Color(0xFFE53935).copy(alpha = brilloNeon),
+                            color = Color(0xFFFF1744).copy(alpha = brilloNeon),
                             shape = CircleShape,
-                            modifier = Modifier.size(10.dp)
+                            modifier = Modifier.size(12.dp)
                         ) {}
-                        Spacer(modifier = Modifier.width(6.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
                         Text(
                             text = stringResource(R.string.mapa_calor_titulo),
                             style = MaterialTheme.typography.titleMedium,
@@ -382,47 +386,53 @@ fun MapaCalorBogota(
             }
         }
 
+        // CANVAS ULTRA-HD CON SOMBRAS Y BORDES SUAVES
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .aspectRatio(1.05f)
+                .aspectRatio(0.95f) // Formato vertical óptimo para la forma de Bogotá
                 .padding(horizontal = 8.dp, vertical = 4.dp)
-                .clip(RoundedCornerShape(16.dp))
+                .clip(RoundedCornerShape(18.dp))
                 .background(
                     Brush.radialGradient(
-                        colors = listOf(Color(0xFF1C2733), Color(0xFF0D141C)),
-                        radius = 900f
+                        colors = listOf(Color(0xFF1F2C3A), Color(0xFF0F1722), Color(0xFF070B10)),
+                        radius = 1100f
                     )
                 )
-                .border(1.5.dp, Color(0xFF37474F), RoundedCornerShape(16.dp))
+                .border(1.5.dp, Color(0xFF455A64), RoundedCornerShape(18.dp))
+                .shadow(12.dp, RoundedCornerShape(18.dp))
         ) {
             var canvasWidth by remember { mutableFloatStateOf(1f) }
             var canvasHeight by remember { mutableFloatStateOf(1f) }
 
+            // Configuración de texto tipográfico de ultra alta definición
             val paintTexto = remember {
                 Paint().apply {
                     color = android.graphics.Color.WHITE
                     textSize = 28f
                     isAntiAlias = true
+                    isSubpixelText = true
+                    isLinearText = true
                     textAlign = Paint.Align.CENTER
-                    typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+                    typeface = Typeface.create(Typeface.SANS_SERIF, Typeface.BOLD)
                 }
             }
 
             val paintBadgeFondo = remember {
                 Paint().apply {
-                    color = android.graphics.Color.argb(190, 10, 15, 22)
+                    color = android.graphics.Color.argb(215, 12, 18, 26)
                     isAntiAlias = true
+                    isDither = true
                     style = Paint.Style.FILL
                 }
             }
 
             val paintBadgeBorde = remember {
                 Paint().apply {
-                    color = android.graphics.Color.argb(180, 255, 255, 255)
+                    color = android.graphics.Color.argb(220, 255, 255, 255)
                     isAntiAlias = true
                     style = Paint.Style.STROKE
-                    strokeWidth = 2f
+                    strokeWidth = 2.2f
                 }
             }
 
@@ -431,14 +441,14 @@ fun MapaCalorBogota(
                     .fillMaxSize()
                     .pointerInput(localidadesVisibles, minLng, maxLng, minLat, maxLat, escalaZoom, offsetPanX, offsetPanY) {
                         detectTransformGestures { _, pan, zoom, _ ->
-                            escalaZoom = (escalaZoom * zoom).coerceIn(0.8f, 4.5f)
+                            escalaZoom = (escalaZoom * zoom).coerceIn(0.8f, 5.0f)
                             offsetPanX += pan.x
                             offsetPanY += pan.y
                         }
                     }
                     .pointerInput(localidadesVisibles, minLng, maxLng, minLat, maxLat, escalaZoom, offsetPanX, offsetPanY) {
                         detectTapGestures { offset ->
-                            val pad = 24.dp.toPx()
+                            val pad = 26.dp.toPx()
                             val anchoUtil = (canvasWidth - 2 * pad).coerceAtLeast(1f)
                             val altoUtil = (canvasHeight - 2 * pad).coerceAtLeast(1f)
 
@@ -469,16 +479,18 @@ fun MapaCalorBogota(
                 canvasWidth = size.width
                 canvasHeight = size.height
 
+                // 1. REJILLA RADAR DISCRETA
                 val centroX = size.width / 2f
                 val centroY = size.height / 2f
-                val colorRejilla = Color(0xFF263238).copy(alpha = 0.35f)
+                val colorRejilla = Color(0xFF37474F).copy(alpha = 0.30f)
 
-                drawCircle(color = colorRejilla, radius = size.width * 0.22f, center = Offset(centroX, centroY), style = Stroke(1f))
-                drawCircle(color = colorRejilla, radius = size.width * 0.42f, center = Offset(centroX, centroY), style = Stroke(1f))
+                drawCircle(color = colorRejilla, radius = size.width * 0.20f, center = Offset(centroX, centroY), style = Stroke(1f))
+                drawCircle(color = colorRejilla, radius = size.width * 0.38f, center = Offset(centroX, centroY), style = Stroke(1f))
+                drawCircle(color = colorRejilla, radius = size.width * 0.55f, center = Offset(centroX, centroY), style = Stroke(1f))
                 drawLine(color = colorRejilla, start = Offset(centroX, 0f), end = Offset(centroX, size.height), strokeWidth = 1f)
                 drawLine(color = colorRejilla, start = Offset(0f, centroY), end = Offset(size.width, centroY), strokeWidth = 1f)
 
-                val pad = 24.dp.toPx()
+                val pad = 26.dp.toPx()
                 val anchoUtil = size.width - 2 * pad
                 val altoUtil = size.height - 2 * pad
 
@@ -500,6 +512,7 @@ fun MapaCalorBogota(
                     return Offset(xFinal, yFinal)
                 }
 
+                // 2. DIBUJAR POLÍGONOS DE CADA LOCALIDAD CON ALTA DEFINICIÓN
                 for (loc in localidadesVisibles) {
                     if (loc.poligono.isEmpty()) continue
 
@@ -520,37 +533,49 @@ fun MapaCalorBogota(
                         FiltroMapa.BAJO -> loc.nivelRiesgo == "bajo"
                     }
 
-                    val alfaBase = if (coincideFiltro) 0.90f else 0.18f
+                    val alfaBase = if (coincideFiltro) 0.94f else 0.16f
 
+                    // Gradientes y colores de alta saturación
                     val colorRelleno = when (loc.nivelRiesgo) {
-                        "alto" -> Color(0xFFFF1744).copy(alpha = alfaBase)
-                        "medio" -> Color(0xFFFFB300).copy(alpha = alfaBase)
-                        else -> Color(0xFF00E676).copy(alpha = alfaBase)
+                        "alto" -> Color(0xFFFF1744).copy(alpha = alfaBase)  // Rojo fuego
+                        "medio" -> Color(0xFFFFAB00).copy(alpha = alfaBase) // Ámbar intenso
+                        else -> Color(0xFF00E676).copy(alpha = alfaBase)    // Verde esmeralda vivo
                     }
 
                     val esSeleccionada = localidadSeleccionada?.codigo == loc.codigo
 
+                    // Relleno suave con bordes redondeados
                     drawPath(path, color = colorRelleno, style = Fill)
 
+                    // Borde de separación nítido con anti-alias
                     val colorBorde = when {
                         esSeleccionada -> Color(0xFF00E5FF)
-                        coincideFiltro -> Color(0xFF0A0E14)
-                        else -> Color(0xFF1E2733).copy(alpha = 0.4f)
+                        coincideFiltro -> Color(0xFF0B1017)
+                        else -> Color(0xFF263238).copy(alpha = 0.45f)
                     }
-                    val anchoBorde = if (esSeleccionada) 4.dp.toPx() else 1.8.dp.toPx()
-                    drawPath(path, color = colorBorde, style = Stroke(width = anchoBorde))
+                    val anchoBorde = if (esSeleccionada) 4.5.dp.toPx() else 2.0.dp.toPx()
+                    drawPath(
+                        path = path,
+                        color = colorBorde,
+                        style = Stroke(
+                            width = anchoBorde,
+                            cap = StrokeCap.Round,
+                            join = StrokeJoin.Round
+                        )
+                    )
                 }
 
+                // 3. ONDAS DE PULSO DE RADAR
                 for (loc in localidadesVisibles) {
                     val centro = proyectar(loc.centroide)
-                    if (centro.x < -50 || centro.x > size.width + 50 || centro.y < -50 || centro.y > size.height + 50) continue
+                    if (centro.x < -60 || centro.x > size.width + 60 || centro.y < -60 || centro.y > size.height + 60) continue
 
                     if (loc.nivelRiesgo == "alto" && (filtroActivo == FiltroMapa.TODOS || filtroActivo == FiltroMapa.ALTO)) {
                         drawCircle(
                             color = Color(0xFFFF1744).copy(alpha = alfaPulso),
-                            radius = radioPulso * escalaZoom.coerceIn(0.9f, 2f),
+                            radius = radioPulso * escalaZoom.coerceIn(0.9f, 2.2f),
                             center = centro,
-                            style = Stroke(2.5f)
+                            style = Stroke(3f)
                         )
                     }
 
@@ -558,13 +583,14 @@ fun MapaCalorBogota(
                     if (esSeleccionada) {
                         drawCircle(
                             color = Color(0xFF00E5FF).copy(alpha = brilloNeon),
-                            radius = 16.dp.toPx(),
+                            radius = 18.dp.toPx(),
                             center = centro,
-                            style = Stroke(3.dp.toPx())
+                            style = Stroke(3.5.dp.toPx())
                         )
                     }
                 }
 
+                // 4. ETIQUETAS DE TEXTO NÍTIDAS
                 for (loc in localidadesVisibles) {
                     val centro = proyectar(loc.centroide)
                     if (centro.x < 0 || centro.x > size.width || centro.y < 0 || centro.y > size.height) continue
@@ -576,23 +602,23 @@ fun MapaCalorBogota(
                         FiltroMapa.BAJO -> loc.nivelRiesgo == "bajo"
                     }
 
-                    paintTexto.textSize = (24f * escalaZoom.coerceIn(0.9f, 2.0f)).coerceIn(20f, 40f)
-                    paintTexto.alpha = if (coincideFiltro) 255 else 80
-                    paintBadgeFondo.alpha = if (coincideFiltro) 200 else 60
-                    paintBadgeBorde.alpha = if (coincideFiltro) 220 else 50
+                    paintTexto.textSize = (25f * escalaZoom.coerceIn(0.9f, 2.1f)).coerceIn(22f, 44f)
+                    paintTexto.alpha = if (coincideFiltro) 255 else 75
+                    paintBadgeFondo.alpha = if (coincideFiltro) 225 else 50
+                    paintBadgeBorde.alpha = if (coincideFiltro) 240 else 40
 
                     val texto = loc.nombreCorto
                     val anchoTexto = paintTexto.measureText(texto)
-                    val padH = 12f
-                    val padV = 8f
+                    val padH = 14f
+                    val padV = 9f
 
                     drawContext.canvas.nativeCanvas.drawRoundRect(
                         centro.x - (anchoTexto / 2f) - padH,
                         centro.y - 18f - padV,
                         centro.x + (anchoTexto / 2f) + padH,
                         centro.y + 10f + padV,
-                        12f,
-                        12f,
+                        14f,
+                        14f,
                         paintBadgeFondo
                     )
                     drawContext.canvas.nativeCanvas.drawRoundRect(
@@ -600,8 +626,8 @@ fun MapaCalorBogota(
                         centro.y - 18f - padV,
                         centro.x + (anchoTexto / 2f) + padH,
                         centro.y + 10f + padV,
-                        12f,
-                        12f,
+                        14f,
+                        14f,
                         paintBadgeBorde
                     )
 
@@ -614,6 +640,7 @@ fun MapaCalorBogota(
                 }
             }
 
+            // BOTONES DE ZOOM Y REINICIO
             Column(
                 modifier = Modifier
                     .align(Alignment.TopEnd)
@@ -622,24 +649,24 @@ fun MapaCalorBogota(
             ) {
                 Surface(
                     shape = CircleShape,
-                    color = Color(0xFF1E2733).copy(alpha = 0.92f),
-                    border = BorderStroke(1.dp, Color(0xFF455A64)),
+                    color = Color(0xFF1E2733).copy(alpha = 0.95f),
+                    border = BorderStroke(1.dp, Color(0xFF546E7A)),
                     shadowElevation = 6.dp,
-                    modifier = Modifier.size(38.dp)
+                    modifier = Modifier.size(40.dp)
                 ) {
-                    IconButton(onClick = { escalaZoom = (escalaZoom * 1.35f).coerceAtMost(4.5f) }) {
-                        Text("+", fontWeight = FontWeight.ExtraBold, color = Color.White, fontSize = 20.sp)
+                    IconButton(onClick = { escalaZoom = (escalaZoom * 1.35f).coerceAtMost(5.0f) }) {
+                        Text("+", fontWeight = FontWeight.ExtraBold, color = Color.White, fontSize = 22.sp)
                     }
                 }
                 Surface(
                     shape = CircleShape,
-                    color = Color(0xFF1E2733).copy(alpha = 0.92f),
-                    border = BorderStroke(1.dp, Color(0xFF455A64)),
+                    color = Color(0xFF1E2733).copy(alpha = 0.95f),
+                    border = BorderStroke(1.dp, Color(0xFF546E7A)),
                     shadowElevation = 6.dp,
-                    modifier = Modifier.size(38.dp)
+                    modifier = Modifier.size(40.dp)
                 ) {
                     IconButton(onClick = { escalaZoom = (escalaZoom / 1.35f).coerceAtLeast(0.8f) }) {
-                        Text("−", fontWeight = FontWeight.ExtraBold, color = Color.White, fontSize = 20.sp)
+                        Text("−", fontWeight = FontWeight.ExtraBold, color = Color.White, fontSize = 22.sp)
                     }
                 }
                 if (escalaZoom != 1.0f || offsetPanX != 0f || offsetPanY != 0f) {
@@ -647,19 +674,20 @@ fun MapaCalorBogota(
                         shape = CircleShape,
                         color = Color(0xFF00B0FF),
                         shadowElevation = 6.dp,
-                        modifier = Modifier.size(38.dp)
+                        modifier = Modifier.size(40.dp)
                     ) {
                         IconButton(onClick = {
                             escalaZoom = 1.0f
                             offsetPanX = 0f
                             offsetPanY = 0f
                         }) {
-                            Text("↺", fontWeight = FontWeight.ExtraBold, color = Color.White, fontSize = 18.sp)
+                            Text("↺", fontWeight = FontWeight.ExtraBold, color = Color.White, fontSize = 19.sp)
                         }
                     }
                 }
             }
 
+            // TARJETA FLOTANTE AL TOCAR LOCALIDAD
             androidx.compose.animation.AnimatedVisibility(
                 visible = localidadSeleccionada != null,
                 enter = slideInVertically(initialOffsetY = { it }) + fadeIn(),
@@ -671,9 +699,9 @@ fun MapaCalorBogota(
                 localidadSeleccionada?.let { loc ->
                     Card(
                         modifier = Modifier.fillMaxWidth(),
-                        elevation = CardDefaults.cardElevation(defaultElevation = 10.dp),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 12.dp),
                         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                        shape = RoundedCornerShape(14.dp)
+                        shape = RoundedCornerShape(16.dp)
                     ) {
                         Row(
                             modifier = Modifier
@@ -716,6 +744,7 @@ fun MapaCalorBogota(
             }
         }
 
+        // CARROUSEL INFERIOR
         Text(
             text = "Acceso rápido por localidad:",
             style = MaterialTheme.typography.labelSmall,

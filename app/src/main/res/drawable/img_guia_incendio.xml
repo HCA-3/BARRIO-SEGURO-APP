@@ -1,0 +1,54 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="300dp"
+    android:height="120dp"
+    android:viewportWidth="300"
+    android:viewportHeight="120">
+    <!-- Fondo suave cálido -->
+    <path
+        android:fillColor="#FBE9E7"
+        android:pathData="M0,0H300V120H0Z" />
+    <!-- Silueta de bosque / Cerros con fuego -->
+    <path
+        android:fillColor="#81C784"
+        android:pathData="M180,105 L210,50 L240,105 Z M220,105 L250,40 L280,105 Z" />
+    <!-- Llamas de fuego -->
+    <path
+        android:fillColor="#FF3D00"
+        android:pathData="M225,80 C225,60 235,50 240,40 C245,55 255,65 255,80 C255,92 245,100 235,100 C225,100 225,90 225,80 Z" />
+    <path
+        android:fillColor="#FFEA00"
+        android:pathData="M232,85 C232,75 238,68 240,62 C243,70 248,76 248,85 C248,92 243,96 238,96 C233,96 232,90 232,85 Z" />
+    <!-- Extintor de incendios principal -->
+    <!-- Cilindro rojo -->
+    <path
+        android:fillColor="#D50000"
+        android:pathData="M60,45 C60,38 72,38 72,45 V98 H60 Z" />
+    <!-- Base negra -->
+    <path
+        android:fillColor="#212121"
+        android:pathData="M58,98 H74 V102 H58 Z" />
+    <!-- Manija y válvula -->
+    <path
+        android:fillColor="#424242"
+        android:pathData="M64,30 H68 V38 H64 Z M60,33 H74 V36 H60 Z" />
+    <!-- Manguera -->
+    <path
+        android:strokeColor="#212121"
+        android:strokeWidth="3"
+        android:pathData="M68,36 C76,36 80,48 78,65 L86,60" />
+    <!-- Etiqueta del extintor ABC -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M62,55 H70 V75 H62 Z" />
+    <!-- Humo superior desplazándose -->
+    <path
+        android:fillColor="#9E9E9E"
+        android:pathData="M110,25 C120,20 135,25 145,20 C155,15 170,22 180,18 L180,26 C165,30 150,24 135,28 Z" />
+    <!-- Persona gateando (evacuación por humo bajo) -->
+    <path
+        android:fillColor="#FFB74D"
+        android:pathData="M125,92 A6,6 0,1,0 137,92 A6,6 0,1,0 125,92 Z" />
+    <path
+        android:fillColor="#1565C0"
+        android:pathData="M118,97 H150 V105 H118 Z" />
+</vector>

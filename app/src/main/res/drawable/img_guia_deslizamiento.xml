@@ -1,0 +1,37 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="300dp"
+    android:height="120dp"
+    android:viewportWidth="300"
+    android:viewportHeight="120">
+    <!-- Fondo cielo -->
+    <path
+        android:fillColor="#EFEBE9"
+        android:pathData="M0,0H300V120H0Z" />
+    <!-- Ladera de montaña inclinada -->
+    <path
+        android:fillColor="#8D6E63"
+        android:pathData="M0,30 L160,85 L300,105 V120 H0 Z" />
+    <!-- Capa de vegetación superior -->
+    <path
+        android:fillColor="#66BB6A"
+        android:pathData="M0,25 L100,60 L90,68 L0,36 Z" />
+    <!-- Rocas cayendo / Deslizamiento -->
+    <path
+        android:fillColor="#5D4037"
+        android:pathData="M110,65 L125,58 L130,72 L115,75 Z M135,76 L148,70 L152,82 L138,86 Z M160,88 L170,82 L175,94 L162,97 Z" />
+    <!-- Árbol inclinado por el derrumbe -->
+    <path
+        android:strokeColor="#4E342E"
+        android:strokeWidth="4"
+        android:pathData="M70,48 L88,32" />
+    <path
+        android:fillColor="#2E7D32"
+        android:pathData="M88,32 C88,20 102,24 100,15 C92,10 75,18 78,28 Z" />
+    <!-- Señal de peligro de derrumbe -->
+    <path
+        android:fillColor="#FFC107"
+        android:pathData="M220,40 L250,90 H190 Z" />
+    <path
+        android:fillColor="#212121"
+        android:pathData="M218,55 H222 V72 H218 Z M218,76 H222 V80 H218 Z" />
+</vector>

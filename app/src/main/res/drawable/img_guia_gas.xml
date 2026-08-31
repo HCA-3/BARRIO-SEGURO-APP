@@ -1,0 +1,43 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="300dp"
+    android:height="120dp"
+    android:viewportWidth="300"
+    android:viewportHeight="120">
+    <!-- Fondo suave menta -->
+    <path
+        android:fillColor="#E0F2F1"
+        android:pathData="M0,0H300V120H0Z" />
+    <!-- Ventana abierta de par en par (Ventilación cruzada) -->
+    <path
+        android:fillColor="#B2DFDB"
+        android:pathData="M40,25 H100 V95 H40 Z" />
+    <path
+        android:strokeColor="#00796B"
+        android:strokeWidth="3"
+        android:pathData="M40,25 H100 V95 H40 Z M70,25 V95 M40,60 H100" />
+    <!-- Flechas de viento entrando -->
+    <path
+        android:strokeColor="#004D40"
+        android:strokeWidth="2"
+        android:pathData="M30,40 L60,40 M55,35 L60,40 L55,45 M25,75 L55,75 M50,70 L55,75 L50,80" />
+    <!-- Tubería y Válvula de corte de gas cerrada -->
+    <path
+        android:fillColor="#FFE082"
+        android:pathData="M140,55 H260 V65 H140 Z" />
+    <!-- Válvula de gas roja cerrada (perpendicular a la tubería) -->
+    <path
+        android:fillColor="#D32F2F"
+        android:pathData="M195,35 H205 V75 H195 Z" />
+    <!-- Nube de gas disipándose -->
+    <path
+        android:fillColor="#80CBC4"
+        android:pathData="M170,85 C160,80 165,70 175,72 C180,65 195,68 200,75 C210,72 215,82 210,88 Z" />
+    <!-- Icono de no encender fósforo / chispa -->
+    <path
+        android:fillColor="#D32F2F"
+        android:pathData="M245,25 A15,15 0,1,0 275,25 A15,15 0,1,0 245,25 Z" />
+    <path
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="2.5"
+        android:pathData="M250,15 L270,35" />
+</vector>

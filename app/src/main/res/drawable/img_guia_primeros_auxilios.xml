@@ -1,0 +1,39 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="300dp"
+    android:height="120dp"
+    android:viewportWidth="300"
+    android:viewportHeight="120">
+    <!-- Fondo suave rosado/blanco -->
+    <path
+        android:fillColor="#FFEBEE"
+        android:pathData="M0,0H300V120H0Z" />
+    <!-- Botiquín de Primeros Auxilios -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M35,45 H95 V100 H35 Z" />
+    <path
+        android:strokeColor="#E53935"
+        android:strokeWidth="2"
+        android:pathData="M35,45 H95 V100 H35 Z" />
+    <!-- Asa del botiquín -->
+    <path
+        android:fillColor="#757575"
+        android:pathData="M55,38 H75 V45 H55 Z" />
+    <!-- Cruz Roja del botiquín -->
+    <path
+        android:fillColor="#E53935"
+        android:pathData="M60,58 H70 V88 H60 Z M50,68 H80 V78 H50 Z" />
+    <!-- Línea de pulso cardíaco / Electrocardiograma -->
+    <path
+        android:strokeColor="#E53935"
+        android:strokeWidth="2.5"
+        android:pathData="M110,75 L140,75 L148,50 L156,98 L164,62 L172,82 L178,75 L210,75" />
+    <!-- Manos realizando compresiones RCP -->
+    <path
+        android:fillColor="#FFA726"
+        android:pathData="M235,55 C235,48 248,48 250,58 L255,80 H235 Z M250,55 C250,48 263,48 265,58 L270,80 H250 Z" />
+    <!-- Pecho del paciente -->
+    <path
+        android:fillColor="#90CAF9"
+        android:pathData="M215,85 H290 V105 H215 Z" />
+</vector>

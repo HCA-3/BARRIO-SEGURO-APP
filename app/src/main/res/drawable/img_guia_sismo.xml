@@ -1,0 +1,43 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="300dp"
+    android:height="120dp"
+    android:viewportWidth="300"
+    android:viewportHeight="120">
+    <!-- Fondo suave azul/grisáceo -->
+    <path
+        android:fillColor="#ECEFF1"
+        android:pathData="M0,0H300V120H0Z" />
+    <!-- Ondas de sismo de fondo -->
+    <path
+        android:strokeColor="#CFD8DC"
+        android:strokeWidth="2"
+        android:pathData="M20,105 L50,105 L60,90 L70,115 L80,85 L90,120 L100,75 L110,115 L120,105 L280,105" />
+    <!-- Edificio lateral con grietas de alerta -->
+    <path
+        android:fillColor="#90A4AE"
+        android:pathData="M30,30 H75 V105 H30 Z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M38,40 H48 V50 H38 Z M55,40 H65 V50 H55 Z M38,60 H48 V70 H38 Z M55,60 H65 V70 H55 Z M38,80 H48 V90 H38 Z M55,80 H65 V90 H55 Z" />
+    <!-- Mesa resistente de protección (Técnica D-C-A) -->
+    <path
+        android:fillColor="#8D6E63"
+        android:pathData="M130,55 H220 V63 H130 Z M135,63 H143 V105 H135 Z M207,63 H215 V105 H207 Z" />
+    <!-- Persona protegida debajo de la mesa -->
+    <!-- Cabeza -->
+    <path
+        android:fillColor="#FFB74D"
+        android:pathData="M165,72 A8,8 0,1,0 181,72 A8,8 0,1,0 165,72 Z" />
+    <!-- Cuerpo agachado -->
+    <path
+        android:fillColor="#1E88E5"
+        android:pathData="M158,80 C158,76 164,76 172,76 C180,76 186,76 186,80 L190,98 H154 Z" />
+    <!-- Manos cubriendo la cabeza -->
+    <path
+        android:fillColor="#FFA726"
+        android:pathData="M162,70 C162,66 184,66 184,70" />
+    <!-- Insignia D-C-A -->
+    <path
+        android:fillColor="#D32F2F"
+        android:pathData="M235,35 H285 V55 H235 Z" />
+</vector>

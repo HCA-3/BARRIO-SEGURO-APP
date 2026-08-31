@@ -1,0 +1,40 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="300dp"
+    android:height="120dp"
+    android:viewportWidth="300"
+    android:viewportHeight="120">
+    <!-- Fondo suave ámbar/amarillo alerta -->
+    <path
+        android:fillColor="#FFF8E1"
+        android:pathData="M0,0H300V120H0Z" />
+    <!-- Contenedor / Barril químico HazMat -->
+    <path
+        android:fillColor="#FBC02D"
+        android:pathData="M40,35 H90 V95 H40 Z" />
+    <path
+        android:strokeColor="#F57F17"
+        android:strokeWidth="2"
+        android:pathData="M40,35 H90 V95 H40 Z M40,55 H90 M40,75 H90" />
+    <!-- Rombo NFPA de materiales peligrosos -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M65,52 L75,62 L65,72 L55,62 Z" />
+    <path
+        android:fillColor="#D32F2F"
+        android:pathData="M65,52 L75,62 L65,62 Z" />
+    <path
+        android:fillColor="#1976D2"
+        android:pathData="M55,62 L65,52 L65,62 Z" />
+    <!-- Máscara de respiración / Protección -->
+    <path
+        android:fillColor="#455A64"
+        android:pathData="M150,50 C140,50 135,65 140,80 L160,95 L180,80 C185,65 180,50 170,50 Z" />
+    <!-- Filtros laterales -->
+    <path
+        android:fillColor="#78909C"
+        android:pathData="M130,70 A8,8 0,1,0 146,70 A8,8 0,1,0 130,70 Z M174,70 A8,8 0,1,0 190,70 A8,8 0,1,0 174,70 Z" />
+    <!-- Nube de gas tóxico contenida -->
+    <path
+        android:fillColor="#C8E6C9"
+        android:pathData="M220,40 C210,35 215,25 228,28 C235,20 252,22 258,30 C270,28 275,40 268,48 C265,55 245,55 238,50 Z" />
+</vector>
