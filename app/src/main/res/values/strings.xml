@@ -64,4 +64,8 @@
     <string name="idioma_sistema">Predeterminado del sistema</string>
     <string name="idioma_es">Español</string>
     <string name="idioma_en">English (Inglés)</string>
+    <string name="idioma_fr">Français (Francés)</string>
+    <string name="idioma_pt">Português (Portugués)</string>
+    <string name="idioma_de">Deutsch (Alemán)</string>
+    <string name="idioma_it">Italiano (Italiano)</string>
 </resources>

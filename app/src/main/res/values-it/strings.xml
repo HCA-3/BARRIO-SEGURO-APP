@@ -1,0 +1,71 @@
+<resources>
+    <string name="app_name">Quartiere Sicuro</string>
+    <string name="pantalla_riesgo">Rischio</string>
+    <string name="pantalla_agente">Agente</string>
+    <string name="pantalla_ajustes">Impostazioni</string>
+
+    <!-- Monitoraggio -->
+    <string name="monitoreo_titulo">Monitoraggio della posizione</string>
+    <string name="monitoreo_activo">Attivo: ti avviseremo se entri in una zona ad alto rischio</string>
+    <string name="monitoreo_inactivo">Attivalo per ricevere un avviso se entri in una zona ad alto rischio</string>
+    <string name="btn_activar">Attiva</string>
+    <string name="btn_detener">Ferma</string>
+
+    <!-- Rischio -->
+    <string name="buscar_barrio_hint">Cerca quartiere (es. Acapulco)…</string>
+    <string name="cargando_riesgo">Consultazione del rischio per località...</string>
+    <string name="error_ayuda">Verifica che il backend sia in esecuzione (run_api.py). Se usi uno smartphone fisico, inserisci l\'IP del PC da "ipconfig", o collegalo via USB ed esegui "adb reverse tcp:8000 tcp:8000".</string>
+    <string name="error_no_conexion_no_cache">Impossibile connettersi al server e nessun dato salvato. Verifica l\'URL nel campo \'Server\' in basso.</string>
+    <string name="tasa_formato">Tasso: %1$.1f per 100k ab.</string>
+    <string name="detalle_cargando">Caricamento dati…</string>
+    <string name="detalle_nota_barrio">Non ci sono statistiche per quartiere: reati e contesto sono misurati per località, le chiamate di emergenza per UPZ. Questi sono i dati delle aree relative a questo quartiere.</string>
+    <string name="delitos_100k_label">reati per 100k ab.</string>
+    <string name="seccion_upz">UPZ %1$s — chiamate di emergenza</string>
+    <string name="nivel_llamadas_label">Livello chiamate</string>
+    <string name="por_100k_label">Per 100k ab.</string>
+    <string name="seccion_localidad">Località %1$s</string>
+    <string name="poblacion_label">Popolazione 2025</string>
+    <string name="delitos_periodo_label">Reati 2023–2025</string>
+    <string name="score_mixto_label">Punteggio misto</string>
+    <string name="seccion_delitos_tipo">Reati per tipologia (2023-2025)</string>
+    <string name="seccion_contexto">Contesto della località</string>
+    <string name="estrato_label">Strato medio</string>
+    <string name="area_label">Superficie</string>
+    <string name="luminarias_label">Lampioni stimati</string>
+    <string name="luminarias_km2_label">Lampioni per km²</string>
+    <string name="vias_label">Lunghezza strade</string>
+    <string name="incidentes_label">Incidenti NUSE</string>
+    <string name="error_backend">Impossibile connettersi al backend</string>
+    <string name="btn_reintentar">Riprova</string>
+    <string name="btn_conectar">Connetti</string>
+    <string name="servidor_label">Server</string>
+    <string name="sin_conexion_cache">Offline: visualizzazione dati salvati</string>
+
+    <!-- Chat -->
+    <string name="chat_memoria">Memoria</string>
+    <string name="chat_hint">Scrivi la tua domanda...</string>
+    <string name="chat_bienvenida">Chiedi all\'agente informazioni sul rischio di una località, o quale sia la più o meno sicura.</string>
+    <string name="btn_borrar_conversacion">Cancella conversazione</string>
+    <string name="btn_listo">Fatto</string>
+    <string name="error_chat">Impossibile comunicare con l\'agente: %1$s</string>
+    <string name="chat_conversaciones">Conversazioni</string>
+    <string name="chat_nueva_conversacion">+ Nuova conversazione</string>
+    <string name="chat_no_conversaciones">Nessuna conversazione ancora salvata.</string>
+    <string name="chat_memoria_titulo">Cosa ricorda l\'agente di te</string>
+    <string name="chat_memoria_vacia">Nessun ricordo al momento. Durante la chat, l\'agente memorizzerà i dettagli rilevanti (es. dove vivi) per non chiedertelo ogni volta.</string>
+
+    <!-- Impostazioni -->
+    <string name="ajustes_titulo">Impostazioni</string>
+    <string name="ajustes_tema">Tema dell\'applicazione</string>
+    <string name="tema_sistema">Predefinito di sistema</string>
+    <string name="tema_claro">Chiaro</string>
+    <string name="tema_oscuro">Scuro</string>
+    <string name="ajustes_idioma">Lingua</string>
+    <string name="idioma_sistema">Predefinito di sistema</string>
+    <string name="idioma_es">Spagnolo (Español)</string>
+    <string name="idioma_en">Inglese (English)</string>
+    <string name="idioma_fr">Francese (Français)</string>
+    <string name="idioma_pt">Portoghese (Português)</string>
+    <string name="idioma_de">Tedesco (Deutsch)</string>
+    <string name="idioma_it">Italiano</string>
+</resources>

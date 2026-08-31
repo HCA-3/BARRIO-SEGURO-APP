@@ -64,4 +64,8 @@
     <string name="idioma_sistema">System default</string>
     <string name="idioma_es">Spanish</string>
     <string name="idioma_en">English</string>
+    <string name="idioma_fr">French (Français)</string>
+    <string name="idioma_pt">Portuguese (Português)</string>
+    <string name="idioma_de">German (Deutsch)</string>
+    <string name="idioma_it">Italian (Italiano)</string>
 </resources>
