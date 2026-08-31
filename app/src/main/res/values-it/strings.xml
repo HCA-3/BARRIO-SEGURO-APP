@@ -15,6 +15,14 @@
     <string name="tab_mochila">Zaino 72h</string>
     <string name="tab_lineas">Linee 123</string>
 
+    <!-- Mappa termica e viste -->
+    <string name="mapa_calor_titulo">Mappa Termica del Rischio</string>
+    <string name="mapa_ver_todo">Tutto il distretto</string>
+    <string name="mapa_ver_urbano">Area urbana</string>
+    <string name="btn_ver_detalle">Vedi dati</string>
+    <string name="pestana_mapa">Mappa termica</string>
+    <string name="pestana_ranking">Classifica</string>
+
     <!-- Terremoti in Tempo Reale -->
     <string name="sismos_recientes_titulo">Terremoti recenti nella regione</string>
     <string name="sismos_actualizar">Aggiorna</string>

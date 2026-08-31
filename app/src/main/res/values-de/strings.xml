@@ -15,6 +15,14 @@
     <string name="tab_mochila">72h-Rucksack</string>
     <string name="tab_lineas">Notrufe</string>
 
+    <!-- Heatmap & Ansichten -->
+    <string name="mapa_calor_titulo">Risiko-Heatmap</string>
+    <string name="mapa_ver_todo">Gesamter Bezirk</string>
+    <string name="mapa_ver_urbano">Stadtgebiet</string>
+    <string name="btn_ver_detalle">Details ansehen</string>
+    <string name="pestana_mapa">Heatmap</string>
+    <string name="pestana_ranking">Rangliste</string>
+
     <!-- Live-Erdbeben -->
     <string name="sismos_recientes_titulo">Aktuelle Erdbeben in der Region</string>
     <string name="sismos_actualizar">Aktualisieren</string>
