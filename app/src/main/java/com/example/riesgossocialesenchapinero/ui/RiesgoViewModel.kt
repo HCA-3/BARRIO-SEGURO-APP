@@ -1,8 +1,12 @@
 package com.example.riesgossocialesenchapinero.ui
 
-import androidx.lifecycle.ViewModel
+import android.app.Application
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.riesgossocialesenchapinero.data.ApiClient
+import com.example.riesgossocialesenchapinero.data.local.AppDatabase
+import com.example.riesgossocialesenchapinero.data.local.aEntity
+import com.example.riesgossocialesenchapinero.data.local.LocalidadEntity
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -11,11 +15,14 @@ import kotlinx.coroutines.withContext
 
 sealed interface RiesgoUiState {
     object Cargando : RiesgoUiState
-    data class Listo(val localidades: List<ApiClient.Localidad>) : RiesgoUiState
+    data class Listo(val localidades: List<ApiClient.Localidad>, val esCache: Boolean = false) : RiesgoUiState
     data class Error(val mensaje: String) : RiesgoUiState
 }
 
-class RiesgoViewModel : ViewModel() {
+class RiesgoViewModel(application: Application) : AndroidViewModel(application) {
+    private val db = AppDatabase.obtener(application)
+    private val localidadDao = db.localidadDao()
+
     private val _estado = MutableStateFlow<RiesgoUiState>(RiesgoUiState.Cargando)
     val estado: StateFlow<RiesgoUiState> = _estado
 
@@ -26,17 +33,32 @@ class RiesgoViewModel : ViewModel() {
     fun cargarRanking() {
         _estado.value = RiesgoUiState.Cargando
         viewModelScope.launch {
-            _estado.value = try {
-                // ApiClient ya reintenta solo con autodetección si la URL
-                // guardada dejó de responder.
+            try {
+                // 1. Intentar descargar del backend
                 val ranking = withContext(Dispatchers.IO) { ApiClient.obtenerRanking() }
-                RiesgoUiState.Listo(ranking)
+                
+                // 2. Si hay éxito, guardar en caché local
+                withContext(Dispatchers.IO) {
+                    localidadDao.borrarTodas()
+                    localidadDao.insertarTodas(ranking.map { it.aEntity() })
+                }
+                
+                _estado.value = RiesgoUiState.Listo(ranking, esCache = false)
             } catch (e: Exception) {
-                RiesgoUiState.Error(
-                    "No respondió ninguna de estas direcciones: " +
-                        ApiClient.CANDIDATOS.joinToString() + ". Detalle: " +
-                        (e.message ?: "error desconocido"),
-                )
+                // 3. Si falla, intentar cargar de la caché local
+                val cache = withContext(Dispatchers.IO) { localidadDao.obtenerTodas() }
+                
+                if (cache.isNotEmpty()) {
+                    _estado.value = RiesgoUiState.Listo(
+                        localidades = cache.map { it.aExternalModel() },
+                        esCache = true
+                    )
+                } else {
+                    _estado.value = RiesgoUiState.Error(
+                        "No pude conectar con el servidor y no hay datos guardados. " +
+                            "Verifica la URL en el campo 'Servidor' abajo."
+                    )
+                }
             }
         }
     }
