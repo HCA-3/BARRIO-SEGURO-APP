@@ -1,6 +1,10 @@
 package com.example.riesgossocialesenchapinero.ui
 
+import android.Manifest
+import android.annotation.SuppressLint
 import android.app.Application
+import android.content.pm.PackageManager
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.riesgossocialesenchapinero.data.ApiClient
@@ -8,11 +12,14 @@ import com.example.riesgossocialesenchapinero.data.local.AppDatabase
 import com.example.riesgossocialesenchapinero.data.local.ConversacionEntity
 import com.example.riesgossocialesenchapinero.data.local.HechoEntity
 import com.example.riesgossocialesenchapinero.data.local.MensajeEntity
+import com.google.android.gms.location.LocationServices
+import com.google.android.gms.location.Priority
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
 
 data class ChatUiState(
@@ -23,6 +30,7 @@ data class ChatUiState(
     val cargandoHistorial: Boolean = true,
     val conversaciones: List<ConversacionEntity> = emptyList(),
     val conversacionActualId: Long = 0L,
+    val ubicacionConcedida: Boolean = false,
 )
 
 /**
@@ -39,6 +47,7 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
     private val mensajeDao = db.mensajeDao()
     private val hechoDao = db.hechoDao()
     private val conversacionDao = db.conversacionDao()
+    private val clienteUbicacion = LocationServices.getFusedLocationProviderClient(application)
 
     private val _estado = MutableStateFlow(ChatUiState())
     val estado: StateFlow<ChatUiState> = _estado
@@ -66,6 +75,7 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
                 hechosRecordados = hechosGuardados,
                 conversacionActualId = conversacionInicialId,
                 cargandoHistorial = false,
+                ubicacionConcedida = tienePermisosUbicacion(),
             )
         }
         viewModelScope.launch {
@@ -98,8 +108,14 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
             }
 
             _estado.value = try {
+                val (lat, lng) = obtenerUbicacionActual()
                 val respuesta = withContext(Dispatchers.IO) {
-                    ApiClient.enviarMensajeChat(historialConPregunta, _estado.value.hechosRecordados)
+                    ApiClient.enviarMensajeChat(
+                        historialConPregunta,
+                        _estado.value.hechosRecordados,
+                        lat = lat,
+                        lng = lng,
+                    )
                 }
 
                 withContext(Dispatchers.IO) {
@@ -189,6 +205,30 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
     fun borrarHecho(texto: String) {
         _estado.value = _estado.value.copy(hechosRecordados = _estado.value.hechosRecordados - texto)
         viewModelScope.launch(Dispatchers.IO) { hechoDao.borrarPorTexto(texto) }
+    }
+
+    fun refrescarPermisos() {
+        _estado.value = _estado.value.copy(ubicacionConcedida = tienePermisosUbicacion())
+    }
+
+    private fun tienePermisosUbicacion(): Boolean {
+        val app = getApplication<Application>()
+        return ContextCompat.checkSelfPermission(app, Manifest.permission.ACCESS_FINE_LOCATION) ==
+            PackageManager.PERMISSION_GRANTED ||
+            ContextCompat.checkSelfPermission(app, Manifest.permission.ACCESS_COARSE_LOCATION) ==
+            PackageManager.PERMISSION_GRANTED
+    }
+
+    @SuppressLint("MissingPermission")
+    private suspend fun obtenerUbicacionActual(): Pair<Double?, Double?> {
+        if (!tienePermisosUbicacion()) return null to null
+        return try {
+            val loc = clienteUbicacion.getCurrentLocation(Priority.PRIORITY_BALANCED_POWER_ACCURACY, null).await()
+                ?: clienteUbicacion.lastLocation.await()
+            loc?.latitude to loc?.longitude
+        } catch (e: Exception) {
+            null to null
+        }
     }
 }
 
