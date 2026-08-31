@@ -62,10 +62,43 @@
     <string name="tema_oscuro">Dark</string>
     <string name="ajustes_idioma">Language</string>
     <string name="idioma_sistema">System default</string>
-    <string name="idioma_es">Spanish</string>
+    <string name="idioma_es">Spanish (Español)</string>
     <string name="idioma_en">English</string>
     <string name="idioma_fr">French (Français)</string>
     <string name="idioma_pt">Portuguese (Português)</string>
     <string name="idioma_de">German (Deutsch)</string>
     <string name="idioma_it">Italian (Italiano)</string>
+
+    <!-- Risk levels -->
+    <string name="riesgo_alto">HIGH</string>
+    <string name="riesgo_medio">MEDIUM</string>
+    <string name="riesgo_bajo">LOW</string>
+
+    <!-- Search and details -->
+    <string name="varios_barrios_titulo">Multiple neighborhoods with that name — which one?</string>
+    <string name="toca_para_detalle">Tap the card to see all data for the area.</string>
+    <string name="error_buscar_barrio">Could not search for the neighborhood</string>
+    <string name="barrio_de_localidad">Neighborhood of %1$s</string>
+    <string name="btn_cerrar">Close</string>
+    <string name="upz_resumen_formato">UPZ %1$s: emergency calls %2$s (%3$.0f per 100k inhab., 2023-2025)</string>
+
+    <!-- Crime types -->
+    <string name="delito_hurto_personas">Theft from persons</string>
+    <string name="delito_hurto_residencias">Residential burglary</string>
+    <string name="delito_hurto_comercio">Commercial burglary</string>
+    <string name="delito_hurto_automotores">Motor vehicle theft</string>
+    <string name="delito_hurto_motocicletas">Motorcycle theft</string>
+    <string name="delito_hurto_bicicletas">Bicycle theft</string>
+    <string name="delito_hurto_celulares">Cell phone theft</string>
+    <string name="delito_homicidio">Homicide</string>
+    <string name="delito_lesiones">Personal injury / Assault</string>
+    <string name="delito_extorsion">Extortion</string>
+    <string name="delito_sexuales">Sexual offenses</string>
+    <string name="delito_violencia_intrafamiliar">Domestic violence</string>
+
+    <!-- Chat Suggestions -->
+    <string name="chat_sugerida_1">Which locality is the most dangerous?</string>
+    <string name="chat_sugerida_2">Which one is the safest?</string>
+    <string name="chat_sugerida_3">Tell me about Chapinero</string>
+    <string name="chat_sugerida_4">How is the risk calculated?</string>
 </resources>

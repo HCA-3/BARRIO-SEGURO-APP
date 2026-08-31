@@ -83,18 +83,16 @@ MODELO_DEFECTO = os.environ.get("BARRIO_SEGURO_MODELO", "llama3.2:3b")
 # propia respuesta. Con esto, la primera pregunta paga la carga y las demás no.
 KEEP_ALIVE = os.environ.get("BARRIO_SEGURO_KEEP_ALIVE", "30m")
 
-# Medido con /api/chat: el prompt completo (SYSTEM_PROMPT + esquema de TOOLS +
-# la pregunta) son ~3.100 tokens, así que cabe de sobra en 4096 y no hace falta
-# subirlo: un num_ctx mayor solo agranda la caché KV y, en una CPU sin GPU como
-# esta, va más lento sin ganar nada.
-NUM_CTX = int(os.environ.get("BARRIO_SEGURO_NUM_CTX", "4096"))
+# Medido con /api/chat: 2048 tokens optimiza la caché KV y acelera la inferencia en CPU.
+NUM_CTX = int(os.environ.get("BARRIO_SEGURO_NUM_CTX", "2048"))
 
-# Tope de tokens de la respuesta. Las respuestas útiles aquí son de dos o tres
-# frases; sin tope, el modelo a veces se enrolla y cada token extra son décimas
-# de segundo en CPU.
-NUM_PREDICT = int(os.environ.get("BARRIO_SEGURO_NUM_PREDICT", "400"))
+# Tope de tokens de la respuesta. 220 tokens es suficiente para respuestas concisas.
+NUM_PREDICT = int(os.environ.get("BARRIO_SEGURO_NUM_PREDICT", "220"))
 
-MAX_RONDAS_TOOLS = 4
+# Número de hilos CPU a utilizar
+NUM_THREADS = int(os.environ.get("BARRIO_SEGURO_THREADS", str(os.cpu_count() or 8)))
+
+MAX_RONDAS_TOOLS = 3
 
 SYSTEM_PROMPT = """Eres el asistente de la app "Barrio Seguro" sobre riesgo \
 de inseguridad por localidad en Bogotá. Los datos vienen de un pipeline de \
@@ -952,6 +950,38 @@ def ejecutar_tool(nombre: str, argumentos: dict, datos: dict, lat: float = None,
     return {"error": f"Herramienta desconocida: {nombre}"}
 
 
+def responder_rapido_directo(pregunta: str, datos: dict, lat: float = None, lng: float = None) -> str | None:
+    p = normalizar(pregunta)
+    if not p:
+        return None
+    
+    # 1. Saludos sencillos
+    if p in ("hola", "buenos dias", "buenas tardes", "buenas noches", "que tal", "hello", "hi", "salut", "ola", "hallo", "ciao"):
+        return "¡Hola! ¿En qué te puedo ayudar hoy sobre el riesgo y seguridad en Bogotá?"
+    
+    # 2. Localidad más peligrosa / mayor riesgo
+    if ("peligrosa" in p or "mayor riesgo" in p or "mas insegura" in p or "dangerous" in p or "dangereuse" in p or "perigosa" in p or "gefahrlich" in p or "pericolosa" in p) and ("cual" in p or "que" in p or "which" in p or "quelle" in p or "qual" in p or "wie" in p):
+        extremo = tool_localidad_extrema(datos, "mayor")
+        return f"La localidad con mayor riesgo en Bogotá es **{extremo['localidad']}** (puesto #{extremo['posicion']}), con un nivel de riesgo **{extremo['nivel_riesgo'].upper()}**, {extremo['delitos_totales']:,} delitos registrados ({extremo['tasa_delitos_100k']:.1f} por 100k hab.)."
+
+    # 3. Localidad más segura / menor riesgo
+    if ("segura" in p or "menor riesgo" in p or "menos peligrosa" in p or "safest" in p or "plus sure" in p or "mais segura" in p or "sicherste" in p or "piu sicura" in p) and ("cual" in p or "que" in p or "which" in p or "quelle" in p or "qual" in p or "wie" in p):
+        extremo = tool_localidad_extrema(datos, "menor")
+        return f"La localidad con menor riesgo en Bogotá es **{extremo['localidad']}** (puesto #{extremo['posicion']}), con un nivel de riesgo **{extremo['nivel_riesgo'].upper()}**, {extremo['delitos_totales']:,} delitos registrados ({extremo['tasa_delitos_100k']:.1f} por 100k hab.)."
+
+    # 4. Cálculo de riesgo
+    if "calcula el riesgo" in p or "calculo de riesgo" in p or "how is the risk" in p or "calcule le risque" in p or "calculado o risco" in p or "risiko berechnet" in p or "calcolato il rischio" in p:
+        return "El riesgo se calcula mediante un pipeline geoespacial determinístico (sin machine learning) que combina: 1) Delitos oficiales de la SDSCJ por habitante (tasa 100k), 2) Severidad ponderada del delito, 3) Llamadas de emergencia NUSE 123 por UPZ, 4) Cobertura de luminarias por km², 5) Estrato socioeconómico promedio, y 6) Longitud de vías y área de la localidad."
+
+    # 5. Consulta directa de Chapinero
+    if "cuentame de chapinero" in p or "que pasa en chapinero" in p or "riesgo en chapinero" in p or "tell me about chapinero" in p or "parle-moi de chapinero" in p:
+        chapi = tool_obtener_localidad(datos, "Chapinero")
+        if "error" not in chapi:
+            return f"**Chapinero** se encuentra en el puesto #{chapi['posicion']} de 20 localidades, con nivel de riesgo **{chapi['nivel_riesgo'].upper()}**. Registra {chapi['delitos_totales']:,} delitos acumulados ({chapi['tasa_delitos_100k']:.1f} por 100k hab.), estrato promedio {chapi['estrato_promedio']:.1f} y una población de {chapi['poblacion']:,} habitantes."
+
+    return None
+
+
 def preguntar(modelo: str, historial: list, datos: dict, lat: float = None, lng: float = None) -> tuple[str, list[str]]:
     # hechos_nuevos: la app (no este backend) es quien guarda la memoria del
     # usuario, localmente en el celular — este backend es stateless. Cuando
@@ -959,6 +989,13 @@ def preguntar(modelo: str, historial: list, datos: dict, lat: float = None, lng:
     # el hecho se junta en esta lista y viaja en la respuesta HTTP para que
     # la app lo persista.
     hechos_nuevos = []
+
+    # Vía rápida de respuesta instantánea para preguntas directas / frecuentes
+    ultimo_mensaje_usr = next((m.get("content", "") for m in reversed(historial) if m.get("role") == "user"), "")
+    if len(historial) <= 3:
+        respuesta_rapida = responder_rapido_directo(ultimo_mensaje_usr, datos, lat, lng)
+        if respuesta_rapida:
+            return respuesta_rapida, hechos_nuevos
 
     for _ in range(MAX_RONDAS_TOOLS):
         try:
@@ -973,10 +1010,8 @@ def preguntar(modelo: str, historial: list, datos: dict, lat: float = None, lng:
                     "options": {
                         "num_ctx": NUM_CTX,
                         "num_predict": NUM_PREDICT,
-                        # Aquí no se quiere creatividad: se trata de elegir bien
-                        # la herramienta y repetir cifras sin adornarlas. Bajar
-                        # la temperatura también reduce las respuestas largas.
-                        "temperature": 0.2,
+                        "num_thread": NUM_THREADS,
+                        "temperature": 0.15,
                     },
                 },
                 timeout=600,

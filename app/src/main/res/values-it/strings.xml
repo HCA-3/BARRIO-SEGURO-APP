@@ -68,4 +68,37 @@
     <string name="idioma_pt">Portoghese (Português)</string>
     <string name="idioma_de">Tedesco (Deutsch)</string>
     <string name="idioma_it">Italiano</string>
+
+    <!-- Livelli di rischio -->
+    <string name="riesgo_alto">ALTO</string>
+    <string name="riesgo_medio">MEDIO</string>
+    <string name="riesgo_bajo">BASSO</string>
+
+    <!-- Ricerca e dettagli -->
+    <string name="varios_barrios_titulo">Ci sono più quartieri con questo nome — quale?</string>
+    <string name="toca_para_detalle">Tocca la scheda per visualizzare tutti i dati della zona.</string>
+    <string name="error_buscar_barrio">Impossibile trovare il quartiere</string>
+    <string name="barrio_de_localidad">Quartiere di %1$s</string>
+    <string name="btn_cerrar">Chiudi</string>
+    <string name="upz_resumen_formato">UPZ %1$s: chiamate di emergenza %2$s (%3$.0f per 100k ab., 2023-2025)</string>
+
+    <!-- Tipologie di reati -->
+    <string name="delito_hurto_personas">Furto con destrezza</string>
+    <string name="delito_hurto_residencias">Furto in abitazione</string>
+    <string name="delito_hurto_comercio">Furto in esercizi commerciali</string>
+    <string name="delito_hurto_automotores">Furto di autoveicoli</string>
+    <string name="delito_hurto_motocicletas">Furto di motocicli</string>
+    <string name="delito_hurto_bicicletas">Furto di biciclette</string>
+    <string name="delito_hurto_celulares">Furto di telefoni cellulari</string>
+    <string name="delito_homicidio">Omicidio</string>
+    <string name="delito_lesiones">Lesioni personali</string>
+    <string name="delito_extorsion">Estorsione</string>
+    <string name="delito_sexuales">Reati sessuali</string>
+    <string name="delito_violencia_intrafamiliar">Violenza domestica</string>
+
+    <!-- Suggerimenti Chat -->
+    <string name="chat_sugerida_1">Qual è la località più pericolosa?</string>
+    <string name="chat_sugerida_2">Qual è la più sicura?</string>
+    <string name="chat_sugerida_3">Parlami di Chapinero</string>
+    <string name="chat_sugerida_4">Come viene calcolato il rischio?</string>
 </resources>
