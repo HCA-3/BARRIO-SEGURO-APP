@@ -85,7 +85,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 private enum class Pantalla {
-    RIESGO, EMERGENCIAS, CHAT, AJUSTES
+    RIESGO, DESASTRES, EMERGENCIAS, CHAT, AJUSTES
 }
 
 class MainActivity : AppCompatActivity() {
@@ -144,9 +144,9 @@ class MainActivity : AppCompatActivity() {
                 }
 
                 RIESGOSSOCIALESENCHAPINEROTheme(darkTheme = temaOscuro) {
+                val actividad = this
                 var pantallaActual by remember { mutableStateOf(Pantalla.RIESGO) }
 
-                val actividad = this
                 // true cuando el diálogo lo pidió el usuario pulsando "Activar",
                 // no el arranque automático: solo en ese caso tiene sentido
                 // mandarlo a Ajustes si Android ya no muestra el diálogo.
@@ -204,6 +204,7 @@ class MainActivity : AppCompatActivity() {
                                 Text(
                                     when (pantallaActual) {
                                         Pantalla.RIESGO -> stringResource(R.string.pantalla_riesgo)
+                                        Pantalla.DESASTRES -> stringResource(R.string.pantalla_desastres)
                                         Pantalla.EMERGENCIAS -> stringResource(R.string.pantalla_emergencias)
                                         Pantalla.CHAT -> stringResource(R.string.pantalla_agente)
                                         Pantalla.AJUSTES -> stringResource(R.string.pantalla_ajustes)
@@ -221,9 +222,15 @@ class MainActivity : AppCompatActivity() {
                                 label = { Text(stringResource(R.string.pantalla_riesgo)) },
                             )
                             NavigationBarItem(
+                                selected = pantallaActual == Pantalla.DESASTRES,
+                                onClick = { pantallaActual = Pantalla.DESASTRES },
+                                icon = { Text("🌋") },
+                                label = { Text(stringResource(R.string.pantalla_desastres)) },
+                            )
+                            NavigationBarItem(
                                 selected = pantallaActual == Pantalla.EMERGENCIAS,
                                 onClick = { pantallaActual = Pantalla.EMERGENCIAS },
-                                icon = { Text("🚨") },
+                                icon = { Text("📞") },
                                 label = { Text(stringResource(R.string.pantalla_emergencias)) },
                             )
                             NavigationBarItem(
@@ -270,6 +277,7 @@ class MainActivity : AppCompatActivity() {
                                     }
                                 },
                             )
+                            Pantalla.DESASTRES -> DesastresAmbientalesScreen(modifier = Modifier.fillMaxSize())
                             Pantalla.EMERGENCIAS -> EmergenciasScreen(modifier = Modifier.fillMaxSize())
                             Pantalla.CHAT -> PantallaChat(modifier = Modifier.fillMaxSize())
                             Pantalla.AJUSTES -> AjustesScreen(

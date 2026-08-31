@@ -1,9 +1,13 @@
 <resources>
     <string name="app_name">Barrio Seguro</string>
     <string name="pantalla_riesgo">Riesgo</string>
+    <string name="pantalla_desastres">Desastres</string>
     <string name="pantalla_emergencias">Emergencias</string>
     <string name="pantalla_agente">Agente</string>
     <string name="pantalla_ajustes">Ajustes</string>
+
+    <string name="lineas_titulo_banner">Líneas de Atención de Emergencias</string>
+    <string name="lineas_desc_banner">Directorio oficial de Bogotá. Toca el botón de cualquier entidad para llamar de inmediato.</string>
 
     <!-- Pestañas de Emergencia -->
     <string name="tab_sismos">Sismos</string>
