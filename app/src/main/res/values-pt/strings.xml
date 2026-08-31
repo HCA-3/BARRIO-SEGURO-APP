@@ -1,8 +1,33 @@
 <resources>
     <string name="app_name">Bairro Seguro</string>
     <string name="pantalla_riesgo">Risco</string>
+    <string name="pantalla_emergencias">Emergências</string>
     <string name="pantalla_agente">Agente</string>
     <string name="pantalla_ajustes">Configurações</string>
+
+    <!-- Abas de emergência -->
+    <string name="tab_sismos">Sismos</string>
+    <string name="tab_guias">Guias</string>
+    <string name="tab_mochila">Mochila 72h</string>
+    <string name="tab_lineas">Linhas 123</string>
+
+    <!-- Sismos em Tempo Real -->
+    <string name="sismos_recientes_titulo">Sismos recentes na região</string>
+    <string name="sismos_actualizar">Atualizar</string>
+    <string name="sismos_magnitud">Mag. %1$.1f</string>
+    <string name="sismos_profundidad">Profundidade: %1$.1f km</string>
+    <string name="sismos_distancia">A %1$.1f km de Bogotá</string>
+    <string name="sismos_sin_datos">Nenhum sismo recente registrado na região.</string>
+    <string name="sismos_cargando">Consultando sismos em tempo real...</string>
+    <string name="sismo_hace_minutos">Há %1$d min</string>
+    <string name="sismo_hace_horas">Há %1$d h</string>
+
+    <!-- Fases dos Guias -->
+    <string name="guia_fase_antes">Antes</string>
+    <string name="guia_fase_durante">Durante</string>
+    <string name="guia_fase_despues">Depois</string>
+    <string name="mochila_progreso">Preparação: %1$d de %2$d itens prontos (%3$d%%)</string>
+    <string name="linea_llamar">Ligar</string>
 
     <!-- Monitoramento -->
     <string name="monitoreo_titulo">Monitoramento de localização</string>

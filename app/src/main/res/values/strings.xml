@@ -1,8 +1,33 @@
 <resources>
     <string name="app_name">Barrio Seguro</string>
     <string name="pantalla_riesgo">Riesgo</string>
+    <string name="pantalla_emergencias">Emergencias</string>
     <string name="pantalla_agente">Agente</string>
     <string name="pantalla_ajustes">Ajustes</string>
+
+    <!-- Pestañas de Emergencia -->
+    <string name="tab_sismos">Sismos</string>
+    <string name="tab_guias">Guías</string>
+    <string name="tab_mochila">Mochila 72h</string>
+    <string name="tab_lineas">Líneas 123</string>
+
+    <!-- Sismos en Vivo -->
+    <string name="sismos_recientes_titulo">Sismos recientes en la región</string>
+    <string name="sismos_actualizar">Actualizar</string>
+    <string name="sismos_magnitud">Mag. %1$.1f</string>
+    <string name="sismos_profundidad">Profundidad: %1$.1f km</string>
+    <string name="sismos_distancia">A %1$.1f km de Bogotá</string>
+    <string name="sismos_sin_datos">No se registran sismos recientes en la zona.</string>
+    <string name="sismos_cargando">Consultando sismos en tiempo real...</string>
+    <string name="sismo_hace_minutos">Hace %1$d min</string>
+    <string name="sismo_hace_horas">Hace %1$d h</string>
+
+    <!-- Fases de Guía -->
+    <string name="guia_fase_antes">Antes</string>
+    <string name="guia_fase_durante">Durante</string>
+    <string name="guia_fase_despues">Después</string>
+    <string name="mochila_progreso">Preparación: %1$d de %2$d elementos listos (%3$d%%)</string>
+    <string name="linea_llamar">Llamar</string>
 
     <!-- Monitoreo -->
     <string name="monitoreo_titulo">Monitoreo de ubicación</string>
@@ -68,6 +93,15 @@
     <string name="idioma_pt">Português (Portugués)</string>
     <string name="idioma_de">Deutsch (Alemán)</string>
     <string name="idioma_it">Italiano (Italiano)</string>
+
+    <!-- Frecuencia de verificación (RF-004) y Alertas (RF-003) -->
+    <string name="ajustes_frecuencia_titulo">Frecuencia de monitoreo GPS</string>
+    <string name="ajustes_frecuencia_1m">Cada 1 minuto (Mayor precisión)</string>
+    <string name="ajustes_frecuencia_2m">Cada 2 minutos (Recomendado)</string>
+    <string name="ajustes_frecuencia_5m">Cada 5 minutos (Ahorro de batería)</string>
+    <string name="ajustes_frecuencia_10m">Cada 10 minutos (Bajo consumo)</string>
+    <string name="ajustes_alertas_titulo">Notificaciones de riesgo alto</string>
+    <string name="ajustes_alertas_subtitulo">Avisar automáticamente al ingresar a una localidad de riesgo alto</string>
 
     <!-- Niveles de riesgo -->
     <string name="riesgo_alto">ALTO</string>

@@ -1,8 +1,33 @@
 <resources>
     <string name="app_name">Sicheres Viertel</string>
     <string name="pantalla_riesgo">Risiko</string>
+    <string name="pantalla_emergencias">Notfälle</string>
     <string name="pantalla_agente">Agent</string>
     <string name="pantalla_ajustes">Einstellungen</string>
+
+    <!-- Notfall-Tabs -->
+    <string name="tab_sismos">Erdbeben</string>
+    <string name="tab_guias">Leitfäden</string>
+    <string name="tab_mochila">72h-Rucksack</string>
+    <string name="tab_lineas">Notrufe</string>
+
+    <!-- Live-Erdbeben -->
+    <string name="sismos_recientes_titulo">Aktuelle Erdbeben in der Region</string>
+    <string name="sismos_actualizar">Aktualisieren</string>
+    <string name="sismos_magnitud">Mag. %1$.1f</string>
+    <string name="sismos_profundidad">Tiefe: %1$.1f km</string>
+    <string name="sismos_distancia">%1$.1f km von Bogotá</string>
+    <string name="sismos_sin_datos">Keine aktuellen Erdbeben in der Region registriert.</string>
+    <string name="sismos_cargando">Live-Erdbeben werden abgerufen...</string>
+    <string name="sismo_hace_minutos">Vor %1$d Min.</string>
+    <string name="sismo_hace_horas">Vor %1$d Std.</string>
+
+    <!-- Leitfaden-Phasen -->
+    <string name="guia_fase_antes">Davor</string>
+    <string name="guia_fase_durante">Währenddessen</string>
+    <string name="guia_fase_despues">Danach</string>
+    <string name="mochila_progreso">Bereitschaft: %1$d von %2$d Artikeln bereit (%3$d%%)</string>
+    <string name="linea_llamar">Anrufen</string>
 
     <!-- Standortüberwachung -->
     <string name="monitoreo_titulo">Standortüberwachung</string>

@@ -1,8 +1,33 @@
 <resources>
     <string name="app_name">Quartier Sûr</string>
     <string name="pantalla_riesgo">Risque</string>
+    <string name="pantalla_emergencias">Urgences</string>
     <string name="pantalla_agente">Agent</string>
     <string name="pantalla_ajustes">Paramètres</string>
+
+    <!-- Onglets d'urgence -->
+    <string name="tab_sismos">Séismes</string>
+    <string name="tab_guias">Guides</string>
+    <string name="tab_mochila">Sac 72h</string>
+    <string name="tab_lineas">Lignes 123</string>
+
+    <!-- Séismes en Direct -->
+    <string name="sismos_recientes_titulo">Séismes récents dans la région</string>
+    <string name="sismos_actualizar">Actualiser</string>
+    <string name="sismos_magnitud">Mag. %1$.1f</string>
+    <string name="sismos_profundidad">Profondeur : %1$.1f km</string>
+    <string name="sismos_distancia">À %1$.1f km de Bogotá</string>
+    <string name="sismos_sin_datos">Aucun séisme récent enregistré dans la région.</string>
+    <string name="sismos_cargando">Consultation des séismes en direct...</string>
+    <string name="sismo_hace_minutos">Il y a %1$d min</string>
+    <string name="sismo_hace_horas">Il y a %1$d h</string>
+
+    <!-- Phases des Guides -->
+    <string name="guia_fase_antes">Avant</string>
+    <string name="guia_fase_durante">Pendant</string>
+    <string name="guia_fase_despues">Après</string>
+    <string name="mochila_progreso">Préparation : %1$d sur %2$d éléments prêts (%3$d%%)</string>
+    <string name="linea_llamar">Appeler</string>
 
     <!-- Surveillance -->
     <string name="monitoreo_titulo">Surveillance de localisation</string>

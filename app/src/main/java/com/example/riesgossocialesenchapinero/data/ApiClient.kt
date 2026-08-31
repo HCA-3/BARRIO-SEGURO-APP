@@ -151,6 +151,17 @@ object ApiClient {
 
     data class RiesgoUpz(val upz: String, val nivelLlamadas: String, val tasaLlamadas100k: Double)
 
+    data class Sismo(
+        val id: String,
+        val magnitud: Double,
+        val lugar: String,
+        val tiempo: Long,
+        val profundidadKm: Double,
+        val lat: Double,
+        val lng: Double,
+        val distanciaBogotaKm: Double,
+    )
+
     data class RiesgoPorPunto(
         val localidad: String,
         val nivelRiesgo: String,
@@ -211,6 +222,29 @@ object ApiClient {
                     nivelRiesgo = o.getString("nivel_riesgo"),
                     scorePonderado100k = o.getDouble("score_ponderado_100k"),
                     tasaDelitos100k = o.getDouble("tasa_delitos_100k"),
+                )
+            }
+        }
+    }
+
+    fun obtenerSismosRecientes(): List<Sismo> = conAutodeteccion { obtenerSismosRecientesUnaVez() }
+
+    private fun obtenerSismosRecientesUnaVez(): List<Sismo> {
+        val request = Request.Builder().url(baseUrl + "sismos/recientes").get().build()
+        client.newCall(request).execute().use { resp ->
+            if (!resp.isSuccessful) throw ApiException("Error ${resp.code} consultando sismos")
+            val arr = JSONArray(resp.body?.string() ?: "[]")
+            return List(arr.length()) { i ->
+                val o = arr.getJSONObject(i)
+                Sismo(
+                    id = o.getString("id"),
+                    magnitud = o.getDouble("magnitud"),
+                    lugar = o.getString("lugar"),
+                    tiempo = o.getLong("tiempo"),
+                    profundidadKm = o.getDouble("profundidad_km"),
+                    lat = o.getDouble("lat"),
+                    lng = o.getDouble("lng"),
+                    distanciaBogotaKm = o.getDouble("distancia_bogota_km"),
                 )
             }
         }

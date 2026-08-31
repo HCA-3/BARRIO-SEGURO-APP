@@ -19,6 +19,8 @@ class AjustesManager(context: Context) {
     companion object {
         private const val CLAVE_TEMA = "ajustes_tema"
         private const val CLAVE_IDIOMA = "ajustes_idioma"
+        private const val CLAVE_INTERVALO = "ajustes_intervalo_minutos"
+        private const val CLAVE_ALERTAS = "ajustes_alertas_habilitadas"
     }
 
     var tema: TemaApp
@@ -38,5 +40,25 @@ class AjustesManager(context: Context) {
         get() = prefs.getString(CLAVE_IDIOMA, "") ?: ""
         set(value) {
             prefs.edit().putString(CLAVE_IDIOMA, value).apply()
+        }
+
+    /**
+     * Frecuencia de verificación de ubicación en minutos (RF-004).
+     * Por defecto: 2 minutos.
+     */
+    var intervaloMinutos: Int
+        get() = prefs.getInt(CLAVE_INTERVALO, 2)
+        set(value) {
+            prefs.edit().putInt(CLAVE_INTERVALO, value).apply()
+        }
+
+    /**
+     * Si las alertas automáticas de riesgo alto están habilitadas (RF-003 / RF-015).
+     * Por defecto: true.
+     */
+    var alertasHabilitadas: Boolean
+        get() = prefs.getBoolean(CLAVE_ALERTAS, true)
+        set(value) {
+            prefs.edit().putBoolean(CLAVE_ALERTAS, value).apply()
         }
 }

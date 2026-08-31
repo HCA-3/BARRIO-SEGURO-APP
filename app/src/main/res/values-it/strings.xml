@@ -1,8 +1,33 @@
 <resources>
     <string name="app_name">Quartiere Sicuro</string>
     <string name="pantalla_riesgo">Rischio</string>
+    <string name="pantalla_emergencias">Emergenze</string>
     <string name="pantalla_agente">Agente</string>
     <string name="pantalla_ajustes">Impostazioni</string>
+
+    <!-- Schede di emergenza -->
+    <string name="tab_sismos">Terremoti</string>
+    <string name="tab_guias">Guide</string>
+    <string name="tab_mochila">Zaino 72h</string>
+    <string name="tab_lineas">Linee 123</string>
+
+    <!-- Terremoti in Tempo Reale -->
+    <string name="sismos_recientes_titulo">Terremoti recenti nella regione</string>
+    <string name="sismos_actualizar">Aggiorna</string>
+    <string name="sismos_magnitud">Mag. %1$.1f</string>
+    <string name="sismos_profundidad">Profondità: %1$.1f km</string>
+    <string name="sismos_distancia">A %1$.1f km da Bogotá</string>
+    <string name="sismos_sin_datos">Nessun terremoto recente registrato nella regione.</string>
+    <string name="sismos_cargando">Consultazione terremoti in tempo reale...</string>
+    <string name="sismo_hace_minutos">%1$d min fa</string>
+    <string name="sismo_hace_horas">%1$d h fa</string>
+
+    <!-- Fasi delle Guide -->
+    <string name="guia_fase_antes">Prima</string>
+    <string name="guia_fase_durante">Durante</string>
+    <string name="guia_fase_despues">Dopo</string>
+    <string name="mochila_progreso">Preparazione: %1$d su %2$d elementi pronti (%3$d%%)</string>
+    <string name="linea_llamar">Chiama</string>
 
     <!-- Monitoraggio -->
     <string name="monitoreo_titulo">Monitoraggio della posizione</string>

@@ -85,7 +85,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 private enum class Pantalla {
-    RIESGO, CHAT, AJUSTES
+    RIESGO, EMERGENCIAS, CHAT, AJUSTES
 }
 
 class MainActivity : AppCompatActivity() {
@@ -121,15 +121,14 @@ class MainActivity : AppCompatActivity() {
                     Locale.forLanguageTag(ajustesEstado.idioma)
                 }
             }
-            val currentConfiguration = LocalConfiguration.current
             val currentContext = LocalContext.current
-            val localizedConfiguration = remember(locale, currentConfiguration) {
-                Configuration(currentConfiguration).apply {
+            val localizedConfiguration = remember(locale) {
+                Configuration(currentContext.resources.configuration).apply {
                     setLocale(locale)
                     setLayoutDirection(locale)
                 }
             }
-            val localizedContext = remember(locale, currentContext) {
+            val localizedContext = remember(localizedConfiguration) {
                 currentContext.createConfigurationContext(localizedConfiguration)
             }
 
@@ -138,7 +137,13 @@ class MainActivity : AppCompatActivity() {
                 LocalContext provides localizedContext,
                 LocalActivityResultRegistryOwner provides this
             ) {
-                RIESGOSSOCIALESENCHAPINEROTheme(tema = ajustesEstado.tema) {
+                val temaOscuro = when (ajustesEstado.tema) {
+                    com.example.riesgossocialesenchapinero.data.TemaApp.CLARO -> false
+                    com.example.riesgossocialesenchapinero.data.TemaApp.OSCURO -> true
+                    com.example.riesgossocialesenchapinero.data.TemaApp.SISTEMA -> androidx.compose.foundation.isSystemInDarkTheme()
+                }
+
+                RIESGOSSOCIALESENCHAPINEROTheme(darkTheme = temaOscuro) {
                 var pantallaActual by remember { mutableStateOf(Pantalla.RIESGO) }
 
                 val actividad = this
@@ -199,6 +204,7 @@ class MainActivity : AppCompatActivity() {
                                 Text(
                                     when (pantallaActual) {
                                         Pantalla.RIESGO -> stringResource(R.string.pantalla_riesgo)
+                                        Pantalla.EMERGENCIAS -> stringResource(R.string.pantalla_emergencias)
                                         Pantalla.CHAT -> stringResource(R.string.pantalla_agente)
                                         Pantalla.AJUSTES -> stringResource(R.string.pantalla_ajustes)
                                     }
@@ -213,6 +219,12 @@ class MainActivity : AppCompatActivity() {
                                 onClick = { pantallaActual = Pantalla.RIESGO },
                                 icon = { Text("⚠") },
                                 label = { Text(stringResource(R.string.pantalla_riesgo)) },
+                            )
+                            NavigationBarItem(
+                                selected = pantallaActual == Pantalla.EMERGENCIAS,
+                                onClick = { pantallaActual = Pantalla.EMERGENCIAS },
+                                icon = { Text("🚨") },
+                                label = { Text(stringResource(R.string.pantalla_emergencias)) },
                             )
                             NavigationBarItem(
                                 selected = pantallaActual == Pantalla.CHAT,
@@ -258,6 +270,7 @@ class MainActivity : AppCompatActivity() {
                                     }
                                 },
                             )
+                            Pantalla.EMERGENCIAS -> EmergenciasScreen(modifier = Modifier.fillMaxSize())
                             Pantalla.CHAT -> PantallaChat(modifier = Modifier.fillMaxSize())
                             Pantalla.AJUSTES -> AjustesScreen(
                                 modifier = Modifier.fillMaxSize(),
