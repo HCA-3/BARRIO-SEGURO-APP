@@ -1,0 +1,31 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="48dp"
+    android:height="48dp"
+    android:viewportWidth="48"
+    android:viewportHeight="48">
+    <!-- Fondo circular rojo -->
+    <path
+        android:fillColor="#D32F2F"
+        android:pathData="M24,2A22,22 0,1,0 46,24,22,22 0,0,0 24,2Z" />
+    <!-- Escudo blanco -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M24,7L37,12V24C37,32.5 31.5,40.2 24,43C16.5,40.2 11,32.5 11,24V12L24,7Z" />
+    <!-- Texto 123 estilizado en rojo -->
+    <!-- Número 1 -->
+    <path
+        android:fillColor="#D32F2F"
+        android:pathData="M16.5,21.5L18.5,20V31H16V21.5Z" />
+    <!-- Número 2 -->
+    <path
+        android:fillColor="#D32F2F"
+        android:pathData="M21.5,22C21.5,20.5 22.8,19.5 24.5,19.5C26.2,19.5 27.5,20.5 27.5,22C27.5,23.5 26.5,24.8 24.5,26.5L21.5,29V31H28V29H24.5L26,27.5C28.5,25 29.5,23.5 29.5,22C29.5,19.2 27.2,17.5 24.5,17.5C21.8,17.5 19.5,19.2 19.5,22H21.5Z" />
+    <!-- Número 3 -->
+    <path
+        android:fillColor="#D32F2F"
+        android:pathData="M31,20H36.5V22H33.5V23.5H35.5C36.8,23.5 37.5,24.3 37.5,25.5C37.5,26.8 36.5,27.8 35,27.8C33.8,27.8 33,27.2 32.5,26.5L31,28C31.8,29.2 33.2,30 35,30C37.8,30 39.5,28.2 39.5,25.5C39.5,23.8 38.5,22.8 37,22.2C38.2,21.7 39,20.8 39,19.5C39,17.8 37.5,16.5 35.5,16.5H31V20Z" />
+    <!-- Mini sirena arriba -->
+    <path
+        android:fillColor="#FFD54F"
+        android:pathData="M24,9A3,3 0,0,1 27,12L21,12A3,3 0,0,1 24,9Z" />
+</vector>

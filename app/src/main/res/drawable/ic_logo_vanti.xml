@@ -1,0 +1,22 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="48dp"
+    android:height="48dp"
+    android:viewportWidth="48"
+    android:viewportHeight="48">
+    <!-- Fondo circular cian oscuro -->
+    <path
+        android:fillColor="#006064"
+        android:pathData="M24,2A22,22 0,1,0 46,24,22,22 0,0,0 24,2Z" />
+    <!-- Llama exterior azul turquesa -->
+    <path
+        android:fillColor="#00E5FF"
+        android:pathData="M24,9C24,9 33,18 33,27C33,32 29,36 24,36C19,36 15,32 15,27C15,18 24,9 24,9Z" />
+    <!-- Llama media naranja cálida -->
+    <path
+        android:fillColor="#FF9100"
+        android:pathData="M24,16C24,16 30,22 30,27C30,30.3 27.3,33 24,33C20.7,33 18,30.3 18,27C18,22 24,16 24,16Z" />
+    <!-- Núcleo de llama amarilla -->
+    <path
+        android:fillColor="#FFEA00"
+        android:pathData="M24,22C24,22 27,25 27,28C27,29.7 25.7,31 24,31C22.3,31 21,29.7 21,28C21,25 24,22 24,22Z" />
+</vector>

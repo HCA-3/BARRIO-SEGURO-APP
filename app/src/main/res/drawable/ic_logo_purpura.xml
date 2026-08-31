@@ -1,0 +1,22 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="48dp"
+    android:height="48dp"
+    android:viewportWidth="48"
+    android:viewportHeight="48">
+    <!-- Fondo circular púrpura -->
+    <path
+        android:fillColor="#6A1B9A"
+        android:pathData="M24,2A22,22 0,1,0 46,24,22,22 0,0,0 24,2Z" />
+    <!-- Símbolo de lazo / Mariposa / Mujer (Blanco y Magenta) -->
+    <!-- Lazo de apoyo púrpura claro -->
+    <path
+        android:fillColor="#E1BEE7"
+        android:pathData="M24,10C21.8,10 20,11.8 20,14C20,15.8 21.2,17.2 22.8,17.8L15,34H19L24,23.5L29,34H33L25.2,17.8C26.8,17.2 28,15.8 28,14C28,11.8 26.2,10 24,10ZM24,12C25.1,12 26,12.9 26,14C26,15.1 25.1,16 24,16C22.9,16 22,15.1 22,14C22,12.9 22.9,12 24,12Z" />
+    <!-- Mariposa / Alas laterales magentas -->
+    <path
+        android:fillColor="#EA80FC"
+        android:pathData="M15,18C12,18 10,21 12,24C14,27 18,25 18,25C18,25 16,21 15,18Z" />
+    <path
+        android:fillColor="#EA80FC"
+        android:pathData="M33,18C36,18 38,21 36,24C34,27 30,25 30,25C30,25 32,21 33,18Z" />
+</vector>

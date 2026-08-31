@@ -1,0 +1,23 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="48dp"
+    android:height="48dp"
+    android:viewportWidth="48"
+    android:viewportHeight="48">
+    <!-- Círculo naranja de Protección Civil -->
+    <path
+        android:fillColor="#E65100"
+        android:pathData="M24,2A22,22 0,1,0 46,24,22,22 0,0,0 24,2Z" />
+    <!-- Borde amarillo externo -->
+    <path
+        android:strokeColor="#FFD54F"
+        android:strokeWidth="2.5"
+        android:pathData="M24,4A20,20 0,1,0 44,24,20,20 0,0,0 24,4Z" />
+    <!-- Triángulo equilátero azul internacional -->
+    <path
+        android:fillColor="#0D47A1"
+        android:pathData="M24,11L37,33H11Z" />
+    <!-- Letras DCC o estrellas -->
+    <path
+        android:fillColor="#FFD54F"
+        android:pathData="M24,18L25.2,21.5H29L26,23.5L27,27L24,24.8L21,27L22,23.5L19,21.5H22.8Z" />
+</vector>

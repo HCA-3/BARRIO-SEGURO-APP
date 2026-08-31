@@ -1,18 +1,31 @@
 package com.example.riesgossocialesenchapinero.ui
 
 import android.content.Context
+import android.graphics.Paint
+import android.graphics.Typeface
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
@@ -22,17 +35,20 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FilterChip
-import androidx.compose.material3.Icon
+import androidx.compose.material3.FilterChipDefaults
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -42,19 +58,24 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Fill
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.example.riesgossocialesenchapinero.R
 import com.example.riesgossocialesenchapinero.data.ApiClient
 import org.json.JSONObject
+import kotlin.math.cos
 import kotlin.math.max
 import kotlin.math.min
 
@@ -63,6 +84,7 @@ data class PuntoGeo(val lng: Double, val lat: Double)
 data class LocalidadMapa(
     val codigo: Int,
     val nombre: String,
+    val nombreCorto: String,
     val nivelRiesgo: String,
     val tasa100k: Double,
     val poligono: List<PuntoGeo>,
@@ -80,7 +102,6 @@ object GestorGeojson {
         val mapaRiesgo = ranking.associateBy({ normalizar(it.nombre) }, { it })
 
         if (cacheLocalidades != null) {
-            // Actualizar niveles con el ranking más reciente
             return cacheLocalidades!!.map { loc ->
                 val r = mapaRiesgo[normalizar(loc.nombre)]
                 if (r != null) {
@@ -133,11 +154,13 @@ object GestorGeojson {
                     val r = mapaRiesgo[normalizar(nombre)]
                     val nivel = r?.nivelRiesgo ?: "medio"
                     val tasa = r?.tasaDelitos100k ?: 0.0
+                    val corto = abreviarNombre(nombre)
 
                     lista.add(
                         LocalidadMapa(
                             codigo = codigo,
                             nombre = nombre,
+                            nombreCorto = corto,
                             nivelRiesgo = nivel,
                             tasa100k = tasa,
                             poligono = puntos,
@@ -157,13 +180,22 @@ object GestorGeojson {
         return lista
     }
 
+    private fun abreviarNombre(nombre: String): String = when (nombre.trim()) {
+        "Antonio Nariño" -> "A. Nariño"
+        "Barrios Unidos" -> "B. Unidos"
+        "Ciudad Bolívar" -> "Cd. Bolívar"
+        "Puente Aranda" -> "Pte. Aranda"
+        "Rafael Uribe Uribe" -> "R. Uribe"
+        "San Cristóbal" -> "S. Cristóbal"
+        "Los Mártires" -> "Mártires"
+        "La Candelaria", "Candelaria" -> "Candelaria"
+        else -> nombre
+    }
+
     private fun normalizar(s: String): String =
         s.lowercase().replace("á", "a").replace("é", "e").replace("í", "i").replace("ó", "o").replace("ú", "u").replace("ñ", "n").trim()
 }
 
-/**
- * Algoritmo de Ray-Casting para determinar si un punto está dentro de un polígono.
- */
 fun puntoEnPoligono(pt: PuntoGeo, poligono: List<PuntoGeo>): Boolean {
     var adentro = false
     var j = poligono.size - 1
@@ -180,6 +212,10 @@ fun puntoEnPoligono(pt: PuntoGeo, poligono: List<PuntoGeo>): Boolean {
     return adentro
 }
 
+enum class FiltroMapa {
+    TODOS, ALTO, MEDIO, BAJO
+}
+
 @Composable
 fun MapaCalorBogota(
     modifier: Modifier = Modifier,
@@ -189,18 +225,50 @@ fun MapaCalorBogota(
     val context = LocalContext.current
     var localidades by remember { mutableStateOf<List<LocalidadMapa>>(emptyList()) }
     var localidadSeleccionada by remember { mutableStateOf<LocalidadMapa?>(null) }
-    var vistaCompleta by remember { mutableStateOf(false) } // false = Área urbana principal, true = Incluye Sumapaz
+    var vistaCompleta by remember { mutableStateOf(false) }
+    var filtroActivo by remember { mutableStateOf(FiltroMapa.TODOS) }
+
+    val infiniteTransition = rememberInfiniteTransition(label = "pulso_termico")
+    val radioPulso by infiniteTransition.animateFloat(
+        initialValue = 4f,
+        targetValue = 28f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(2200, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "radio_pulso"
+    )
+    val alfaPulso by infiniteTransition.animateFloat(
+        initialValue = 0.85f,
+        targetValue = 0.0f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(2200, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "alfa_pulso"
+    )
+    val brilloNeon by infiniteTransition.animateFloat(
+        initialValue = 0.6f,
+        targetValue = 1.0f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1200, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "brillo_neon"
+    )
+
+    var escalaZoom by remember { mutableFloatStateOf(1.0f) }
+    var offsetPanX by remember { mutableFloatStateOf(0f) }
+    var offsetPanY by remember { mutableFloatStateOf(0f) }
 
     LaunchedEffect(ranking) {
         localidades = GestorGeojson.cargarLocalidades(context, ranking)
     }
 
-    // Filtrar para el área urbana si no está en vista completa
     val localidadesVisibles = remember(localidades, vistaCompleta) {
-        if (vistaCompleta) localidades else localidades.filter { it.codigo != 20 } // 20 = Sumapaz (área rural sur muy extensa)
+        if (vistaCompleta) localidades else localidades.filter { it.codigo != 20 }
     }
 
-    // Calcular Bounding Box del mapa
     val bbox = remember(localidadesVisibles) {
         if (localidadesVisibles.isEmpty()) {
             PuntoGeo(-74.25, 4.45) to PuntoGeo(-74.00, 4.83)
@@ -223,79 +291,172 @@ fun MapaCalorBogota(
     val minLat = bbox.first.lat
     val maxLng = bbox.second.lng
     val maxLat = bbox.second.lat
-    val rangoLng = max(maxLng - minLng, 0.001)
-    val rangoLat = max(maxLat - minLat, 0.001)
+    val rangoLng = max(maxLng - minLng, 0.0001)
+    val rangoLat = max(maxLat - minLat, 0.0001)
 
     Column(modifier = modifier.fillMaxWidth()) {
-        // ENCABEZADO DEL MAPA CON LEYENDA Y TOGGLE
         Card(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 10.dp, vertical = 4.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
         ) {
-            Column(modifier = Modifier.padding(12.dp)) {
+            Column(modifier = Modifier.padding(10.dp)) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(
-                        text = "🗺️ " + stringResource(R.string.mapa_calor_titulo),
-                        style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.Bold
-                    )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Surface(
+                            color = Color(0xFFE53935).copy(alpha = brilloNeon),
+                            shape = CircleShape,
+                            modifier = Modifier.size(10.dp)
+                        ) {}
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = stringResource(R.string.mapa_calor_titulo),
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.ExtraBold
+                        )
+                    }
+
                     FilterChip(
                         selected = vistaCompleta,
-                        onClick = { vistaCompleta = !vistaCompleta },
+                        onClick = {
+                            vistaCompleta = !vistaCompleta
+                            escalaZoom = 1.0f
+                            offsetPanX = 0f
+                            offsetPanY = 0f
+                        },
                         label = {
                             Text(
                                 if (vistaCompleta) stringResource(R.string.mapa_ver_urbano)
-                                else stringResource(R.string.mapa_ver_todo)
+                                else stringResource(R.string.mapa_ver_todo),
+                                style = MaterialTheme.typography.labelSmall
                             )
                         }
                     )
                 }
 
-                Spacer(modifier = Modifier.height(6.dp))
+                Spacer(modifier = Modifier.height(8.dp))
 
-                // LEYENDA VISUAL
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceAround,
-                    verticalAlignment = Alignment.CenterVertically
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
-                    ItemLeyenda(color = Color(0xFFE53935), texto = stringResource(R.string.riesgo_alto))
-                    ItemLeyenda(color = Color(0xFFFB8C00), texto = stringResource(R.string.riesgo_medio))
-                    ItemLeyenda(color = Color(0xFF43A047), texto = stringResource(R.string.riesgo_bajo))
+                    FilterChip(
+                        selected = filtroActivo == FiltroMapa.TODOS,
+                        onClick = { filtroActivo = FiltroMapa.TODOS },
+                        label = { Text("Todas (20)", style = MaterialTheme.typography.labelSmall) }
+                    )
+                    FilterChip(
+                        selected = filtroActivo == FiltroMapa.ALTO,
+                        onClick = { filtroActivo = if (filtroActivo == FiltroMapa.ALTO) FiltroMapa.TODOS else FiltroMapa.ALTO },
+                        label = { Text("🔴 Alto", style = MaterialTheme.typography.labelSmall) },
+                        colors = FilterChipDefaults.filterChipColors(
+                            selectedContainerColor = Color(0xFFFFCDD2),
+                            selectedLabelColor = Color(0xFFB71C1C)
+                        )
+                    )
+                    FilterChip(
+                        selected = filtroActivo == FiltroMapa.MEDIO,
+                        onClick = { filtroActivo = if (filtroActivo == FiltroMapa.MEDIO) FiltroMapa.TODOS else FiltroMapa.MEDIO },
+                        label = { Text("🟡 Medio", style = MaterialTheme.typography.labelSmall) },
+                        colors = FilterChipDefaults.filterChipColors(
+                            selectedContainerColor = Color(0xFFFFECB3),
+                            selectedLabelColor = Color(0xFFE65100)
+                        )
+                    )
+                    FilterChip(
+                        selected = filtroActivo == FiltroMapa.BAJO,
+                        onClick = { filtroActivo = if (filtroActivo == FiltroMapa.BAJO) FiltroMapa.TODOS else FiltroMapa.BAJO },
+                        label = { Text("🟢 Seguro", style = MaterialTheme.typography.labelSmall) },
+                        colors = FilterChipDefaults.filterChipColors(
+                            selectedContainerColor = Color(0xFFC8E6C9),
+                            selectedLabelColor = Color(0xFF1B5E20)
+                        )
+                    )
                 }
             }
         }
 
-        // CANVAS INTERACTIVO
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .aspectRatio(1.05f)
-                .padding(8.dp)
-                .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(12.dp))
+                .padding(horizontal = 8.dp, vertical = 4.dp)
+                .clip(RoundedCornerShape(16.dp))
+                .background(
+                    Brush.radialGradient(
+                        colors = listOf(Color(0xFF1C2733), Color(0xFF0D141C)),
+                        radius = 900f
+                    )
+                )
+                .border(1.5.dp, Color(0xFF37474F), RoundedCornerShape(16.dp))
         ) {
             var canvasWidth by remember { mutableFloatStateOf(1f) }
             var canvasHeight by remember { mutableFloatStateOf(1f) }
 
+            val paintTexto = remember {
+                Paint().apply {
+                    color = android.graphics.Color.WHITE
+                    textSize = 28f
+                    isAntiAlias = true
+                    textAlign = Paint.Align.CENTER
+                    typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+                }
+            }
+
+            val paintBadgeFondo = remember {
+                Paint().apply {
+                    color = android.graphics.Color.argb(190, 10, 15, 22)
+                    isAntiAlias = true
+                    style = Paint.Style.FILL
+                }
+            }
+
+            val paintBadgeBorde = remember {
+                Paint().apply {
+                    color = android.graphics.Color.argb(180, 255, 255, 255)
+                    isAntiAlias = true
+                    style = Paint.Style.STROKE
+                    strokeWidth = 2f
+                }
+            }
+
             Canvas(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(12.dp)
-                    .pointerInput(localidadesVisibles, minLng, maxLng, minLat, maxLat) {
+                    .pointerInput(localidadesVisibles, minLng, maxLng, minLat, maxLat, escalaZoom, offsetPanX, offsetPanY) {
+                        detectTransformGestures { _, pan, zoom, _ ->
+                            escalaZoom = (escalaZoom * zoom).coerceIn(0.8f, 4.5f)
+                            offsetPanX += pan.x
+                            offsetPanY += pan.y
+                        }
+                    }
+                    .pointerInput(localidadesVisibles, minLng, maxLng, minLat, maxLat, escalaZoom, offsetPanX, offsetPanY) {
                         detectTapGestures { offset ->
-                            val pad = 12.dp.toPx()
+                            val pad = 24.dp.toPx()
                             val anchoUtil = (canvasWidth - 2 * pad).coerceAtLeast(1f)
                             val altoUtil = (canvasHeight - 2 * pad).coerceAtLeast(1f)
 
-                            val xRel = (offset.x - pad).coerceIn(0f, anchoUtil)
-                            val yRel = (offset.y - pad).coerceIn(0f, altoUtil)
+                            val factorCos = cos(Math.toRadians(4.65))
+                            val escalaX = anchoUtil / (rangoLng * factorCos)
+                            val escalaY = altoUtil / rangoLat
+                            val escalaBase = min(escalaX, escalaY)
 
-                            val clickLng = minLng + (xRel / anchoUtil) * rangoLng
-                            val clickLat = maxLat - (yRel / altoUtil) * rangoLat
+                            val anchoMapa = (rangoLng * factorCos * escalaBase).toFloat()
+                            val altoMapa = (rangoLat * escalaBase).toFloat()
+                            val offsetXBase = pad + (anchoUtil - anchoMapa) / 2f + offsetPanX
+                            val offsetYBase = pad + (altoUtil - altoMapa) / 2f + offsetPanY
+
+                            val xEnMapa = (offset.x - offsetXBase) / escalaZoom
+                            val yEnMapa = (offset.y - offsetYBase) / escalaZoom
+
+                            val clickLng = minLng + (xEnMapa / (anchoMapa)) * rangoLng
+                            val clickLat = maxLat - (yEnMapa / (altoMapa)) * rangoLat
                             val ptClick = PuntoGeo(clickLng, clickLat)
 
                             val tocada = localidadesVisibles.firstOrNull { loc ->
@@ -308,18 +469,37 @@ fun MapaCalorBogota(
                 canvasWidth = size.width
                 canvasHeight = size.height
 
-                val pad = 12.dp.toPx()
+                val centroX = size.width / 2f
+                val centroY = size.height / 2f
+                val colorRejilla = Color(0xFF263238).copy(alpha = 0.35f)
+
+                drawCircle(color = colorRejilla, radius = size.width * 0.22f, center = Offset(centroX, centroY), style = Stroke(1f))
+                drawCircle(color = colorRejilla, radius = size.width * 0.42f, center = Offset(centroX, centroY), style = Stroke(1f))
+                drawLine(color = colorRejilla, start = Offset(centroX, 0f), end = Offset(centroX, size.height), strokeWidth = 1f)
+                drawLine(color = colorRejilla, start = Offset(0f, centroY), end = Offset(size.width, centroY), strokeWidth = 1f)
+
+                val pad = 24.dp.toPx()
                 val anchoUtil = size.width - 2 * pad
                 val altoUtil = size.height - 2 * pad
 
-                // Función de proyección GPS -> Pantalla Canvas
+                val factorCos = cos(Math.toRadians(4.65))
+                val escalaX = anchoUtil / (rangoLng * factorCos)
+                val escalaY = altoUtil / rangoLat
+                val escalaBase = min(escalaX, escalaY)
+
+                val anchoMapa = (rangoLng * factorCos * escalaBase).toFloat()
+                val altoMapa = (rangoLat * escalaBase).toFloat()
+                val offsetXBase = pad + (anchoUtil - anchoMapa) / 2f + offsetPanX
+                val offsetYBase = pad + (altoUtil - altoMapa) / 2f + offsetPanY
+
                 fun proyectar(p: PuntoGeo): Offset {
-                    val x = pad + ((p.lng - minLng) / rangoLng * anchoUtil).toFloat()
-                    val y = pad + ((maxLat - p.lat) / rangoLat * altoUtil).toFloat()
-                    return Offset(x, y)
+                    val xRel = ((p.lng - minLng) / rangoLng * anchoMapa).toFloat()
+                    val yRel = ((maxLat - p.lat) / rangoLat * altoMapa).toFloat()
+                    val xFinal = offsetXBase + (xRel * escalaZoom)
+                    val yFinal = offsetYBase + (yRel * escalaZoom)
+                    return Offset(xFinal, yFinal)
                 }
 
-                // DIBUJAR POLÍGONOS DE TODAS LAS LOCALIDADES
                 for (loc in localidadesVisibles) {
                     if (loc.poligono.isEmpty()) continue
 
@@ -333,46 +513,172 @@ fun MapaCalorBogota(
                         close()
                     }
 
+                    val coincideFiltro = when (filtroActivo) {
+                        FiltroMapa.TODOS -> true
+                        FiltroMapa.ALTO -> loc.nivelRiesgo == "alto"
+                        FiltroMapa.MEDIO -> loc.nivelRiesgo == "medio"
+                        FiltroMapa.BAJO -> loc.nivelRiesgo == "bajo"
+                    }
+
+                    val alfaBase = if (coincideFiltro) 0.90f else 0.18f
+
                     val colorRelleno = when (loc.nivelRiesgo) {
-                        "alto" -> Color(0xFFE53935).copy(alpha = 0.82f)
-                        "medio" -> Color(0xFFFB8C00).copy(alpha = 0.82f)
-                        else -> Color(0xFF43A047).copy(alpha = 0.82f)
+                        "alto" -> Color(0xFFFF1744).copy(alpha = alfaBase)
+                        "medio" -> Color(0xFFFFB300).copy(alpha = alfaBase)
+                        else -> Color(0xFF00E676).copy(alpha = alfaBase)
                     }
 
                     val esSeleccionada = localidadSeleccionada?.codigo == loc.codigo
 
-                    // Relleno
                     drawPath(path, color = colorRelleno, style = Fill)
 
-                    // Borde
-                    val colorBorde = if (esSeleccionada) Color.White else Color(0xFF263238).copy(alpha = 0.6f)
-                    val anchoBorde = if (esSeleccionada) 3.5.dp.toPx() else 1.2.dp.toPx()
+                    val colorBorde = when {
+                        esSeleccionada -> Color(0xFF00E5FF)
+                        coincideFiltro -> Color(0xFF0A0E14)
+                        else -> Color(0xFF1E2733).copy(alpha = 0.4f)
+                    }
+                    val anchoBorde = if (esSeleccionada) 4.dp.toPx() else 1.8.dp.toPx()
                     drawPath(path, color = colorBorde, style = Stroke(width = anchoBorde))
+                }
 
-                    // Centroide y punto destacado si es seleccionada
+                for (loc in localidadesVisibles) {
+                    val centro = proyectar(loc.centroide)
+                    if (centro.x < -50 || centro.x > size.width + 50 || centro.y < -50 || centro.y > size.height + 50) continue
+
+                    if (loc.nivelRiesgo == "alto" && (filtroActivo == FiltroMapa.TODOS || filtroActivo == FiltroMapa.ALTO)) {
+                        drawCircle(
+                            color = Color(0xFFFF1744).copy(alpha = alfaPulso),
+                            radius = radioPulso * escalaZoom.coerceIn(0.9f, 2f),
+                            center = centro,
+                            style = Stroke(2.5f)
+                        )
+                    }
+
+                    val esSeleccionada = localidadSeleccionada?.codigo == loc.codigo
                     if (esSeleccionada) {
-                        val c = proyectar(loc.centroide)
-                        drawCircle(color = Color.White, radius = 6.dp.toPx(), center = c)
-                        drawCircle(color = Color(0xFF1E88E5), radius = 3.5.dp.toPx(), center = c)
+                        drawCircle(
+                            color = Color(0xFF00E5FF).copy(alpha = brilloNeon),
+                            radius = 16.dp.toPx(),
+                            center = centro,
+                            style = Stroke(3.dp.toPx())
+                        )
+                    }
+                }
+
+                for (loc in localidadesVisibles) {
+                    val centro = proyectar(loc.centroide)
+                    if (centro.x < 0 || centro.x > size.width || centro.y < 0 || centro.y > size.height) continue
+
+                    val coincideFiltro = when (filtroActivo) {
+                        FiltroMapa.TODOS -> true
+                        FiltroMapa.ALTO -> loc.nivelRiesgo == "alto"
+                        FiltroMapa.MEDIO -> loc.nivelRiesgo == "medio"
+                        FiltroMapa.BAJO -> loc.nivelRiesgo == "bajo"
+                    }
+
+                    paintTexto.textSize = (24f * escalaZoom.coerceIn(0.9f, 2.0f)).coerceIn(20f, 40f)
+                    paintTexto.alpha = if (coincideFiltro) 255 else 80
+                    paintBadgeFondo.alpha = if (coincideFiltro) 200 else 60
+                    paintBadgeBorde.alpha = if (coincideFiltro) 220 else 50
+
+                    val texto = loc.nombreCorto
+                    val anchoTexto = paintTexto.measureText(texto)
+                    val padH = 12f
+                    val padV = 8f
+
+                    drawContext.canvas.nativeCanvas.drawRoundRect(
+                        centro.x - (anchoTexto / 2f) - padH,
+                        centro.y - 18f - padV,
+                        centro.x + (anchoTexto / 2f) + padH,
+                        centro.y + 10f + padV,
+                        12f,
+                        12f,
+                        paintBadgeFondo
+                    )
+                    drawContext.canvas.nativeCanvas.drawRoundRect(
+                        centro.x - (anchoTexto / 2f) - padH,
+                        centro.y - 18f - padV,
+                        centro.x + (anchoTexto / 2f) + padH,
+                        centro.y + 10f + padV,
+                        12f,
+                        12f,
+                        paintBadgeBorde
+                    )
+
+                    drawContext.canvas.nativeCanvas.drawText(
+                        texto,
+                        centro.x,
+                        centro.y + 2f,
+                        paintTexto
+                    )
+                }
+            }
+
+            Column(
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(10.dp),
+                verticalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                Surface(
+                    shape = CircleShape,
+                    color = Color(0xFF1E2733).copy(alpha = 0.92f),
+                    border = BorderStroke(1.dp, Color(0xFF455A64)),
+                    shadowElevation = 6.dp,
+                    modifier = Modifier.size(38.dp)
+                ) {
+                    IconButton(onClick = { escalaZoom = (escalaZoom * 1.35f).coerceAtMost(4.5f) }) {
+                        Text("+", fontWeight = FontWeight.ExtraBold, color = Color.White, fontSize = 20.sp)
+                    }
+                }
+                Surface(
+                    shape = CircleShape,
+                    color = Color(0xFF1E2733).copy(alpha = 0.92f),
+                    border = BorderStroke(1.dp, Color(0xFF455A64)),
+                    shadowElevation = 6.dp,
+                    modifier = Modifier.size(38.dp)
+                ) {
+                    IconButton(onClick = { escalaZoom = (escalaZoom / 1.35f).coerceAtLeast(0.8f) }) {
+                        Text("−", fontWeight = FontWeight.ExtraBold, color = Color.White, fontSize = 20.sp)
+                    }
+                }
+                if (escalaZoom != 1.0f || offsetPanX != 0f || offsetPanY != 0f) {
+                    Surface(
+                        shape = CircleShape,
+                        color = Color(0xFF00B0FF),
+                        shadowElevation = 6.dp,
+                        modifier = Modifier.size(38.dp)
+                    ) {
+                        IconButton(onClick = {
+                            escalaZoom = 1.0f
+                            offsetPanX = 0f
+                            offsetPanY = 0f
+                        }) {
+                            Text("↺", fontWeight = FontWeight.ExtraBold, color = Color.White, fontSize = 18.sp)
+                        }
                     }
                 }
             }
 
-            // FICHA FLOTANTE DE IDENTIFICACIÓN AL TOCAR UNA LOCALIDAD
             androidx.compose.animation.AnimatedVisibility(
                 visible = localidadSeleccionada != null,
                 enter = slideInVertically(initialOffsetY = { it }) + fadeIn(),
                 exit = slideOutVertically(targetOffsetY = { it }) + fadeOut(),
-                modifier = Modifier.align(Alignment.BottomCenter).padding(8.dp)
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(10.dp)
             ) {
                 localidadSeleccionada?.let { loc ->
                     Card(
                         modifier = Modifier.fillMaxWidth(),
-                        elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+                        elevation = CardDefaults.cardElevation(defaultElevation = 10.dp),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                        shape = RoundedCornerShape(14.dp)
                     ) {
                         Row(
-                            modifier = Modifier.fillMaxWidth().padding(12.dp),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(14.dp),
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
@@ -398,7 +704,9 @@ fun MapaCalorBogota(
 
                             Button(
                                 onClick = { onSeleccionarLocalidad(loc.nombre) },
-                                shape = RoundedCornerShape(8.dp)
+                                shape = RoundedCornerShape(10.dp),
+                                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
+                                contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp)
                             ) {
                                 Text(stringResource(R.string.btn_ver_detalle))
                             }
@@ -407,14 +715,50 @@ fun MapaCalorBogota(
                 }
             }
         }
-    }
-}
 
-@Composable
-fun ItemLeyenda(color: Color, texto: String) {
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        Surface(color = color, shape = CircleShape, modifier = Modifier.size(12.dp)) {}
-        Spacer(modifier = Modifier.width(6.dp))
-        Text(text = texto, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.SemiBold)
+        Text(
+            text = "Acceso rápido por localidad:",
+            style = MaterialTheme.typography.labelSmall,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        LazyRow(
+            modifier = Modifier.fillMaxWidth(),
+            contentPadding = PaddingValues(horizontal = 10.dp),
+            horizontalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            items(localidadesVisibles, key = { it.codigo }) { loc ->
+                val colorChip = when (loc.nivelRiesgo) {
+                    "alto" -> Color(0xFFFFEBEE)
+                    "medio" -> Color(0xFFFFF8E1)
+                    else -> Color(0xFFE8F5E9)
+                }
+                val colorTexto = when (loc.nivelRiesgo) {
+                    "alto" -> Color(0xFFC62828)
+                    "medio" -> Color(0xFFEF6C00)
+                    else -> Color(0xFF2E7D32)
+                }
+                Surface(
+                    color = if (localidadSeleccionada?.codigo == loc.codigo) MaterialTheme.colorScheme.primaryContainer else colorChip,
+                    shape = RoundedCornerShape(8.dp),
+                    modifier = Modifier.clickable {
+                        localidadSeleccionada = loc
+                    }
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = loc.nombreCorto,
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.SemiBold,
+                            color = colorTexto
+                        )
+                    }
+                }
+            }
+        }
     }
 }
