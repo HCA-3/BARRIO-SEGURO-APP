@@ -12,6 +12,7 @@ import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
+import androidx.activity.compose.LocalActivityResultRegistryOwner
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
@@ -130,7 +131,8 @@ class MainActivity : AppCompatActivity() {
 
             CompositionLocalProvider(
                 LocalConfiguration provides localizedConfiguration,
-                LocalContext provides localizedContext
+                LocalContext provides localizedContext,
+                LocalActivityResultRegistryOwner provides this
             ) {
                 RIESGOSSOCIALESENCHAPINEROTheme(tema = ajustesEstado.tema) {
                 var pantallaActual by remember { mutableStateOf(Pantalla.RIESGO) }
