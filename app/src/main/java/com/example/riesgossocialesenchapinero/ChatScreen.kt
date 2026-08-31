@@ -1,5 +1,8 @@
 package com.example.riesgossocialesenchapinero
 
+import android.Manifest
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -49,8 +52,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.riesgossocialesenchapinero.data.ApiClient
 import com.example.riesgossocialesenchapinero.data.local.ConversacionEntity
@@ -74,6 +79,16 @@ fun PantallaChat(modifier: Modifier = Modifier, viewModel: ChatViewModel = viewM
     val listState = rememberLazyListState()
     val drawerState = rememberDrawerState(DrawerValue.Closed)
     val scope = rememberCoroutineScope()
+
+    val lanzadorPermisos = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions(),
+    ) { _ ->
+        viewModel.refrescarPermisos()
+    }
+
+    LaunchedEffect(Unit) {
+        viewModel.refrescarPermisos()
+    }
 
     LaunchedEffect(mensajes.size) {
         if (mensajes.isNotEmpty()) listState.animateScrollToItem(mensajes.size - 1)
@@ -124,14 +139,27 @@ fun PantallaChat(modifier: Modifier = Modifier, viewModel: ChatViewModel = viewM
                 IconButton(onClick = { scope.launch { drawerState.open() } }) {
                     Text("☰")
                 }
-                TextButton(onClick = { mostrarMemoria = true }) {
-                    Text(
-                        if (estado.hechosRecordados.isEmpty()) {
-                            "🧠 Memoria"
-                        } else {
-                            "🧠 Memoria (${estado.hechosRecordados.size})"
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    IconButton(
+                        onClick = {
+                            val permisos = arrayOf(
+                                Manifest.permission.ACCESS_FINE_LOCATION,
+                                Manifest.permission.ACCESS_COARSE_LOCATION,
+                            )
+                            lanzadorPermisos.launch(permisos)
                         },
-                    )
+                    ) {
+                        Text(if (estado.ubicacionConcedida) "📍" else "📍?")
+                    }
+                    TextButton(onClick = { mostrarMemoria = true }) {
+                        Text(
+                            if (estado.hechosRecordados.isEmpty()) {
+                                "🧠 Memoria"
+                            } else {
+                                "🧠 Memoria (${estado.hechosRecordados.size})"
+                            },
+                        )
+                    }
                 }
             }
 

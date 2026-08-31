@@ -21,11 +21,14 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
@@ -38,6 +41,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -57,7 +61,12 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.riesgossocialesenchapinero.data.ApiClient
 import com.example.riesgossocialesenchapinero.location.MonitoreoUbicacionService
+import com.example.riesgossocialesenchapinero.ui.BadgeRiesgo
+import com.example.riesgossocialesenchapinero.ui.BarraDelito
+import com.example.riesgossocialesenchapinero.ui.FilaDato
 import com.example.riesgossocialesenchapinero.ui.RiesgoUiState
+import com.example.riesgossocialesenchapinero.ui.SeccionPlegable
+import com.example.riesgossocialesenchapinero.ui.TileDato
 import com.example.riesgossocialesenchapinero.ui.RiesgoViewModel
 import com.example.riesgossocialesenchapinero.ui.theme.RIESGOSSOCIALESENCHAPINEROTheme
 import kotlinx.coroutines.Dispatchers
@@ -224,6 +233,33 @@ fun PantallaRiesgo(
         }
     }
 
+    // Ficha que se abre al tocar un recuadro, sea de localidad o de barrio.
+    var seleccion by remember { mutableStateOf<SeleccionDetalle?>(null) }
+    var detalle by remember { mutableStateOf<ApiClient.DetalleLocalidad?>(null) }
+    var errorDetalle by remember { mutableStateOf<String?>(null) }
+
+    LaunchedEffect(seleccion) {
+        val actual = seleccion
+        detalle = null
+        errorDetalle = null
+        if (actual != null) {
+            try {
+                detalle = withContext(Dispatchers.IO) { ApiClient.obtenerDetalleLocalidad(actual.localidad) }
+            } catch (e: Exception) {
+                errorDetalle = e.message ?: "No pude cargar los datos de esta zona"
+            }
+        }
+    }
+
+    seleccion?.let { actual ->
+        DialogoDetalle(
+            seleccion = actual,
+            detalle = detalle,
+            error = errorDetalle,
+            onCerrar = { seleccion = null },
+        )
+    }
+
     Column(modifier = modifier.fillMaxSize()) {
         ControlMonitoreo(activo = monitoreoActivo, onToggle = onToggleMonitoreo)
 
@@ -244,6 +280,9 @@ fun PantallaRiesgo(
                 estado = busquedaActual,
                 modifier = Modifier.weight(1f).fillMaxWidth(),
                 onElegirOpcion = { opcion -> buscarBarrio(textoBusqueda, opcion.localidad) },
+                onAbrirDetalle = { r ->
+                    seleccion = SeleccionDetalle(localidad = r.localidad, barrio = r.barrio, upz = r.upz)
+                },
             )
             return@Column
         }
@@ -306,7 +345,12 @@ fun PantallaRiesgo(
                     contentPadding = PaddingValues(12.dp),
                 ) {
                     items(actual.localidades) { localidad ->
-                        TarjetaLocalidad(localidad)
+                        TarjetaLocalidad(
+                            localidad,
+                            modifier = Modifier.clickable {
+                                seleccion = SeleccionDetalle(localidad = localidad.nombre)
+                            },
+                        )
                     }
                 }
             }
@@ -378,6 +422,7 @@ fun BarraBusquedaBarrio(
 @Composable
 fun ResultadoBusquedaBarrio(
     estado: EstadoBusquedaBarrio,
+    onAbrirDetalle: (ApiClient.ResultadoBarrio) -> Unit,
     modifier: Modifier = Modifier,
     onElegirOpcion: (ApiClient.ResultadoBarrio) -> Unit,
 ) {
@@ -405,7 +450,15 @@ fun ResultadoBusquedaBarrio(
             when (val busqueda = estado.busqueda) {
                 is ApiClient.BusquedaBarrio.Encontrado -> {
                     Column(modifier = modifier.padding(12.dp)) {
-                        TarjetaResultadoBarrio(busqueda.resultado)
+                        TarjetaResultadoBarrio(
+                            busqueda.resultado,
+                            modifier = Modifier.clickable { onAbrirDetalle(busqueda.resultado) },
+                        )
+                        Text(
+                            "Toca el recuadro para ver todos los datos de la zona.",
+                            style = MaterialTheme.typography.bodySmall,
+                            modifier = Modifier.padding(top = 8.dp),
+                        )
                     }
                 }
 
@@ -454,14 +507,7 @@ fun TarjetaResultadoBarrio(resultado: ApiClient.ResultadoBarrio, modifier: Modif
                     Text(resultado.barrio, style = MaterialTheme.typography.titleMedium)
                     Text(resultado.localidad, style = MaterialTheme.typography.bodySmall)
                 }
-                Surface(color = colorRiesgo(resultado.nivelRiesgo)) {
-                    Text(
-                        resultado.nivelRiesgo.uppercase(),
-                        color = Color.White,
-                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
-                        style = MaterialTheme.typography.labelMedium,
-                    )
-                }
+                BadgeRiesgo(resultado.nivelRiesgo)
             }
             resultado.upz?.let { upz ->
                 Text(
@@ -474,6 +520,165 @@ fun TarjetaResultadoBarrio(resultado: ApiClient.ResultadoBarrio, modifier: Modif
         }
     }
 }
+
+/**
+ * Qué recuadro se tocó. [barrio] y [upz] solo vienen cuando fue un resultado de
+ * búsqueda de barrio; desde el ranking solo se sabe la localidad.
+ */
+data class SeleccionDetalle(
+    val localidad: String,
+    val barrio: String? = null,
+    val upz: ApiClient.RiesgoUpz? = null,
+)
+
+/**
+ * Ficha con todo lo que el pipeline recopiló de la zona.
+ *
+ * Las cifras se agrupan y etiquetan por la capa de la que salen (localidad o
+ * UPZ) porque NO existen datos por barrio: OpenStreetMap solo aporta el nombre
+ * y un punto. Presentar los delitos de la localidad bajo el título del barrio,
+ * sin decirlo, daría a entender una precisión que los datos no tienen.
+ */
+@Composable
+fun DialogoDetalle(
+    seleccion: SeleccionDetalle,
+    detalle: ApiClient.DetalleLocalidad?,
+    error: String?,
+    onCerrar: () -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onCerrar,
+        confirmButton = { TextButton(onClick = onCerrar) { Text("Cerrar") } },
+        title = {
+            Column {
+                Text(seleccion.barrio ?: seleccion.localidad)
+                if (seleccion.barrio != null) {
+                    Text(
+                        "Barrio de ${seleccion.localidad}",
+                        style = MaterialTheme.typography.bodySmall,
+                    )
+                }
+            }
+        },
+        text = {
+            Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
+                when {
+                    error != null -> Text(error, style = MaterialTheme.typography.bodyMedium)
+
+                    detalle == null -> Row(verticalAlignment = Alignment.CenterVertically) {
+                        CircularProgressIndicator(modifier = Modifier.padding(end = 12.dp))
+                        Text("Cargando datos...")
+                    }
+
+                    else -> {
+                        if (seleccion.barrio != null) {
+                            Text(
+                                "No hay estadísticas por barrio: los delitos y el contexto se " +
+                                    "miden por localidad, y las llamadas de emergencia por UPZ. " +
+                                    "Estos son los datos de las zonas que contienen este barrio.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.padding(bottom = 4.dp),
+                            )
+                        }
+
+                        // Encabezado: el nivel de riesgo y la cifra que mejor
+                        // resume la zona, antes de cualquier desglose.
+                        Row(
+                            modifier = Modifier.fillMaxWidth().padding(top = 10.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            BadgeRiesgo(detalle.nivelRiesgo)
+                            Column(horizontalAlignment = Alignment.End) {
+                                Text(
+                                    "%,.0f".format(detalle.tasaDelitos100k),
+                                    style = MaterialTheme.typography.headlineSmall,
+                                )
+                                Text(
+                                    "delitos por 100k hab.",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                        }
+
+                        seleccion.upz?.let { upz ->
+                            SeccionPlegable("UPZ ${upz.upz} — llamadas de emergencia") {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                ) {
+                                    TileDato(
+                                        "Nivel de llamadas",
+                                        upz.nivelLlamadas.uppercase(),
+                                        Modifier.weight(1f),
+                                    )
+                                    TileDato(
+                                        "Por 100k hab.",
+                                        "%,.0f".format(upz.tasaLlamadas100k),
+                                        Modifier.weight(1f),
+                                    )
+                                }
+                            }
+                        }
+
+                        SeccionPlegable("Localidad ${detalle.localidad}") {
+                            Row(
+                                modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            ) {
+                                TileDato(
+                                    "Población 2025",
+                                    "%,d".format(detalle.poblacion),
+                                    Modifier.weight(1f),
+                                )
+                                TileDato(
+                                    "Delitos 2023-2025",
+                                    "%,d".format(detalle.delitosTotal),
+                                    Modifier.weight(1f),
+                                )
+                            }
+                            FilaDato("Score mixto", "%.4f".format(detalle.scoreMixto))
+                        }
+
+                        SeccionPlegable("Delitos por tipo (2023-2025)") {
+                            val maximo = detalle.detalleDelitos.maxOfOrNull { it.second } ?: 0
+                            detalle.detalleDelitos.forEachIndexed { i, (tipo, cantidad) ->
+                                BarraDelito(
+                                    tipo = tipo,
+                                    cantidad = cantidad,
+                                    maximo = maximo,
+                                    indice = i,
+                                )
+                            }
+                        }
+
+                        SeccionPlegable("Contexto de la localidad", abiertaPorDefecto = false) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            ) {
+                                TileDato(
+                                    "Estrato promedio",
+                                    "%.2f".format(detalle.estratoPromedio),
+                                    Modifier.weight(1f),
+                                )
+                                TileDato("Área", "%,.1f km²".format(detalle.areaKm2), Modifier.weight(1f))
+                            }
+                            FilaDato("Luminarias estimadas", "%,d".format(detalle.luminarias))
+                            FilaDato("Luminarias por km²", "%.1f".format(detalle.luminariasPorKm2))
+                            FilaDato("Longitud de vías", "%,.1f km".format(detalle.longitudViasKm))
+                            FilaDato("Incidentes NUSE", "%,d".format(detalle.incidentesNuse))
+                        }
+                    }
+                }
+            }
+        },
+    )
+}
+
+
 
 private fun hayPermisoUbicacion(context: Context): Boolean =
     ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) ==
@@ -505,8 +710,8 @@ private fun detenerServicioMonitoreo(context: Context) {
 }
 
 @Composable
-fun TarjetaLocalidad(localidad: ApiClient.Localidad) {
-    Card(modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp)) {
+fun TarjetaLocalidad(localidad: ApiClient.Localidad, modifier: Modifier = Modifier) {
+    Card(modifier = modifier.fillMaxWidth().padding(vertical = 6.dp)) {
         Row(
             modifier = Modifier.fillMaxWidth().padding(16.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -518,22 +723,9 @@ fun TarjetaLocalidad(localidad: ApiClient.Localidad) {
                     style = MaterialTheme.typography.bodySmall,
                 )
             }
-            Surface(color = colorRiesgo(localidad.nivelRiesgo)) {
-                Text(
-                    localidad.nivelRiesgo.uppercase(),
-                    color = Color.White,
-                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
-                    style = MaterialTheme.typography.labelMedium,
-                )
-            }
+            BadgeRiesgo(localidad.nivelRiesgo)
         }
     }
-}
-
-fun colorRiesgo(nivel: String): Color = when (nivel) {
-    "alto" -> Color(0xFFC62828)
-    "medio" -> Color(0xFFF9A825)
-    else -> Color(0xFF2E7D32)
 }
 
 @Preview(showBackground = true)

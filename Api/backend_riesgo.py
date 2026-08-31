@@ -83,11 +83,11 @@ MODELO_DEFECTO = os.environ.get("BARRIO_SEGURO_MODELO", "llama3.2:3b")
 # propia respuesta. Con esto, la primera pregunta paga la carga y las demás no.
 KEEP_ALIVE = os.environ.get("BARRIO_SEGURO_KEEP_ALIVE", "30m")
 
-# SYSTEM_PROMPT (~1.8k tokens) + TOOLS (~3.4k tokens) se mandan en cada ronda,
-# así que con los 4096 por defecto de Ollama el contexto se truncaba y el modelo
-# perdía parte de las herramientas. 8192 deja sitio para el prompt, el historial
-# y los resultados de las tools.
-NUM_CTX = int(os.environ.get("BARRIO_SEGURO_NUM_CTX", "8192"))
+# Medido con /api/chat: el prompt completo (SYSTEM_PROMPT + esquema de TOOLS +
+# la pregunta) son ~3.100 tokens, así que cabe de sobra en 4096 y no hace falta
+# subirlo: un num_ctx mayor solo agranda la caché KV y, en una CPU sin GPU como
+# esta, va más lento sin ganar nada.
+NUM_CTX = int(os.environ.get("BARRIO_SEGURO_NUM_CTX", "4096"))
 
 # Tope de tokens de la respuesta. Las respuestas útiles aquí son de dos o tres
 # frases; sin tope, el modelo a veces se enrolla y cada token extra son décimas
@@ -171,6 +171,11 @@ sin interrogarlo ni pedirle explícitamente que te cuente datos personales. \
 Si en "Cosas que ya sabes de este usuario" ves algo relevante a lo que \
 pregunta, úsalo con naturalidad (ej. si sabes que vive en Kennedy y \
 pregunta "¿es seguro donde vivo?", no le preguntes dónde vive).
+
+Si te proporcionan la UBICACIÓN ACTUAL del usuario (latitud y longitud), \
+puedes usar la herramienta consultar_riesgo_actual para saber en qué \
+localidad está y su nivel de riesgo sin preguntarle. No la uses si no \
+tienes las coordenadas.
 
 El campo "estrato_promedio" es solo contexto socioeconómico: el pipeline \
 NO lo usa para calcular nivel_riesgo (decisión ética documentada del \
@@ -457,6 +462,19 @@ TOOLS = [
                 },
                 "required": ["nombre"],
             },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "consultar_riesgo_actual",
+            "description": (
+                "Devuelve el nivel de riesgo y la localidad del usuario basada "
+                "en sus coordenadas GPS actuales (latitud y longitud). Úsala "
+                "cuando el usuario pregunte por su seguridad 'aquí', 'donde estoy' "
+                "o 'en este momento', siempre que las coordenadas estén disponibles."
+            ),
+            "parameters": {"type": "object", "properties": {}, "required": []},
         },
     },
 ]
@@ -914,7 +932,11 @@ def tool_comparar_localidades(datos: dict, nombres: list) -> dict:
     return {nombre: tool_obtener_localidad(datos, nombre) for nombre in nombres}
 
 
-def ejecutar_tool(nombre: str, argumentos: dict, datos: dict):
+def ejecutar_tool(nombre: str, argumentos: dict, datos: dict, lat: float = None, lng: float = None):
+    if nombre == "consultar_riesgo_actual":
+        if lat is not None and lng is not None:
+            return tool_localidad_por_punto(datos, lat, lng)
+        return {"error": "No tengo las coordenadas GPS actuales del usuario."}
     if nombre == "localidad_extrema":
         return tool_localidad_extrema(datos, argumentos.get("cual", "mayor"))
     if nombre == "obtener_ranking":
@@ -930,7 +952,7 @@ def ejecutar_tool(nombre: str, argumentos: dict, datos: dict):
     return {"error": f"Herramienta desconocida: {nombre}"}
 
 
-def preguntar(modelo: str, historial: list, datos: dict) -> tuple[str, list[str]]:
+def preguntar(modelo: str, historial: list, datos: dict, lat: float = None, lng: float = None) -> tuple[str, list[str]]:
     # hechos_nuevos: la app (no este backend) es quien guarda la memoria del
     # usuario, localmente en el celular — este backend es stateless. Cuando
     # el modelo llama recordar_hecho(), en vez de "recordarlo" él mismo aquí,
@@ -984,7 +1006,7 @@ def preguntar(modelo: str, historial: list, datos: dict) -> tuple[str, list[str]
                 hecho = str(argumentos.get("hecho", "")).strip()
                 if hecho:
                     hechos_nuevos.append(hecho)
-            resultado = ejecutar_tool(fn["name"], argumentos, datos)
+            resultado = ejecutar_tool(fn["name"], argumentos, datos, lat, lng)
             if fn["name"] == "obtener_localidad" and isinstance(resultado, dict):
                 establecida = localidad_establecida_reciente(historial)
                 # Si la llamada tuvo éxito, la localidad pedida es la que
@@ -1037,6 +1059,8 @@ class ChatRequest(BaseModel):
     # anteriores con este usuario (ver recordar_hecho). El backend no
     # guarda nada entre requests: la app se los reenvía cada vez.
     hechos_recordados: list[str] = []
+    lat: float | None = None
+    lng: float | None = None
 
 
 class ChatResponse(BaseModel):
@@ -1123,6 +1147,12 @@ def chat(req: ChatRequest):
             f"{lista}\nÚsalas si son relevantes para lo que pregunta ahora, pero no las "
             "repitas sin razón ni las menciones si no vienen al caso."
         )
+    if req.lat is not None and req.lng is not None:
+        system_prompt += (
+            f"\n\nUBICACIÓN ACTUAL DEL USUARIO: latitud {req.lat}, longitud {req.lng}.\n"
+            "Si te preguntan por su ubicación o riesgo actual, usa consultar_riesgo_actual."
+        )
+
     historial = [{"role": "system", "content": system_prompt}] + req.mensajes
-    respuesta, hechos_nuevos = preguntar(req.modelo, historial, DATOS)
+    respuesta, hechos_nuevos = preguntar(req.modelo, historial, DATOS, req.lat, req.lng)
     return ChatResponse(respuesta=respuesta, mensajes=historial[1:], hechos_nuevos=hechos_nuevos)

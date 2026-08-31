@@ -1,0 +1,650 @@
+{
+  "_meta": {
+    "metodologia": "reglas + geofencing (sin machine learning)",
+    "periodo_delitos": "promedio 2023-2025",
+    "granularidad": "localidad (20 zonas). No se usó UPZ: el portal de datos abiertos de Bogotá no publica actualmente 'Delito de Alto Impacto' desagregado por UPZ, solo por localidad.",
+    "clasificacion": {
+      "variable_usada": "score_mixto (promedio normalizado de score_ponderado_100k y score_ponderado_por_km2)",
+      "metodo_corte": "Jenks Natural Breaks (3 clases)",
+      "umbral_bajo_medio": 0.1798,
+      "umbral_medio_alto": 0.3757
+    },
+    "pesos_severidad": {
+      "Homicidios": 100,
+      "Delitos sexuales": 70,
+      "Violencia intrafamiliar": 40,
+      "Lesiones personales": 35,
+      "Hurto a residencias": 25,
+      "Hurto a personas": 20,
+      "Hurto de automotores": 20,
+      "Hurto de motocicletas": 18,
+      "Hurto a comercio": 15,
+      "Hurto de bicicletas": 10,
+      "Hurto de celulares": 8
+    },
+    "nota_pesos": "Los pesos de severidad son una decision de diseno (no una cifra oficial): reflejan que delitos contra la vida/integridad deben pesar mas que hurtos sin violencia. Se recomienda validarlos con el asesor del proyecto.",
+    "nota_score_mixto": "nivel_riesgo se calcula sobre score_mixto, NO solo sobre score_ponderado_100k. Motivo: normalizar unicamente por poblacion residente infla el riesgo de localidades pequenas con mucha poblacion flotante no residente -- comercio, turismo, transito -- (ej. Los Martires por San Victorino/Paloquemao, La Candelaria por el centro historico) y diluye localidades grandes y muy pobladas donde el delito violento en cifras absolutas es alto (ej. Ciudad Bolivar, Kennedy, Bosa), a pesar de que la app alerta segun donde esta fisicamente alguien (GPS), no segun donde vive registrado. score_mixto promedia score_ponderado_100k (por habitante) y score_ponderado_por_km2 (por area), cada uno normalizado 0-1 por min-max sobre las 20 localidades, con ponderacion 50/50. Es una decision de diseno documentada, no una formula oficial: se recomienda validarla con el asesor del proyecto. score_ponderado_100k y score_ponderado_por_km2 se conservan en la salida por transparencia/comparacion.",
+    "nota_etica": "El estrato socioeconomico se reporta como contexto pero NO se usa para calcular nivel_riesgo, para evitar sesgar el modelo contra localidades de bajos ingresos.",
+    "nota_incidentes_nuse": "incidentes_nuse_recientes_total (contexto.incidentes_nuse_recientes_total) es el volumen de llamadas de emergencia NUSE/C4 (dataset 'Incidente Reportado' de la SDSCJ), agregado sin desglosar por categoria porque esas categorias no tienen diccionario publico de facil acceso. Se actualiza MENSUALMENTE (a diferencia del dataset de delitos, que es semestral/anual), pero es volumen de llamadas, no delito verificado -- por eso tampoco se usa para calcular nivel_riesgo."
+  },
+  "9": {
+    "localidad": "Fontibón",
+    "poblacion_2025": 391475,
+    "delitos_recientes_total_2023_2025": 41963,
+    "tasa_delitos_100k": 10719.2,
+    "score_ponderado_100k": 240545.12,
+    "score_ponderado_por_km2": 28317.24,
+    "score_mixto": 0.1798,
+    "nivel_riesgo": "bajo",
+    "detalle_delitos": {
+      "Homicidios": 105,
+      "Lesiones personales": 1865,
+      "Hurto a personas": 23721,
+      "Hurto a residencias": 968,
+      "Hurto de automotores": 411,
+      "Hurto de bicicletas": 1622,
+      "Hurto a comercio": 2007,
+      "Hurto de celulares": 4620,
+      "Hurto de motocicletas": 498,
+      "Delitos sexuales": 699,
+      "Violencia intrafamiliar": 5447
+    },
+    "contexto": {
+      "estrato_promedio": 3.05,
+      "luminarias_estimadas": null,
+      "luminarias_por_km2": null,
+      "longitud_vias_km": 1203.9,
+      "area_km2": 33.25,
+      "incidentes_nuse_recientes_total": 156924
+    }
+  },
+  "19": {
+    "localidad": "Ciudad Bolívar",
+    "poblacion_2025": 680206,
+    "delitos_recientes_total_2023_2025": 47162,
+    "tasa_delitos_100k": 6933.49,
+    "score_ponderado_100k": 212607.65,
+    "score_ponderado_por_km2": 11133.04,
+    "score_mixto": 0.1153,
+    "nivel_riesgo": "bajo",
+    "detalle_delitos": {
+      "Homicidios": 662,
+      "Lesiones personales": 5762,
+      "Hurto a personas": 15608,
+      "Hurto a residencias": 1085,
+      "Hurto de automotores": 955,
+      "Hurto de bicicletas": 545,
+      "Hurto a comercio": 1039,
+      "Hurto de celulares": 3035,
+      "Hurto de motocicletas": 1935,
+      "Delitos sexuales": 2611,
+      "Violencia intrafamiliar": 13925
+    },
+    "contexto": {
+      "estrato_promedio": 1.27,
+      "luminarias_estimadas": null,
+      "luminarias_por_km2": null,
+      "longitud_vias_km": 1255.4,
+      "area_km2": 129.9,
+      "incidentes_nuse_recientes_total": 295978
+    }
+  },
+  "14": {
+    "localidad": "Los Mártires",
+    "poblacion_2025": 83987,
+    "delitos_recientes_total_2023_2025": 42688,
+    "tasa_delitos_100k": 50826.91,
+    "score_ponderado_100k": 1251827.07,
+    "score_ponderado_por_km2": 161530.01,
+    "score_mixto": 1.0,
+    "nivel_riesgo": "alto",
+    "detalle_delitos": {
+      "Homicidios": 139,
+      "Lesiones personales": 2692,
+      "Hurto a personas": 25166,
+      "Hurto a residencias": 537,
+      "Hurto de automotores": 278,
+      "Hurto de bicicletas": 677,
+      "Hurto a comercio": 1819,
+      "Hurto de celulares": 3429,
+      "Hurto de motocicletas": 475,
+      "Delitos sexuales": 1729,
+      "Violencia intrafamiliar": 5747
+    },
+    "contexto": {
+      "estrato_promedio": 2.92,
+      "luminarias_estimadas": 14,
+      "luminarias_por_km2": 2.2,
+      "longitud_vias_km": 399.2,
+      "area_km2": 6.51,
+      "incidentes_nuse_recientes_total": 91608
+    }
+  },
+  "15": {
+    "localidad": "Antonio Nariño",
+    "poblacion_2025": 79758,
+    "delitos_recientes_total_2023_2025": 13691,
+    "tasa_delitos_100k": 17165.68,
+    "score_ponderado_100k": 375016.93,
+    "score_ponderado_por_km2": 61347.0,
+    "score_mixto": 0.3363,
+    "nivel_riesgo": "medio",
+    "detalle_delitos": {
+      "Homicidios": 37,
+      "Lesiones personales": 845,
+      "Hurto a personas": 7459,
+      "Hurto a residencias": 267,
+      "Hurto de automotores": 342,
+      "Hurto de bicicletas": 267,
+      "Hurto a comercio": 944,
+      "Hurto de celulares": 1750,
+      "Hurto de motocicletas": 352,
+      "Delitos sexuales": 295,
+      "Violencia intrafamiliar": 1133
+    },
+    "contexto": {
+      "estrato_promedio": 2.95,
+      "luminarias_estimadas": null,
+      "luminarias_por_km2": null,
+      "longitud_vias_km": 304.3,
+      "area_km2": 4.88,
+      "incidentes_nuse_recientes_total": 65628
+    }
+  },
+  "2": {
+    "localidad": "Chapinero",
+    "poblacion_2025": 163693,
+    "delitos_recientes_total_2023_2025": 51644,
+    "tasa_delitos_100k": 31549.3,
+    "score_ponderado_100k": 623511.7,
+    "score_ponderado_por_km2": 26874.34,
+    "score_mixto": 0.3298,
+    "nivel_riesgo": "medio",
+    "detalle_delitos": {
+      "Homicidios": 48,
+      "Lesiones personales": 1489,
+      "Hurto a personas": 33994,
+      "Hurto a residencias": 952,
+      "Hurto de automotores": 167,
+      "Hurto de bicicletas": 690,
+      "Hurto a comercio": 2554,
+      "Hurto de celulares": 8538,
+      "Hurto de motocicletas": 227,
+      "Delitos sexuales": 657,
+      "Violencia intrafamiliar": 2328
+    },
+    "contexto": {
+      "estrato_promedio": 4.05,
+      "luminarias_estimadas": 89,
+      "luminarias_por_km2": 2.3,
+      "longitud_vias_km": 955.7,
+      "area_km2": 37.98,
+      "incidentes_nuse_recientes_total": 110932
+    }
+  },
+  "20": {
+    "localidad": "Sumapaz",
+    "poblacion_2025": 3649,
+    "delitos_recientes_total_2023_2025": 5,
+    "tasa_delitos_100k": 137.02,
+    "score_ponderado_100k": 12058.1,
+    "score_ponderado_por_km2": 0.56,
+    "score_mixto": 0.0,
+    "nivel_riesgo": "bajo",
+    "detalle_delitos": {
+      "Homicidios": 4,
+      "Lesiones personales": 0,
+      "Hurto a personas": 0,
+      "Hurto a residencias": 0,
+      "Hurto de automotores": 0,
+      "Hurto de bicicletas": 0,
+      "Hurto a comercio": 0,
+      "Hurto de celulares": 0,
+      "Hurto de motocicletas": 0,
+      "Delitos sexuales": 0,
+      "Violencia intrafamiliar": 1
+    },
+    "contexto": {
+      "estrato_promedio": null,
+      "luminarias_estimadas": null,
+      "luminarias_por_km2": null,
+      "longitud_vias_km": null,
+      "area_km2": 780.35,
+      "incidentes_nuse_recientes_total": 113
+    }
+  },
+  "18": {
+    "localidad": "Rafael Uribe Uribe",
+    "poblacion_2025": 379109,
+    "delitos_recientes_total_2023_2025": 27148,
+    "tasa_delitos_100k": 7161.0,
+    "score_ponderado_100k": 187125.6,
+    "score_ponderado_por_km2": 51320.87,
+    "score_mixto": 0.2295,
+    "nivel_riesgo": "medio",
+    "detalle_delitos": {
+      "Homicidios": 212,
+      "Lesiones personales": 2832,
+      "Hurto a personas": 12115,
+      "Hurto a residencias": 851,
+      "Hurto de automotores": 778,
+      "Hurto de bicicletas": 383,
+      "Hurto a comercio": 879,
+      "Hurto de celulares": 2536,
+      "Hurto de motocicletas": 919,
+      "Delitos sexuales": 1013,
+      "Violencia intrafamiliar": 4630
+    },
+    "contexto": {
+      "estrato_promedio": 2.21,
+      "luminarias_estimadas": null,
+      "luminarias_por_km2": null,
+      "longitud_vias_km": 633.2,
+      "area_km2": 13.82,
+      "incidentes_nuse_recientes_total": 204968
+    }
+  },
+  "17": {
+    "localidad": "Candelaria",
+    "poblacion_2025": 16801,
+    "delitos_recientes_total_2023_2025": 7469,
+    "tasa_delitos_100k": 44455.69,
+    "score_ponderado_100k": 1001327.3,
+    "score_ponderado_por_km2": 81722.32,
+    "score_mixto": 0.6519,
+    "nivel_riesgo": "alto",
+    "detalle_delitos": {
+      "Homicidios": 15,
+      "Lesiones personales": 541,
+      "Hurto a personas": 4485,
+      "Hurto a residencias": 94,
+      "Hurto de automotores": 33,
+      "Hurto de bicicletas": 74,
+      "Hurto a comercio": 480,
+      "Hurto de celulares": 898,
+      "Hurto de motocicletas": 38,
+      "Delitos sexuales": 228,
+      "Violencia intrafamiliar": 583
+    },
+    "contexto": {
+      "estrato_promedio": 2.36,
+      "luminarias_estimadas": 1,
+      "luminarias_por_km2": 0.5,
+      "longitud_vias_km": 122.8,
+      "area_km2": 2.06,
+      "incidentes_nuse_recientes_total": 16927
+    }
+  },
+  "12": {
+    "localidad": "Barrios Unidos",
+    "poblacion_2025": 139756,
+    "delitos_recientes_total_2023_2025": 27503,
+    "tasa_delitos_100k": 19679.3,
+    "score_ponderado_100k": 421685.65,
+    "score_ponderado_por_km2": 49548.94,
+    "score_mixto": 0.3186,
+    "nivel_riesgo": "medio",
+    "detalle_delitos": {
+      "Homicidios": 56,
+      "Lesiones personales": 1468,
+      "Hurto a personas": 16078,
+      "Hurto a residencias": 649,
+      "Hurto de automotores": 324,
+      "Hurto de bicicletas": 894,
+      "Hurto a comercio": 1414,
+      "Hurto de celulares": 3537,
+      "Hurto de motocicletas": 355,
+      "Delitos sexuales": 471,
+      "Violencia intrafamiliar": 2257
+    },
+    "contexto": {
+      "estrato_promedio": 3.29,
+      "luminarias_estimadas": null,
+      "luminarias_por_km2": null,
+      "longitud_vias_km": 689.7,
+      "area_km2": 11.89,
+      "incidentes_nuse_recientes_total": 104401
+    }
+  },
+  "13": {
+    "localidad": "Teusaquillo",
+    "poblacion_2025": 157566,
+    "delitos_recientes_total_2023_2025": 39702,
+    "tasa_delitos_100k": 25197.06,
+    "score_ponderado_100k": 509287.54,
+    "score_ponderado_por_km2": 56584.03,
+    "score_mixto": 0.3757,
+    "nivel_riesgo": "medio",
+    "detalle_delitos": {
+      "Homicidios": 35,
+      "Lesiones personales": 1322,
+      "Hurto a personas": 25225,
+      "Hurto a residencias": 1018,
+      "Hurto de automotores": 419,
+      "Hurto de bicicletas": 1004,
+      "Hurto a comercio": 1486,
+      "Hurto de celulares": 6201,
+      "Hurto de motocicletas": 367,
+      "Delitos sexuales": 694,
+      "Violencia intrafamiliar": 1931
+    },
+    "contexto": {
+      "estrato_promedio": 3.9,
+      "luminarias_estimadas": 87,
+      "luminarias_por_km2": 6.1,
+      "longitud_vias_km": 812.0,
+      "area_km2": 14.18,
+      "incidentes_nuse_recientes_total": 100705
+    }
+  },
+  "16": {
+    "localidad": "Puente Aranda",
+    "poblacion_2025": 251711,
+    "delitos_recientes_total_2023_2025": 34239,
+    "tasa_delitos_100k": 13602.5,
+    "score_ponderado_100k": 310643.16,
+    "score_ponderado_por_km2": 45204.87,
+    "score_mixto": 0.2603,
+    "nivel_riesgo": "medio",
+    "detalle_delitos": {
+      "Homicidios": 77,
+      "Lesiones personales": 2278,
+      "Hurto a personas": 18279,
+      "Hurto a residencias": 832,
+      "Hurto de automotores": 1134,
+      "Hurto de bicicletas": 785,
+      "Hurto a comercio": 1837,
+      "Hurto de celulares": 3779,
+      "Hurto de motocicletas": 737,
+      "Delitos sexuales": 883,
+      "Violencia intrafamiliar": 3618
+    },
+    "contexto": {
+      "estrato_promedio": 3.0,
+      "luminarias_estimadas": null,
+      "luminarias_por_km2": null,
+      "longitud_vias_km": 895.1,
+      "area_km2": 17.3,
+      "incidentes_nuse_recientes_total": 143336
+    }
+  },
+  "1": {
+    "localidad": "Usaquén",
+    "poblacion_2025": 572925,
+    "delitos_recientes_total_2023_2025": 43287,
+    "tasa_delitos_100k": 7555.44,
+    "score_ponderado_100k": 170927.08,
+    "score_ponderado_por_km2": 15031.43,
+    "score_mixto": 0.1106,
+    "nivel_riesgo": "bajo",
+    "detalle_delitos": {
+      "Homicidios": 130,
+      "Lesiones personales": 2247,
+      "Hurto a personas": 24131,
+      "Hurto a residencias": 1756,
+      "Hurto de automotores": 298,
+      "Hurto de bicicletas": 1176,
+      "Hurto a comercio": 2501,
+      "Hurto de celulares": 4921,
+      "Hurto de motocicletas": 362,
+      "Delitos sexuales": 980,
+      "Violencia intrafamiliar": 4785
+    },
+    "contexto": {
+      "estrato_promedio": 3.68,
+      "luminarias_estimadas": 177,
+      "luminarias_por_km2": 2.7,
+      "longitud_vias_km": 1617.9,
+      "area_km2": 65.15,
+      "incidentes_nuse_recientes_total": 217047
+    }
+  },
+  "4": {
+    "localidad": "San Cristóbal",
+    "poblacion_2025": 401414,
+    "delitos_recientes_total_2023_2025": 26073,
+    "tasa_delitos_100k": 6495.29,
+    "score_ponderado_100k": 183167.25,
+    "score_ponderado_por_km2": 14987.17,
+    "score_mixto": 0.1154,
+    "nivel_riesgo": "bajo",
+    "detalle_delitos": {
+      "Homicidios": 189,
+      "Lesiones personales": 3264,
+      "Hurto a personas": 9918,
+      "Hurto a residencias": 727,
+      "Hurto de automotores": 438,
+      "Hurto de bicicletas": 268,
+      "Hurto a comercio": 1116,
+      "Hurto de celulares": 2117,
+      "Hurto de motocicletas": 766,
+      "Delitos sexuales": 1196,
+      "Violencia intrafamiliar": 6074
+    },
+    "contexto": {
+      "estrato_promedio": 1.99,
+      "luminarias_estimadas": null,
+      "luminarias_por_km2": null,
+      "longitud_vias_km": 931.9,
+      "area_km2": 49.06,
+      "incidentes_nuse_recientes_total": 200234
+    }
+  },
+  "5": {
+    "localidad": "Usme",
+    "poblacion_2025": 403137,
+    "delitos_recientes_total_2023_2025": 21375,
+    "tasa_delitos_100k": 5302.17,
+    "score_ponderado_100k": 158488.06,
+    "score_ponderado_por_km2": 2973.19,
+    "score_mixto": 0.0683,
+    "nivel_riesgo": "bajo",
+    "detalle_delitos": {
+      "Homicidios": 231,
+      "Lesiones personales": 2887,
+      "Hurto a personas": 7709,
+      "Hurto a residencias": 757,
+      "Hurto de automotores": 406,
+      "Hurto de bicicletas": 126,
+      "Hurto a comercio": 724,
+      "Hurto de celulares": 1453,
+      "Hurto de motocicletas": 680,
+      "Delitos sexuales": 1383,
+      "Violencia intrafamiliar": 5019
+    },
+    "contexto": {
+      "estrato_promedio": 1.38,
+      "luminarias_estimadas": null,
+      "luminarias_por_km2": null,
+      "longitud_vias_km": 370.2,
+      "area_km2": 214.9,
+      "incidentes_nuse_recientes_total": 183341
+    }
+  },
+  "7": {
+    "localidad": "Bosa",
+    "poblacion_2025": 767340,
+    "delitos_recientes_total_2023_2025": 42579,
+    "tasa_delitos_100k": 5548.91,
+    "score_ponderado_100k": 150626.71,
+    "score_ponderado_por_km2": 48332.01,
+    "score_mixto": 0.2055,
+    "nivel_riesgo": "medio",
+    "detalle_delitos": {
+      "Homicidios": 321,
+      "Lesiones personales": 4423,
+      "Hurto a personas": 17478,
+      "Hurto a residencias": 976,
+      "Hurto de automotores": 598,
+      "Hurto de bicicletas": 1492,
+      "Hurto a comercio": 1052,
+      "Hurto de celulares": 3591,
+      "Hurto de motocicletas": 1437,
+      "Delitos sexuales": 1642,
+      "Violencia intrafamiliar": 9569
+    },
+    "contexto": {
+      "estrato_promedio": 1.91,
+      "luminarias_estimadas": null,
+      "luminarias_por_km2": null,
+      "longitud_vias_km": 1102.4,
+      "area_km2": 23.91,
+      "incidentes_nuse_recientes_total": 322392
+    }
+  },
+  "8": {
+    "localidad": "Kennedy",
+    "poblacion_2025": 1080598,
+    "delitos_recientes_total_2023_2025": 78410,
+    "tasa_delitos_100k": 7256.17,
+    "score_ponderado_100k": 176404.36,
+    "score_ponderado_por_km2": 49436.55,
+    "score_mixto": 0.2193,
+    "nivel_riesgo": "medio",
+    "detalle_delitos": {
+      "Homicidios": 509,
+      "Lesiones personales": 6324,
+      "Hurto a personas": 37467,
+      "Hurto a residencias": 2005,
+      "Hurto de automotores": 2589,
+      "Hurto de bicicletas": 3052,
+      "Hurto a comercio": 2403,
+      "Hurto de celulares": 7481,
+      "Hurto de motocicletas": 2928,
+      "Delitos sexuales": 1918,
+      "Violencia intrafamiliar": 11734
+    },
+    "contexto": {
+      "estrato_promedio": 2.44,
+      "luminarias_estimadas": null,
+      "luminarias_por_km2": null,
+      "longitud_vias_km": 1782.8,
+      "area_km2": 38.56,
+      "incidentes_nuse_recientes_total": 485060
+    }
+  },
+  "10": {
+    "localidad": "Engativá",
+    "poblacion_2025": 827379,
+    "delitos_recientes_total_2023_2025": 72894,
+    "tasa_delitos_100k": 8810.23,
+    "score_ponderado_100k": 202711.82,
+    "score_ponderado_por_km2": 46780.69,
+    "score_mixto": 0.2217,
+    "nivel_riesgo": "medio",
+    "detalle_delitos": {
+      "Homicidios": 177,
+      "Lesiones personales": 4073,
+      "Hurto a personas": 38010,
+      "Hurto a residencias": 2476,
+      "Hurto de automotores": 1250,
+      "Hurto de bicicletas": 3132,
+      "Hurto a comercio": 2658,
+      "Hurto de celulares": 7980,
+      "Hurto de motocicletas": 1765,
+      "Delitos sexuales": 1604,
+      "Violencia intrafamiliar": 9769
+    },
+    "contexto": {
+      "estrato_promedio": 2.73,
+      "luminarias_estimadas": 11,
+      "luminarias_por_km2": 0.3,
+      "longitud_vias_km": 1487.3,
+      "area_km2": 35.85,
+      "incidentes_nuse_recientes_total": 400506
+    }
+  },
+  "11": {
+    "localidad": "Suba",
+    "poblacion_2025": 1246637,
+    "delitos_recientes_total_2023_2025": 81468,
+    "tasa_delitos_100k": 6535.02,
+    "score_ponderado_100k": 154639.24,
+    "score_ponderado_por_km2": 19185.81,
+    "score_mixto": 0.1169,
+    "nivel_riesgo": "bajo",
+    "detalle_delitos": {
+      "Homicidios": 246,
+      "Lesiones personales": 5139,
+      "Hurto a personas": 41267,
+      "Hurto a residencias": 2600,
+      "Hurto de automotores": 791,
+      "Hurto de bicicletas": 3059,
+      "Hurto a comercio": 3185,
+      "Hurto de celulares": 9274,
+      "Hurto de motocicletas": 1366,
+      "Delitos sexuales": 1946,
+      "Violencia intrafamiliar": 12595
+    },
+    "contexto": {
+      "estrato_promedio": 2.93,
+      "luminarias_estimadas": 219,
+      "luminarias_por_km2": 2.2,
+      "longitud_vias_km": 2063.0,
+      "area_km2": 100.48,
+      "incidentes_nuse_recientes_total": 509301
+    }
+  },
+  "6": {
+    "localidad": "Tunjuelito",
+    "poblacion_2025": 177370,
+    "delitos_recientes_total_2023_2025": 14738,
+    "tasa_delitos_100k": 8309.18,
+    "score_ponderado_100k": 209158.82,
+    "score_ponderado_por_km2": 37461.77,
+    "score_mixto": 0.1954,
+    "nivel_riesgo": "medio",
+    "detalle_delitos": {
+      "Homicidios": 78,
+      "Lesiones personales": 1397,
+      "Hurto a personas": 7356,
+      "Hurto a residencias": 284,
+      "Hurto de automotores": 235,
+      "Hurto de bicicletas": 377,
+      "Hurto a comercio": 452,
+      "Hurto de celulares": 1453,
+      "Hurto de motocicletas": 272,
+      "Delitos sexuales": 498,
+      "Violencia intrafamiliar": 2336
+    },
+    "contexto": {
+      "estrato_promedio": 2.29,
+      "luminarias_estimadas": null,
+      "luminarias_por_km2": null,
+      "longitud_vias_km": 480.4,
+      "area_km2": 9.9,
+      "incidentes_nuse_recientes_total": 89952
+    }
+  },
+  "3": {
+    "localidad": "Santa Fe",
+    "poblacion_2025": 113387,
+    "delitos_recientes_total_2023_2025": 38210,
+    "tasa_delitos_100k": 33698.75,
+    "score_ponderado_100k": 775887.01,
+    "score_ponderado_por_km2": 19491.89,
+    "score_mixto": 0.3684,
+    "nivel_riesgo": "medio",
+    "detalle_delitos": {
+      "Homicidios": 203,
+      "Lesiones personales": 2098,
+      "Hurto a personas": 23811,
+      "Hurto a residencias": 439,
+      "Hurto de automotores": 139,
+      "Hurto de bicicletas": 495,
+      "Hurto a comercio": 1410,
+      "Hurto de celulares": 4428,
+      "Hurto de motocicletas": 242,
+      "Delitos sexuales": 1079,
+      "Violencia intrafamiliar": 3866
+    },
+    "contexto": {
+      "estrato_promedio": 2.25,
+      "luminarias_estimadas": 2,
+      "luminarias_por_km2": 0.0,
+      "longitud_vias_km": 769.4,
+      "area_km2": 45.13,
+      "incidentes_nuse_recientes_total": 89889
+    }
+  }
+}

@@ -12,7 +12,7 @@ import java.io.IOException
 import java.net.URLEncoder
 import java.util.concurrent.TimeUnit
 
-/**
+/**  
  * Cliente HTTP hacia backend_riesgo.py (ver ../../../../../../../Api/backend_riesgo.py).
  *
  * La URL del backend ya no está fija en el código: se guarda en
@@ -172,6 +172,28 @@ object ApiClient {
         data class NoEncontrado(val mensaje: String) : BusquedaBarrio
     }
 
+    /**
+     * Todo lo que el pipeline recopiló de una localidad. OJO: no hay cifras por
+     * barrio — los delitos y el contexto se miden por localidad, y las llamadas
+     * de emergencia por UPZ. La UI tiene que dejar claro de qué capa es cada
+     * número para no dar a entender que son del barrio concreto.
+     */
+    data class DetalleLocalidad(
+        val localidad: String,
+        val nivelRiesgo: String,
+        val poblacion: Int,
+        val delitosTotal: Int,
+        val tasaDelitos100k: Double,
+        val scoreMixto: Double,
+        val detalleDelitos: List<Pair<String, Int>>,
+        val estratoPromedio: Double,
+        val luminarias: Int,
+        val luminariasPorKm2: Double,
+        val longitudViasKm: Double,
+        val areaKm2: Double,
+        val incidentesNuse: Int,
+    )
+
     class ApiException(message: String) : Exception(message)
 
     fun obtenerRanking(): List<Localidad> = conAutodeteccion { obtenerRankingUnaVez() }
@@ -270,10 +292,57 @@ object ApiClient {
         )
     }
 
-    fun enviarMensajeChat(historial: List<MensajeChat>, hechosRecordados: List<String> = emptyList()): RespuestaChat =
-        conAutodeteccion { enviarMensajeChatUnaVez(historial, hechosRecordados) }
+    /** Ficha completa de una localidad (/zonas/{nombre}). */
+    fun obtenerDetalleLocalidad(nombre: String): DetalleLocalidad =
+        conAutodeteccion { obtenerDetalleLocalidadUnaVez(nombre) }
 
-    private fun enviarMensajeChatUnaVez(historial: List<MensajeChat>, hechosRecordados: List<String>): RespuestaChat {
+    private fun obtenerDetalleLocalidadUnaVez(nombre: String): DetalleLocalidad {
+        // URLEncoder es para formularios: codifica el espacio como "+", que en
+        // un SEGMENTO DE RUTA no se decodifica (solo en el query string). Sin
+        // este replace, "Ciudad Bolívar" llega al backend como "Ciudad+Bolívar"
+        // y responde 404; los nombres de una sola palabra sí funcionaban, que
+        // es lo que hacía que el fallo pareciera aleatorio.
+        val url = baseUrl + "zonas/" + URLEncoder.encode(nombre, "UTF-8").replace("+", "%20")
+        client.newCall(Request.Builder().url(url).get().build()).execute().use { resp ->
+            if (!resp.isSuccessful) throw ApiException("Error ${resp.code} consultando $nombre")
+            val o = JSONObject(resp.body?.string() ?: "{}")
+            val delitos = o.optJSONObject("detalle_delitos") ?: JSONObject()
+            val contexto = o.optJSONObject("contexto") ?: JSONObject()
+            return DetalleLocalidad(
+                localidad = o.getString("localidad"),
+                nivelRiesgo = o.getString("nivel_riesgo"),
+                poblacion = o.optInt("poblacion_2025"),
+                delitosTotal = o.optInt("delitos_recientes_total_2023_2025"),
+                tasaDelitos100k = o.optDouble("tasa_delitos_100k", 0.0),
+                scoreMixto = o.optDouble("score_mixto", 0.0),
+                // Ordenados de más a menos frecuentes: es como se lee mejor.
+                detalleDelitos = delitos.keys().asSequence()
+                    .map { it to delitos.optInt(it) }
+                    .sortedByDescending { it.second }
+                    .toList(),
+                estratoPromedio = contexto.optDouble("estrato_promedio", 0.0),
+                luminarias = contexto.optInt("luminarias_estimadas"),
+                luminariasPorKm2 = contexto.optDouble("luminarias_por_km2", 0.0),
+                longitudViasKm = contexto.optDouble("longitud_vias_km", 0.0),
+                areaKm2 = contexto.optDouble("area_km2", 0.0),
+                incidentesNuse = contexto.optInt("incidentes_nuse_recientes_total"),
+            )
+        }
+    }
+
+    fun enviarMensajeChat(
+        historial: List<MensajeChat>,
+        hechosRecordados: List<String> = emptyList(),
+        lat: Double? = null,
+        lng: Double? = null,
+    ): RespuestaChat = conAutodeteccion { enviarMensajeChatUnaVez(historial, hechosRecordados, lat, lng) }
+
+    private fun enviarMensajeChatUnaVez(
+        historial: List<MensajeChat>,
+        hechosRecordados: List<String>,
+        lat: Double?,
+        lng: Double?,
+    ): RespuestaChat {
         val mensajesJson = JSONArray()
         for (m in historial) {
             val o = JSONObject().put("role", m.role).put("content", m.content)
@@ -285,6 +354,12 @@ object ApiClient {
         val cuerpo = JSONObject()
             .put("mensajes", mensajesJson)
             .put("hechos_recordados", hechosJson)
+            .apply {
+                if (lat != null && lng != null) {
+                    put("lat", lat)
+                    put("lng", lng)
+                }
+            }
             .toString()
         val request = Request.Builder()
             .url(baseUrl + "chat")
