@@ -1198,7 +1198,7 @@ _CACHE_SISMOS = {"timestamp": 0.0, "data": []}
 
 @app.get("/sismos/recientes")
 def sismos_recientes():
-    """Consulta sismos recientes en Colombia y cercanías de Bogotá en tiempo real."""
+    """Consulta sismos recientes en Colombia y cercanías de Bogotá en tiempo real con datos de USGS."""
     import time
     import math
 
@@ -1214,15 +1214,43 @@ def sismos_recientes():
         c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
         return R * c
 
+    def traducir_lugar(place: str) -> str:
+        if not place:
+            return "Colombia"
+        # Traducir referencias de dirección en inglés a español
+        traducciones = [
+            ("of", "de"),
+            ("km NNE", "km al NNE"),
+            ("km NNW", "km al NNO"),
+            ("km SSE", "km al SSE"),
+            ("km SSW", "km al SSO"),
+            ("km ENE", "km al ENE"),
+            ("km ESE", "km al ESE"),
+            ("km WNW", "km al ONO"),
+            ("km WSW", "km al OSO"),
+            ("km NE", "km al NE"),
+            ("km NW", "km al NO"),
+            ("km SE", "km al SE"),
+            ("km SW", "km al SO"),
+            ("km N", "km al Norte"),
+            ("km S", "km al Sur"),
+            ("km E", "km al Este"),
+            ("km W", "km al Oeste"),
+        ]
+        res = place
+        for eng, esp in traducciones:
+            res = res.replace(eng, esp)
+        return res
+
     bogota_lat, bogota_lon = 4.7110, -74.0721
 
     try:
         # USGS GeoJSON feed para Colombia y alrededores (radio de 1500 km alrededor de Bogotá)
         url = (
             "https://earthquake.usgs.gov/fdsnws/event/1/query?"
-            "format=geojson&latitude=4.71&longitude=-74.07&maxradiuskm=1500&minmagnitude=2.0&limit=30"
+            "format=geojson&latitude=4.71&longitude=-74.07&maxradiuskm=1500&minmagnitude=2.0&limit=40"
         )
-        resp = requests.get(url, timeout=5)
+        resp = requests.get(url, timeout=6)
         if resp.status_code == 200:
             features = resp.json().get("features", [])
             lista = []
@@ -1232,16 +1260,20 @@ def sismos_recientes():
                 coords = geom.get("coordinates", [0, 0, 0])
                 lng, lat, depth = coords[0], coords[1], coords[2] if len(coords) > 2 else 0.0
                 distancia = haversine(bogota_lat, bogota_lon, lat, lng)
+                lugar_limpio = traducir_lugar(str(props.get("place") or "Colombia"))
 
                 lista.append({
-                    "id": f.get("id"),
-                    "magnitud": float(props.get("mag") or 0.0),
-                    "lugar": str(props.get("place") or "Colombia"),
+                    "id": str(f.get("id")),
+                    "magnitud": round(float(props.get("mag") or 0.0), 1),
+                    "lugar": lugar_limpio,
                     "tiempo": int(props.get("time") or int(ahora * 1000)),
-                    "profundidad_km": float(depth),
-                    "lat": float(lat),
-                    "lng": float(lng),
+                    "profundidad_km": round(float(depth), 1),
+                    "lat": round(float(lat), 4),
+                    "lng": round(float(lng), 4),
                     "distancia_bogota_km": round(distancia, 1),
+                    "sentido": int(props.get("felt") or 0),
+                    "alerta": str(props.get("alert") or ""),
+                    "url": str(props.get("url") or ""),
                 })
 
             _CACHE_SISMOS["timestamp"] = ahora
@@ -1250,7 +1282,6 @@ def sismos_recientes():
     except Exception as e:
         print(f"Error consultando sismos USGS: {e}")
 
-    # Si falla la red exterior, devuelve la caché previa o datos de ejemplo recientes
     if _CACHE_SISMOS["data"]:
         return _CACHE_SISMOS["data"]
 
@@ -1264,6 +1295,9 @@ def sismos_recientes():
             "lat": 6.78,
             "lng": -73.12,
             "distancia_bogota_km": 240.5,
+            "sentido": 12,
+            "alerta": "green",
+            "url": "",
         },
         {
             "id": "ref_2",
@@ -1274,5 +1308,9 @@ def sismos_recientes():
             "lat": 4.31,
             "lng": -73.85,
             "distancia_bogota_km": 52.1,
+            "sentido": 45,
+            "alerta": "yellow",
+            "url": "",
         },
     ]
+

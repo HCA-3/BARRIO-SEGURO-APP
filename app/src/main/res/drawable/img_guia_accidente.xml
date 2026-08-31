@@ -1,0 +1,46 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="300dp"
+    android:height="120dp"
+    android:viewportWidth="300"
+    android:viewportHeight="120">
+    <!-- Fondo asfalto/carretera -->
+    <path
+        android:fillColor="#ECEFF1"
+        android:pathData="M0,0H300V120H0Z" />
+    <!-- Carretera gris con líneas discontinuas -->
+    <path
+        android:fillColor="#37474F"
+        android:pathData="M0,70 H300 V120 H0 Z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M20,92 H60 V96 H20 Z M100,92 H140 V96 H100 Z M180,92 H220 V96 H180 Z M260,92 H300 V96 H260 Z" />
+    <!-- Triángulo de señalización reflectivo P.A.S. -->
+    <path
+        android:fillColor="#FF3D00"
+        android:pathData="M60,40 L90,88 H30 Z" />
+    <path
+        android:fillColor="#ECEFF1"
+        android:pathData="M60,52 L78,82 H42 Z" />
+    <path
+        android:fillColor="#FFD600"
+        android:pathData="M60,60 L70,80 H50 Z" />
+    <!-- Conos de seguridad viales -->
+    <path
+        android:fillColor="#FF6D00"
+        android:pathData="M115,55 L130,88 H100 Z M145,60 L158,88 H132 Z" />
+    <!-- Luces de parqueo / Sirena de emergencia -->
+    <path
+        android:fillColor="#D50000"
+        android:pathData="M220,45 A10,10 0,1,0 240,45 A10,10 0,1,0 220,45 Z" />
+    <path
+        android:strokeColor="#FFD600"
+        android:strokeWidth="2"
+        android:pathData="M210,35 L205,30 M230,30 L230,22 M250,35 L255,30" />
+    <!-- Ambulancia / Vehículo de emergencia silueta -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M200,55 H270 V85 H200 Z" />
+    <path
+        android:fillColor="#D50000"
+        android:pathData="M225,62 H235 V78 H225 Z M220,67 H240 V73 H220 Z" />
+</vector>

@@ -1,0 +1,42 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="300dp"
+    android:height="120dp"
+    android:viewportWidth="300"
+    android:viewportHeight="120">
+    <!-- Fondo cielo lluvioso -->
+    <path
+        android:fillColor="#E1F5FE"
+        android:pathData="M0,0H300V120H0Z" />
+    <!-- Nubes de lluvia -->
+    <path
+        android:fillColor="#B0BEC5"
+        android:pathData="M30,25 C30,18 38,12 48,14 C52,8 64,8 70,14 C78,12 88,18 86,25 H30 Z" />
+    <!-- Gotas de lluvia -->
+    <path
+        android:strokeColor="#0288D1"
+        android:strokeWidth="1.8"
+        android:pathData="M40,32 L36,40 M55,30 L51,38 M70,32 L66,40 M140,25 L136,33 M160,28 L156,36 M240,26 L236,34 M260,30 L256,38" />
+    <!-- Casa protegida en alto -->
+    <path
+        android:fillColor="#78909C"
+        android:pathData="M90,45 L135,20 L180,45 V90 H90 Z" />
+    <!-- Techo -->
+    <path
+        android:fillColor="#E53935"
+        android:pathData="M85,45 L135,16 L185,45 H85 Z" />
+    <!-- Ventana superior encendida -->
+    <path
+        android:fillColor="#FFF59D"
+        android:pathData="M125,50 H145 V65 H125 Z" />
+    <!-- Sacos de arena de contención -->
+    <path
+        android:fillColor="#BCAAA4"
+        android:pathData="M80,85 H95 V93 H80 Z M93,85 H108 V93 H93 Z M162,85 H177 V93 H162 Z M175,85 H190 V93 H175 Z" />
+    <!-- Olas de inundación de agua -->
+    <path
+        android:fillColor="#0288D1"
+        android:pathData="M0,88 Q40,82 80,88 T160,88 T240,88 T300,88 V120 H0 Z" />
+    <path
+        android:fillColor="#01579B"
+        android:pathData="M0,98 Q40,94 80,98 T160,98 T240,98 T300,98 V120 H0 Z" />
+</vector>

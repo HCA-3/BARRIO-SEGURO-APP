@@ -110,6 +110,10 @@ fun DesastresAmbientalesScreen(
 // 1. VISTA SISMOS EN TIEMPO REAL
 // -------------------------------------------------------------------------------------------------
 
+enum class FiltroSismo {
+    TODOS, MAG_4, CERCANOS
+}
+
 @Composable
 fun VistaSismos(
     sismos: List<ApiClient.Sismo>,
@@ -117,24 +121,74 @@ fun VistaSismos(
     error: String?,
     onRefrescar: () -> Unit
 ) {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    var filtro by remember { mutableStateOf(FiltroSismo.TODOS) }
+
+    val sismosFiltrados = remember(sismos, filtro) {
+        when (filtro) {
+            FiltroSismo.TODOS -> sismos
+            FiltroSismo.MAG_4 -> sismos.filter { it.magnitud >= 4.0 }
+            FiltroSismo.CERCANOS -> sismos.filter { it.distanciaBogotaKm <= 350.0 }
+        }
+    }
+
     Column(modifier = Modifier.fillMaxSize().padding(12.dp)) {
-        Row(
+        // BANNER INFORMATIVO
+        Card(
             modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
         ) {
-            Text(
-                text = stringResource(R.string.sismos_recientes_titulo),
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.weight(1f)
-            )
-            Button(
-                onClick = onRefrescar,
-                enabled = !cargando,
-                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(12.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(stringResource(R.string.sismos_actualizar))
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "📡 " + stringResource(R.string.sismos_recientes_titulo),
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
+                    Text(
+                        text = "Monitoreo en vivo de eventos telúricos en Colombia y la región",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.85f)
+                    )
+                }
+                Button(
+                    onClick = onRefrescar,
+                    enabled = !cargando,
+                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+                ) {
+                    Text(stringResource(R.string.sismos_actualizar))
+                }
+            }
+        }
+
+        // CHIPS DE FILTRO RÁPIDO
+        if (sismos.isNotEmpty()) {
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                FilterChip(
+                    selected = filtro == FiltroSismo.TODOS,
+                    onClick = { filtro = FiltroSismo.TODOS },
+                    label = { Text("Todos (${sismos.size})", style = MaterialTheme.typography.labelSmall) }
+                )
+                val countMag4 = sismos.count { it.magnitud >= 4.0 }
+                FilterChip(
+                    selected = filtro == FiltroSismo.MAG_4,
+                    onClick = { filtro = FiltroSismo.MAG_4 },
+                    label = { Text("🔴 Mag ≥ 4.0 ($countMag4)", style = MaterialTheme.typography.labelSmall) }
+                )
+                val countCercanos = sismos.count { it.distanciaBogotaKm <= 350.0 }
+                FilterChip(
+                    selected = filtro == FiltroSismo.CERCANOS,
+                    onClick = { filtro = FiltroSismo.CERCANOS },
+                    label = { Text("📍 < 350 km ($countCercanos)", style = MaterialTheme.typography.labelSmall) }
+                )
             }
         }
 
@@ -156,7 +210,7 @@ fun VistaSismos(
                     }
                 }
             }
-        } else if (sismos.isEmpty()) {
+        } else if (sismosFiltrados.isEmpty()) {
             Box(modifier = Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
                 Text(stringResource(R.string.sismos_sin_datos), style = MaterialTheme.typography.bodyMedium)
             }
@@ -165,8 +219,18 @@ fun VistaSismos(
                 modifier = Modifier.weight(1f).fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                items(sismos, key = { it.id }) { sismo ->
-                    TarjetaSismo(sismo)
+                items(sismosFiltrados, key = { it.id }) { sismo ->
+                    TarjetaSismo(
+                        sismo = sismo,
+                        onAbrirUrl = { url ->
+                            if (url.isNotEmpty()) {
+                                val intent = android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(url)).apply {
+                                    addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+                                }
+                                context.startActivity(intent)
+                            }
+                        }
+                    )
                 }
             }
         }
@@ -174,7 +238,10 @@ fun VistaSismos(
 }
 
 @Composable
-fun TarjetaSismo(sismo: ApiClient.Sismo) {
+fun TarjetaSismo(
+    sismo: ApiClient.Sismo,
+    onAbrirUrl: (String) -> Unit = {}
+) {
     val colorSeveridad = when {
         sismo.magnitud >= 6.0 -> Color(0xFFD32F2F)
         sismo.magnitud >= 5.0 -> Color(0xFFF57C00)
@@ -189,36 +256,55 @@ fun TarjetaSismo(sismo: ApiClient.Sismo) {
         dif.coerceAtLeast(0)
     }
 
+    val tipoProfundidad = when {
+        sismo.profundidadKm < 30.0 -> "Superficial"
+        sismo.profundidadKm <= 120.0 -> "Intermedia"
+        else -> "Profunda"
+    }
+
     Card(
-        modifier = Modifier.fillMaxWidth().animateContentSize(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .animateContentSize()
+            .clickable(enabled = sismo.url.isNotEmpty()) {
+                onAbrirUrl(sismo.url)
+            },
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Row(
-            modifier = Modifier.fillMaxWidth().padding(16.dp),
+            modifier = Modifier.fillMaxWidth().padding(14.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Surface(
                 color = colorSeveridad,
-                shape = RoundedCornerShape(8.dp),
-                modifier = Modifier.size(56.dp)
+                shape = RoundedCornerShape(10.dp),
+                modifier = Modifier.size(54.dp)
             ) {
-                Box(contentAlignment = Alignment.Center) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
+                ) {
                     Text(
                         text = "%.1f".format(sismo.magnitud),
                         color = Color.White,
-                        fontWeight = FontWeight.Bold,
+                        fontWeight = FontWeight.ExtraBold,
                         style = MaterialTheme.typography.titleLarge
+                    )
+                    Text(
+                        text = "Mag",
+                        color = Color.White.copy(alpha = 0.9f),
+                        style = MaterialTheme.typography.labelSmall
                     )
                 }
             }
 
-            Spacer(modifier = Modifier.width(16.dp))
+            Spacer(modifier = Modifier.width(14.dp))
 
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = sismo.lugar,
                     style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.SemiBold
+                    fontWeight = FontWeight.Bold
                 )
                 Spacer(modifier = Modifier.height(2.dp))
                 Text(
@@ -233,15 +319,27 @@ fun TarjetaSismo(sismo: ApiClient.Sismo) {
                 Spacer(modifier = Modifier.height(4.dp))
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = stringResource(R.string.sismos_profundidad, sismo.profundidadKm),
-                        style = MaterialTheme.typography.labelSmall
+                        text = "Prof. ${sismo.profundidadKm} km ($tipoProfundidad)",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Text(
                         text = stringResource(R.string.sismos_distancia, sismo.distanciaBogotaKm),
                         style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.SemiBold,
+                        color = if (sismo.distanciaBogotaKm < 150) Color(0xFFD32F2F) else MaterialTheme.colorScheme.primary
+                    )
+                }
+                if (sismo.sentido > 0) {
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        text = "👥 Sentido por ${sismo.sentido} personas",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = Color(0xFFE65100),
                         fontWeight = FontWeight.Medium
                     )
                 }
@@ -259,6 +357,8 @@ data class GuiaDesastre(
     val icono: String,
     val titulo: String,
     val descripcion: String,
+    val lineaContacto: String = "123",
+    val entidadContacto: String = "Línea 123",
     val antes: List<String>,
     val durante: List<String>,
     val despues: List<String>,
@@ -273,126 +373,247 @@ fun VistaGuiasDesastres() {
                 id = "sismo",
                 icono = "🏢",
                 titulo = "Sismos y Terremotos",
-                descripcion = "Bogotá se encuentra en una zona de amenaza sísmica intermedia con suelos blandos en la sabana.",
+                descripcion = "Protocolo de autoprotección ante movimientos telúricos en la sabana de Bogotá.",
+                lineaContacto = "123",
+                entidadContacto = "Emergencias 123",
                 antes = listOf(
-                    "Identifica zonas seguras y puntos de encuentro en tu casa, trabajo o estudio.",
-                    "Asegura muebles altos, cuadros y objetos pesados a las paredes.",
-                    "Ten lista la mochila de emergencia con documentos y medicinas."
+                    "Identifica zonas seguras (columnas, vigas y muebles resistentes) y rutas de evacuación en tu hogar o trabajo.",
+                    "Fija a las paredes estanterías, televisores, calentadores y cuadros pesados.",
+                    "Mantén lista la Mochila de Emergencia 72h con linterna, agua, alimentos y copias de documentos.",
+                    "Realiza simulacros de evacuación familiares y define un punto de encuentro fuera de cables de alta tensión."
                 ),
                 durante = listOf(
-                    "Agáchate, Cúbrete bajo una mesa resistente y Agárrate (Técnica D-C-A).",
-                    "Aléjate de ventanas, vidrios, fachadas y objetos que puedan caer.",
-                    "Si estás en un edificio alto en Bogotá, NO uses el ascensor ni bajes escaleras durante el sismo."
+                    "Aplica la técnica D-C-A: Agáchate, Cúbrete la cabeza bajo una mesa firme y Agárrate fuerte.",
+                    "Aléjate de ventanas de vidrio, fachadas, balcones y objetos colgantes que puedan desprenderse.",
+                    "Si estás en un edificio alto en Bogotá, NO uses el ascensor ni bajes corriendo por las escaleras durante el sismo.",
+                    "Si estás en la calle, protégete la cabeza y aléjate de postes, transformadores y cornisas antiguas.",
+                    "Si vas en TransMilenio o vehículo, detén la marcha lejos de puentes vehiculares y permanece en el interior."
                 ),
                 despues = listOf(
-                    "Cierra los pasos de gas, agua y baja los tacos de la luz.",
-                    "Evacúa por las escaleras hacia el punto de encuentro establecido.",
-                    "Verifica posibles daños estructurales antes de reingresar."
+                    "Cierra inmediatamente las llaves de paso de gas natural, agua y baja los interruptores eléctricos.",
+                    "Evacúa con calma por las escaleras hacia el punto de encuentro despejado asignado.",
+                    "Usa mensajes de texto (SMS) o datos móviles para comunicarte; deja las líneas de voz para emergencias reales.",
+                    "Inspecciona la estructura en busca de grietas en 'X' o inclinación de columnas antes de reingresar."
                 ),
-                tipsBogota = "En Bogotá, muchas estructuras de Chapinero y Teusaquillo son patrimonio o mampostería no reforzada: ten especial cuidado con cornisas y fachadas antiguas."
+                tipsBogota = "En Bogotá, barrios antiguos como Chapinero, La Candelaria y Teusaquillo cuentan con mampostería histórica vulnerable. Prioriza alejarte de voladizos y marquesinas."
             ),
             GuiaDesastre(
                 id = "inundacion",
                 icono = "🌊",
-                titulo = "Inundaciones y Encharcamientos",
-                descripcion = "Común durante las temporadas de lluvias (ola invernal) por desbordamiento de canales y basuras.",
+                titulo = "Inundaciones y Desbordamientos",
+                descripcion = "Manejo de emergencias por lluvias torrenciales, crecientes de ríos y encharcamientos.",
+                lineaContacto = "116",
+                entidadContacto = "Acueducto 116",
                 antes = listOf(
-                    "No arrojes basuras a las calles ni sumideros de alcantarillado.",
-                    "Limpia canaletas, sifones y bajantes de tu vivienda periódicamente.",
-                    "Mantén sacos de arena si vives cerca de rondas de río o quebradas."
+                    "No arrojes basuras, escombros ni grasas a los sumideros de alcantarillado ni quebradas.",
+                    "Limpia techos, canaletas, bajantes y cajas de inspección de tu vivienda antes de la temporada invernal.",
+                    "Si vives cerca a rondas de río (Bogotá, Tunjuelo, Fucha), ten barreras o sacos de arena listos.",
+                    "Ubica los documentos y electrodomésticos valiosos en niveles o repisas elevadas."
                 ),
                 durante = listOf(
-                    "Desconecta los electrodomésticos y corta el fluido eléctrico.",
-                    "Sube objetos de valor y documentos a los pisos superiores.",
-                    "Nunca intentes cruzar corrientes de agua a pie ni en vehículo."
+                    "Corta inmediatamente el suministro eléctrico y de gas para prevenir cortocircuitos e incendios.",
+                    "Sube a los pisos superiores con tu mochila de emergencia y documentos sellados en bolsas plásticas.",
+                    "NUNCA intentes cruzar a pie ni en carro calles inundadas o corrientes rápidas (15 cm de agua pueden tumbar a una persona).",
+                    "Evita transitar por deprimidos viales inundados en avenidas principales."
                 ),
                 despues = listOf(
-                    "No consumas agua de la llave hasta que el Acueducto certifique su potabilidad.",
-                    "Desinfecta pisos y paredes con cloro antes de volver a habitar.",
-                    "Reporta taponamientos de alcantarillado a la línea 116 de la EAAB."
+                    "No consumas agua de la llave hasta que la EAAB garantice su potabilidad; hierve el agua si es necesario.",
+                    "No toques cables eléctricos caídos ni enchufes mojados hasta que un técnico verifique la instalación.",
+                    "Lava y desinfecta con cloro todas las áreas afectadas para evitar proliferación de bacterias y hongos.",
+                    "Reporta taponamientos masivos y tapas de alcantarillado faltantes a la línea 116 de la EAAB."
                 ),
-                tipsBogota = "Zonas de alta vulnerabilidad: orillas del Río Bogotá, Quebrada La Vieja, Tunjuelo y pasos a desnivel deprimidos (ej. Autopista Norte con Calle 222)."
-            ),
-            GuiaDesastre(
-                id = "deslizamiento",
-                icono = "⛰️",
-                titulo = "Deslizamientos y Remoción en Masa",
-                descripcion = "Riesgo latente en los Cerros Orientales, laderas de Chapinero, Ciudad Bolívar, Usme y San Cristóbal.",
-                antes = listOf(
-                    "Observa si hay grietas en el terreno, muros agrietados o árboles inclinados.",
-                    "No construyas en pendientes pronunciadas ni cortes taludes sin asesoría técnica.",
-                    "Canaliza adecuadamente las aguas lluvias y servidas."
-                ),
-                durante = listOf(
-                    "Si escuchas ruidos de desprendimiento o crujidos, evacúa de inmediato.",
-                    "Aléjate de la trayectoria del derrumbe hacia zonas altas y laterales.",
-                    "Ayuda a evacuar a niños, adultos mayores y mascotas."
-                ),
-                despues = listOf(
-                    "No regreses a la vivienda hasta que IDIGER o Bomberos evalúen el terreno.",
-                    "Permanece alerta a réplicas o nuevos desprendimientos por saturación de agua."
-                ),
-                tipsBogota = "IDIGER Bogotá realiza monitoreo constante de taludes. Ante cualquier grieta llama a la Línea 123 para visita técnica de evaluación de riesgo."
+                tipsBogota = "Puntos críticos frecuentes en Bogotá: Ronda del Río Tunjuelo (Bosa/Kennedy), depresión Autopista Norte con Calle 222, y paso bajo puente de la NQS con Calle 6."
             ),
             GuiaDesastre(
                 id = "incendio",
                 icono = "🔥",
                 titulo = "Incendios Forestales y Urbanos",
-                descripcion = "Frecuentes en temporadas secas (Fenómeno del Niño) en los Cerros Orientales y áreas residenciales.",
+                descripcion = "Prevención y combate inicial de conflagraciones en Cerros Orientales y áreas urbanas.",
+                lineaContacto = "119",
+                entidadContacto = "Bomberos 119",
                 antes = listOf(
-                    "No arrojes colillas de cigarrillo, fósforos ni botellas de vidrio en zonas verdes.",
-                    "Revisa instalaciones eléctricas y no sobrecargues tomacorrientes.",
-                    "Ten un extintor multipropósito (tipo ABC) cargado y vigente en casa."
+                    "No enciendas fogatas ni arrojes colillas de cigarrillos, cerillos o vidrios en los Cerros Orientales.",
+                    "No sobrecargues tomacorrientes ni uses cables pelados; revisa la red eléctrica con regularidad.",
+                    "Ten en casa un extintor multipropósito Tipo ABC recargado y aprende a usarlo (técnica PASS).",
+                    "Mantén despejadas las salidas de emergencia y pasillos comunes en edificios."
                 ),
                 durante = listOf(
-                    "Llama inmediatamente a la línea 119 de Bomberos de Bogotá o al 123.",
-                    "Si hay humo espeso, desplázate a gatas cubriendo nariz y boca con un trapo húmedo.",
-                    "Toca las puertas con el dorso de la mano antes de abrirlas; si están calientes, no abras."
+                    "Llama de inmediato a la Línea 119 de Bomberos de Bogotá o al 123 indicando dirección exacta.",
+                    "Si hay humo denso, desplázate gateando a ras de suelo y cubre tu boca y nariz con un paño húmedo.",
+                    "Toca las puertas con el dorso de la mano antes de abrirlas; si la chapa o puerta está caliente, NO la abras.",
+                    "Si tus prendas de vestir se prenden, detente, tírate al suelo y rueda sobre ti mismo cubriendo tu rostro.",
+                    "NUNCA uses ascensores; utiliza exclusivamente las escaleras de emergencia."
                 ),
                 despues = listOf(
-                    "No ingreses al inmueble hasta que los bomberos declaren el área segura.",
-                    "Desecha alimentos y medicinas que hayan estado expuestos al calor o humo."
+                    "No ingreses al inmueble afectado hasta que el Cuerpo Oficial de Bomberos confirme que es 100% seguro.",
+                    "Desecha cualquier alimento, bebida o medicamento que haya estado expuesto al calor o humo tóxico.",
+                    "Si sufriste quemaduras leves, aplica abundante agua fría limpia (nunca aceites, cremas ni pasta dental)."
                 ),
-                tipsBogota = "En caso de humo denso por incendios en los Cerros de Bogotá, usa tapabocas N95 y mantén cerradas ventanas de colegios y hogares."
+                tipsBogota = "Durante temporadas secas (Fenómeno de El Niño), los Cerros Orientales son muy vulnerables. Si observas humo o fuego en la montaña, llama de inmediato al 119."
             ),
             GuiaDesastre(
-                id = "vendaval",
-                icono = "🌪️",
-                titulo = "Vendavales y Granizadas",
-                descripcion = "Ráfagas de viento súbitas y granizadas densas que provocan colapso de techos y tejas.",
+                id = "deslizamiento",
+                icono = "⛰️",
+                titulo = "Deslizamientos y Remoción en Masa",
+                descripcion = "Acción ante movimientos de tierra, caída de rocas y fallas de taludes en laderas.",
+                lineaContacto = "123",
+                entidadContacto = "IDIGER / 123",
                 antes = listOf(
-                    "Asegura tejas de zinc, láminas, tanques de agua y avisos en cubiertas.",
-                    "Poda ramas de árboles secos que puedan caer sobre cables o techos."
+                    "Observa si aparecen grietas en el terreno, pisos levantados, muros inclinados o puertas que se traban.",
+                    "No realices excavaciones ni cortes en taludes sin asesoría de ingenieros geotécnicos.",
+                    "Canaliza las aguas lluvias y evita arrojar aguas residuales directamente a la ladera.",
+                    "Siembra vegetación nativa con raíces profundas en zonas de pendiente para afirmar el suelo."
                 ),
                 durante = listOf(
-                    "Aléjate de ventanales, muros perimetrales y árboles frondosos.",
-                    "Si estás conduciendo, reduce la velocidad y no te detengas debajo de árboles o postes."
+                    "Si escuchas ruidos sordos de desprendimiento, crujidos o caída de árboles, evacúa de inmediato.",
+                    "Aléjate de la trayectoria del derrumbe hacia zonas laterales y elevadas seguras.",
+                    "Ayuda a evacuar a niños, personas con discapacidad, adultos mayores y animales de compañía."
                 ),
                 despues = listOf(
-                    "Retira el exceso de granizo acumulado en tejados y sifones para evitar colapsos.",
-                    "Ten cuidado con cables caídos en la vía pública (llama a Enel al 115)."
+                    "No regreses a la vivienda hasta que ingenieros de IDIGER y Bomberos emitan concepto técnico.",
+                    "Monitorea el terreno por posibles deslizamientos secundarios por saturación de agua.",
+                    "Sigue las alertas y recomendaciones oficiales emitidas por el Sistema Distrital de Gestión del Riesgo."
                 ),
-                tipsBogota = "El granizo suele taponar bajantes y colapsar cubiertas livianas en zonas comerciales y deprimidos viales de la ciudad."
+                tipsBogota = "Localidades con mayor riesgo de ladera en Bogotá: Ciudad Bolívar, Usme, San Cristóbal, Santa Fe y laderas altas de Chapinero y Usaquén."
             ),
             GuiaDesastre(
                 id = "gas",
                 icono = "💨",
-                titulo = "Fugas de Gas y Químicos",
-                descripcion = "Emergencias domésticas o industriales con riesgo de explosión e intoxicación.",
+                titulo = "Fugas de Gas y Monóxido de Carbono",
+                descripcion = "Protocolo ante escape de gas natural, olor a mercaptano o fallas en gasodomésticos.",
+                lineaContacto = "164",
+                entidadContacto = "Vanti 164",
                 antes = listOf(
-                    "Revisa periódicamente mangueras y válvulas de la estufa y calentador.",
-                    "Garantiza ventilación adecuada en áreas donde operen calentadores de gas."
+                    "Realiza la revisión técnica periódica obligatoria de instalaciones de gas cada 5 años con firmas certificadas.",
+                    "Verifica que la llama de estufas y calentadores sea siempre de color azul uniforme (si es amarilla o naranja, hay mala combustión).",
+                    "Garantiza ventilación permanente en recintos con calentadores de gas (rejillas de ventilación despejadas)."
                 ),
                 durante = listOf(
-                    "Si huele a gas (olor a huevo podrido), NO enciendas luces, fósforos ni timbres.",
-                    "Abre ventanas y puertas de par en par para ventilar.",
-                    "Cierra la llave de paso general del gas y sal de la vivienda."
+                    "Si percibes fuerte olor a gas (huevo podrido), NO enciendas luces, fósforos, timbres ni uses el celular dentro.",
+                    "Abre ventanas y puertas de par en par inmediatamente para generar ventilación cruzada.",
+                    "Cierra la válvula de corte general del centro de medición de gas de la vivienda.",
+                    "Evacúa a todos los ocupantes hacia el exterior de la edificación sin accionar interruptores."
                 ),
                 despues = listOf(
-                    "Comunícate desde el exterior con Vanti (Línea 164) o al 123.",
-                    "No enciendas aparatos eléctricos hasta que el técnico certifique que la fuga fue reparada."
+                    "Comunícate desde el exterior a la Línea de Emergencias de Vanti (164) o al 123.",
+                    "No reingreses ni enciendas equipos eléctricos hasta que técnicos calificados reparen y certifiquen la red."
                 ),
-                tipsBogota = "Vanti atiende emergencias de gas natural 24/7 en Bogotá a través de la línea gratuita 164."
+                tipsBogota = "Vanti dispone de la línea gratuita 164 las 24 horas para atención de fugas en Bogotá y municipios de la sabana."
+            ),
+            GuiaDesastre(
+                id = "vendaval",
+                icono = "🌪️",
+                titulo = "Vendavales y Granizadas Severas",
+                descripcion = "Protección frente a ráfagas de viento huracanadas y acumulación de granizo en techos.",
+                lineaContacto = "115",
+                entidadContacto = "Enel 115",
+                antes = listOf(
+                    "Fija firmemente cubiertas, tejas de zinc, tanques de agua, paneles solares y avisos publicitarios.",
+                    "Solicita al Jardín Botánico o Enel la poda preventiva de ramas que amenacen redes eléctricas o techos.",
+                    "Asegura ventanas y repara vidrios rotos o flojos."
+                ),
+                durante = listOf(
+                    "Aléjate de ventanales grandes, muros provisionales, árboles frondosos y vallas publicitarias.",
+                    "No te resguardes bajo árboles durante la tormenta por riesgo de caída de ramas y rayos.",
+                    "Si conduces, disminuye la velocidad, enciende luces de emergencia y mantente lejos de postes."
+                ),
+                despues = listOf(
+                    "Retira el exceso de granizo acumulado sobre techos livianos y bajantes para prevenir colapsos por sobrepeso.",
+                    "Si encuentras cables de alta tensión caídos en el suelo, mantén distancia de al menos 10 metros y llama al 115 de Enel."
+                ),
+                tipsBogota = "Las granizadas en Bogotá pueden acumular hasta 30 cm de hielo en pocos minutos, colapsando cubiertas de bodegas, colegios y parqueaderos."
+            ),
+            GuiaDesastre(
+                id = "rayos",
+                icono = "⚡",
+                titulo = "Tormentas Eléctricas y Rayos",
+                descripcion = "Medidas de seguridad ante descargas eléctricas atmosféricas en la sabana.",
+                lineaContacto = "123",
+                entidadContacto = "Línea 123",
+                antes = listOf(
+                    "Instala sistemas de puesta a tierra y pararrayos en edificaciones residenciales e industriales.",
+                    "Conoce los pronósticos meteorológicos de IDIGER e IDEAM antes de realizar actividades al aire libre."
+                ),
+                durante = listOf(
+                    "Aplica la regla del 30-30: si el tiempo entre el relámpago y el trueno es menor a 30 segundos, busca refugio de inmediato.",
+                    "Refúgiate dentro de un edificio cerrado con estructura sólida o dentro de un automóvil cerrado (Jaula de Faraday).",
+                    "Aléjate de cuerpos de agua (lagos, piscinas, humedales), campos abiertos y estructuras metálicas.",
+                    "Desconecta aparatos electrónicos de la red eléctrica para protegerlos de sobretensiones."
+                ),
+                despues = listOf(
+                    "Espera al menos 30 minutos después del último trueno antes de reanudar actividades al aire libre.",
+                    "Si una persona es alcanzada por un rayo, es seguro tocarla y brindarle primeros auxilios/RCP de inmediato."
+                ),
+                tipsBogota = "La sabana de Bogotá tiene alta densidad de descargas eléctricas en parques metropolitanos (Simón Bolívar, El Virrey) y canchas deportivas descubiertas."
+            ),
+            GuiaDesastre(
+                id = "primeros_auxilios",
+                icono = "🩹",
+                titulo = "Primeros Auxilios y RCP Básica",
+                descripcion = "Soporte vital inicial ante paros cardíacos, asfixia, quemaduras y hemorragias.",
+                lineaContacto = "132",
+                entidadContacto = "Cruz Roja 132",
+                antes = listOf(
+                    "Capacítate en técnicas básicas de Reanimación Cardiopulmonar (RCP) y desobstrucción de vía aérea (Maniobra de Heimlich).",
+                    "Mantén un botiquín de primeros auxilios completo con gasas estériles, vendas, tijeras, guantes de látex y solución salina."
+                ),
+                durante = listOf(
+                    "Evalúa la escena antes de ingresar: verifica que sea segura para ti y el paciente.",
+                    "Verifica si la persona responde y respira; si no respira, llama al 123 e inicia compresiones torácicas a ritmo de 100-120 por minuto en el centro del pecho.",
+                    "Para hemorragias graves: presiona firmemente la herida con un paño limpio o gasa sin retirar los apósitos saturados.",
+                    "Para quemaduras: enfría la zona con agua corriente limpia a temperatura ambiente durante al menos 15 minutos.",
+                    "Para atragantamiento en adultos conscientes: realiza compresiones abdominales hacia arriba por encima del ombligo."
+                ),
+                despues = listOf(
+                    "Coloca a la persona inconsciente que sí respira en Posición Lateral de Seguridad mientras arriba la ambulancia.",
+                    "Informa con precisión al personal médico de la ambulancia sobre los tiempos y maniobras realizadas."
+                ),
+                tipsBogota = "El Centro Regulador de Urgencias y Emergencias (CRUE) de Bogotá despacha ambulancias a través de la Línea 123. Mantén la calma y proporciona la dirección exacta."
+            ),
+            GuiaDesastre(
+                id = "quimicos",
+                icono = "🧪",
+                titulo = "Emergencias Químicas y Materiales Peligrosos",
+                descripcion = "Procedimiento ante derrames de sustancias tóxicas, vapores químicos o explosivos.",
+                lineaContacto = "119",
+                entidadContacto = "Bomberos HazMat",
+                antes = listOf(
+                    "Almacena productos químicos de limpieza en sus envases originales, rotulados y fuera del alcance de niños.",
+                    "Nunca mezcles cloro con vinagre, alcohol o amoníaco (produce gas cloramina altamente tóxico y letal)."
+                ),
+                durante = listOf(
+                    "Si hay una fuga o nube química exterior, ingresa a un recinto interior cerrado (refugio en el lugar).",
+                    "Cierra puertas y ventanas; sella las rendijas con toallas húmedas o cinta adhesiva.",
+                    "Apaga los sistemas de aire acondicionado, ventilación y extractores de aire.",
+                    "Ubícate en la habitación más alta si el químico es más pesado que el aire, o en la más baja si es más ligero."
+                ),
+                despues = listOf(
+                    "Espera las indicaciones de las autoridades antes de abrir ventanas para ventilar.",
+                    "Si hubo contacto en piel u ojos, lava con abundante agua corriente durante 20 minutos y acude a urgencias."
+                ),
+                tipsBogota = "Localidades con corredores industriales químicos en Bogotá: Puente Aranda, Fontibón y zonas adyacentes a la Calle 13 y Autopista Sur."
+            ),
+            GuiaDesastre(
+                id = "accidente_vial",
+                icono = "🚗",
+                titulo = "Accidentes de Tránsito y Choques Múltiples",
+                descripcion = "Protocolo P.A.S. (Proteger, Avisar, Socorrer) en vías principales y autopistas.",
+                lineaContacto = "123",
+                entidadContacto = "Policía Tránsito 123",
+                antes = listOf(
+                    "Mantén al día el kit de carretera obligatorio (chaleco reflectivo, 2 conos/triángulos, extintor, botiquín, tacos y linterna).",
+                    "Respeta los límites de velocidad de 50 km/h en vías urbanas de Bogotá y usa siempre el cinturón de seguridad."
+                ),
+                durante = listOf(
+                    "PROTEGER: Enciende luces de parqueo, ponte el chaleco reflectivo y ubica los triángulos de señalización a 30 y 90 metros del vehículo.",
+                    "AVISAR: Comunícate a la Línea 123 indicando kilómetro, sentido vial, número de vehículos y si hay heridos o personas atrapadas.",
+                    "SOCORRER: Si hay heridos graves, NO muevas a la persona ni le retires el casco a motociclistas, salvo riesgo inminente de explosión o incendio."
+                ),
+                despues = listOf(
+                    "Permanece en un lugar seguro fuera de la calzada mientras llegan las unidades de Policía de Tránsito y ambulancias.",
+                    "Toma fotografías de las posiciones finales de los vehículos y la señalización para los reportes oficiales."
+                ),
+                tipsBogota = "En corredores de alta velocidad de Bogotá (Av. Boyacá, Av. Ciudad de Cali, Autopista Norte, Av. Las Américas) extrema las medidas de señalización para evitar atropellamientos secundarios."
             )
         )
     }
@@ -504,6 +725,27 @@ fun TarjetaGuiaInteractiva(guia: GuiaDesastre) {
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.onPrimaryContainer
                             )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    val context = androidx.compose.ui.platform.LocalContext.current
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.End
+                    ) {
+                        Button(
+                            onClick = {
+                                val intent = android.content.Intent(android.content.Intent.ACTION_DIAL, android.net.Uri.parse("tel:${guia.lineaContacto}")).apply {
+                                    addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+                                }
+                                context.startActivity(intent)
+                            },
+                            shape = RoundedCornerShape(8.dp),
+                            contentPadding = PaddingValues(horizontal = 14.dp, vertical = 6.dp)
+                        ) {
+                            Text("📞 Llamar a ${guia.entidadContacto}")
                         }
                     }
                 }

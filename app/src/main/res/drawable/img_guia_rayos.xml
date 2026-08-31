@@ -1,0 +1,34 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="300dp"
+    android:height="120dp"
+    android:viewportWidth="300"
+    android:viewportHeight="120">
+    <!-- Fondo azul noche tormentosa -->
+    <path
+        android:fillColor="#263238"
+        android:pathData="M0,0H300V120H0Z" />
+    <!-- Gran nube de tormenta eléctrica -->
+    <path
+        android:fillColor="#455A64"
+        android:pathData="M40,35 C40,20 60,10 80,15 C90,5 115,5 125,15 C140,10 160,20 160,35 C170,40 165,55 150,55 H50 C35,55 30,45 40,35 Z" />
+    <!-- Rayo de alta tensión -->
+    <path
+        android:fillColor="#FFD600"
+        android:pathData="M105,45 L85,75 H102 L92,108 L125,65 H108 Z" />
+    <!-- Resplandor del rayo -->
+    <path
+        android:strokeColor="#FFEE58"
+        android:strokeWidth="1.5"
+        android:pathData="M105,45 L85,75 H102 L92,108 L125,65 H108 Z" />
+    <!-- Refugio seguro (Vehículo con Jaula de Faraday) -->
+    <path
+        android:fillColor="#1E88E5"
+        android:pathData="M200,85 L215,65 H255 L270,85 H280 V102 H190 V85 Z" />
+    <path
+        android:fillColor="#90CAF9"
+        android:pathData="M218,68 H233 V82 H210 Z M237,68 H252 V82 L262,82 Z" />
+    <!-- Ruedas -->
+    <path
+        android:fillColor="#212121"
+        android:pathData="M205,102 A7,7 0,1,0 219,102 A7,7 0,1,0 205,102 Z M250,102 A7,7 0,1,0 264,102 A7,7 0,1,0 250,102 Z" />
+</vector>

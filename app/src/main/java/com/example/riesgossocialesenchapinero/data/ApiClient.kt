@@ -160,6 +160,9 @@ object ApiClient {
         val lat: Double,
         val lng: Double,
         val distanciaBogotaKm: Double,
+        val sentido: Int = 0,
+        val alerta: String = "",
+        val url: String = ""
     )
 
     data class RiesgoPorPunto(
@@ -245,6 +248,9 @@ object ApiClient {
                     lat = o.getDouble("lat"),
                     lng = o.getDouble("lng"),
                     distanciaBogotaKm = o.getDouble("distancia_bogota_km"),
+                    sentido = o.optInt("sentido", 0),
+                    alerta = o.optString("alerta", ""),
+                    url = o.optString("url", "")
                 )
             }
         }
