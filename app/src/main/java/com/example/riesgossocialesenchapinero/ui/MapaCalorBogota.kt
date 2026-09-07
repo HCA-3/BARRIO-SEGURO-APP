@@ -82,6 +82,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import com.example.riesgossocialesenchapinero.R
 import com.example.riesgossocialesenchapinero.data.ApiClient
 import com.google.android.gms.location.LocationServices
@@ -470,42 +472,17 @@ fun MapaCalorBogota(
     var offsetPanX by remember { mutableFloatStateOf(0f) }
     var offsetPanY by remember { mutableFloatStateOf(0f) }
 
-    // Pulso animado de radar térmico y GPS
-    val infiniteTransition = rememberInfiniteTransition(label = "pulso_termico")
-    val radioPulsoGps by infiniteTransition.animateFloat(
-        initialValue = 4f,
-        targetValue = 22f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(1600, easing = LinearEasing),
-            repeatMode = RepeatMode.Restart
-        ),
-        label = "radio_gps"
-    )
-    val alfaPulsoGps by infiniteTransition.animateFloat(
-        initialValue = 0.95f,
-        targetValue = 0.0f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(1600, easing = LinearEasing),
-            repeatMode = RepeatMode.Restart
-        ),
-        label = "alfa_gps"
-    )
-    val brilloNeon by infiniteTransition.animateFloat(
-        initialValue = 0.65f,
-        targetValue = 1.0f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(1100, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "brillo_neon"
-    )
-
-    // Cargar datos espaciales y de calor
+    // Cargar datos espaciales y de calor en segundo plano sin congelar el hilo principal
     LaunchedEffect(ranking) {
-        val locs = GestorGeojson.cargarLocalidades(context, ranking)
+        val (locs, cuadras, calles) = withContext(Dispatchers.Default) {
+            val l = GestorGeojson.cargarLocalidades(context, ranking)
+            val c = GestorGeojson.cargarCuadrasCalor(context, l)
+            val v = GestorGeojson.obtenerCallesPrincipales()
+            Triple(l, c, v)
+        }
         localidades = locs
-        cuadrasCalor = GestorGeojson.cargarCuadrasCalor(context, locs)
-        callesPrincipales = GestorGeojson.obtenerCallesPrincipales()
+        cuadrasCalor = cuadras
+        callesPrincipales = calles
     }
 
     // Geolocalización automática en tiempo real
@@ -642,7 +619,7 @@ fun MapaCalorBogota(
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Surface(
-                            color = Color(0xFF00E5FF).copy(alpha = brilloNeon),
+                            color = Color(0xFF00E5FF).copy(alpha = 0.85f),
                             shape = CircleShape,
                             modifier = Modifier.size(12.dp)
                         ) {}
@@ -928,10 +905,10 @@ fun MapaCalorBogota(
                     )
 
                     drawCircle(
-                        color = Color(0xFF00E5FF).copy(alpha = alfaPulsoGps),
-                        radius = radioPulsoGps * escalaZoom.coerceIn(1.0f, 2.5f) + 6f,
+                        color = Color(0xFF00E5FF).copy(alpha = 0.60f),
+                        radius = (precisionGpsMts * escalaZoom * 0.4f).coerceIn(18f, 65f) * 1.15f,
                         center = posGps,
-                        style = Stroke(3f)
+                        style = Stroke(2.dp.toPx())
                     )
 
                     drawCircle(
