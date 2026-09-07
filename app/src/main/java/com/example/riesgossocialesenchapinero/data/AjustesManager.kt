@@ -21,7 +21,14 @@ class AjustesManager(context: Context) {
         private const val CLAVE_IDIOMA = "ajustes_idioma"
         private const val CLAVE_INTERVALO = "ajustes_intervalo_minutos"
         private const val CLAVE_ALERTAS = "ajustes_alertas_habilitadas"
+        private const val CLAVE_TERMINOS = "ajustes_terminos_aceptados"
     }
+
+    var terminosAceptados: Boolean
+        get() = prefs.getBoolean(CLAVE_TERMINOS, false)
+        set(value) {
+            prefs.edit().putBoolean(CLAVE_TERMINOS, value).apply()
+        }
 
     var tema: TemaApp
         get() {

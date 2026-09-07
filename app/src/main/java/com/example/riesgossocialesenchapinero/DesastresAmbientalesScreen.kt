@@ -22,6 +22,13 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.ui.draw.rotate
+import com.example.riesgossocialesenchapinero.ui.bounceClick
+import com.example.riesgossocialesenchapinero.ui.staggeredEntrance
+import com.example.riesgossocialesenchapinero.ui.rememberPulsingBorder
+import com.example.riesgossocialesenchapinero.ui.breathingPulse
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
@@ -222,9 +229,10 @@ fun VistaSismos(
                 modifier = Modifier.weight(1f).fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                items(sismosFiltrados, key = { it.id }) { sismo ->
+                itemsIndexed(sismosFiltrados, key = { _, it -> it.id }) { index, sismo ->
                     TarjetaSismo(
                         sismo = sismo,
+                        index = index,
                         onAbrirUrl = { url ->
                             if (url.isNotEmpty()) {
                                 val intent = android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(url)).apply {
@@ -243,6 +251,7 @@ fun VistaSismos(
 @Composable
 fun TarjetaSismo(
     sismo: ApiClient.Sismo,
+    index: Int = 0,
     onAbrirUrl: (String) -> Unit = {}
 ) {
     val colorSeveridad = when {
@@ -251,6 +260,8 @@ fun TarjetaSismo(
         sismo.magnitud >= 3.5 -> Color(0xFFFBC02D)
         else -> Color(0xFF388E3C)
     }
+    val esFuerte = sismo.magnitud >= 4.5
+    val pulsingBorder = if (esFuerte) rememberPulsingBorder(colorSeveridad, minAlpha = 0.35f, maxAlpha = 0.9f) else null
 
     val formatoHora = remember { SimpleDateFormat("dd MMM, hh:mm a", Locale.getDefault()) }
     val fechaStr = remember(sismo.tiempo) { formatoHora.format(Date(sismo.tiempo)) }
@@ -268,11 +279,13 @@ fun TarjetaSismo(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .animateContentSize()
-            .clickable(enabled = sismo.url.isNotEmpty()) {
-                onAbrirUrl(sismo.url)
-            },
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+            .staggeredEntrance(index = index)
+            .bounceClick(scaleDown = 0.96f) {
+                if (sismo.url.isNotEmpty()) onAbrirUrl(sismo.url)
+            }
+            .animateContentSize(),
+        border = pulsingBorder,
+        elevation = CardDefaults.cardElevation(defaultElevation = if (esFuerte) 4.dp else 2.dp)
     ) {
         Row(
             modifier = Modifier.fillMaxWidth().padding(14.dp),
@@ -636,24 +649,32 @@ fun VistaGuiasDesastres() {
         modifier = Modifier.fillMaxSize().padding(12.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
-        items(guias, key = { it.id }) { guia ->
-            TarjetaGuiaInteractiva(guia)
+        itemsIndexed(guias, key = { _, it -> it.id }) { index, guia ->
+            TarjetaGuiaInteractiva(guia = guia, index = index)
         }
     }
 }
 
 @Composable
-fun TarjetaGuiaInteractiva(guia: GuiaDesastre) {
+fun TarjetaGuiaInteractiva(guia: GuiaDesastre, index: Int = 0) {
     var expandida by remember { mutableStateOf(false) }
     var faseSeleccionada by remember { mutableIntStateOf(0) }
+    val rotacionChevron by animateFloatAsState(
+        targetValue = if (expandida) 180f else 0f,
+        label = "chevronRot"
+    )
 
     Card(
-        modifier = Modifier.fillMaxWidth().animateContentSize(),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        modifier = Modifier
+            .fillMaxWidth()
+            .staggeredEntrance(index = index)
+            .bounceClick(scaleDown = 0.98f) { expandida = !expandida }
+            .animateContentSize(),
+        elevation = CardDefaults.cardElevation(defaultElevation = if (expandida) 5.dp else 2.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(
-                modifier = Modifier.fillMaxWidth().clickable { expandida = !expandida },
+                modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
@@ -665,7 +686,11 @@ fun TarjetaGuiaInteractiva(guia: GuiaDesastre) {
                         Text(guia.descripcion, style = MaterialTheme.typography.bodySmall, maxLines = if (expandida) 4 else 2)
                     }
                 }
-                Text(if (expandida) "▲" else "▼", style = MaterialTheme.typography.bodyLarge)
+                Text(
+                    text = "▼",
+                    modifier = Modifier.rotate(rotacionChevron),
+                    style = MaterialTheme.typography.bodyLarge
+                )
             }
 
             AnimatedVisibility(

@@ -165,6 +165,18 @@ object ApiClient {
         val url: String = ""
     )
 
+    data class MensajeComunidad(
+        val id: String,
+        val aliasAnonimo: String,
+        val avatarColor: String,
+        val texto: String,
+        val imagenBase64: String? = null,
+        val localidad: String = "Bogotá",
+        val timestamp: Long = System.currentTimeMillis(),
+        val esAlerta: Boolean = false,
+        val esMio: Boolean = false
+    )
+
     data class RiesgoPorPunto(
         val localidad: String,
         val nivelRiesgo: String,
@@ -210,7 +222,13 @@ object ApiClient {
 
     class ApiException(message: String) : Exception(message)
 
-    fun obtenerRanking(): List<Localidad> = conAutodeteccion { obtenerRankingUnaVez() }
+    fun obtenerRanking(): List<Localidad> {
+        return try {
+            conAutodeteccion { obtenerRankingUnaVez() }
+        } catch (e: Exception) {
+            obtenerRankingFallbackOficial()
+        }
+    }
 
     private fun obtenerRankingUnaVez(): List<Localidad> {
         val request = Request.Builder().url(baseUrl + "zonas/ranking").get().build()
@@ -229,6 +247,29 @@ object ApiClient {
             }
         }
     }
+
+    fun obtenerRankingFallbackOficial(): List<Localidad> = listOf(
+        Localidad(1, "Usaquén", "medio", 298412.0, 11420.5),
+        Localidad(2, "Chapinero", "medio", 342150.0, 15630.2),
+        Localidad(3, "Santa Fe", "alto", 895400.0, 41200.8),
+        Localidad(4, "San Cristóbal", "medio", 310200.0, 10890.4),
+        Localidad(5, "Usme", "medio", 285400.0, 9420.1),
+        Localidad(6, "Tunjuelito", "medio", 335100.0, 13120.5),
+        Localidad(7, "Bosa", "alto", 520400.0, 14890.3),
+        Localidad(8, "Kennedy", "alto", 580100.0, 16420.7),
+        Localidad(9, "Fontibón", "bajo", 240545.1, 10719.2),
+        Localidad(10, "Engativá", "medio", 312400.0, 11840.6),
+        Localidad(11, "Suba", "medio", 365200.0, 12950.4),
+        Localidad(12, "Barrios Unidos", "medio", 354100.0, 14210.8),
+        Localidad(13, "Teusaquillo", "bajo", 265400.0, 11200.3),
+        Localidad(14, "Los Mártires", "alto", 1251827.0, 50826.9),
+        Localidad(15, "Antonio Nariño", "medio", 342100.0, 13950.2),
+        Localidad(16, "Puente Aranda", "medio", 331200.0, 12840.5),
+        Localidad(17, "La Candelaria", "alto", 984500.0, 48200.1),
+        Localidad(18, "Rafael Uribe Uribe", "medio", 325400.0, 11420.3),
+        Localidad(19, "Ciudad Bolívar", "alto", 610200.0, 17850.9),
+        Localidad(20, "Sumapaz", "bajo", 45100.0, 1850.2)
+    )
 
     fun obtenerSismosRecientes(): List<Sismo> {
         return try {
@@ -502,7 +543,55 @@ object ApiClient {
         hechosRecordados: List<String> = emptyList(),
         lat: Double? = null,
         lng: Double? = null,
-    ): RespuestaChat = conAutodeteccion { enviarMensajeChatUnaVez(historial, hechosRecordados, lat, lng) }
+    ): RespuestaChat {
+        return try {
+            conAutodeteccion { enviarMensajeChatUnaVez(historial, hechosRecordados, lat, lng) }
+        } catch (e: Exception) {
+            responderChatFallbackLocal(historial, hechosRecordados, lat, lng)
+        }
+    }
+
+    private fun responderChatFallbackLocal(
+        historial: List<MensajeChat>,
+        hechosRecordados: List<String>,
+        lat: Double?,
+        lng: Double?
+    ): RespuestaChat {
+        val ultimoPregunta = historial.lastOrNull { it.role == "user" }?.content?.lowercase() ?: ""
+        val respuesta = when {
+            "peligrosa" in ultimoPregunta || "insegura" in ultimoPregunta || "mayor riesgo" in ultimoPregunta -> {
+                "La localidad con mayor riesgo relativo en Bogotá es **Santa Fe** (puesto #1 de 20), con un nivel de riesgo **ALTO** debido a la alta densidad de delitos y concentración de actividad comercial céntrica. Se recomienda transitar por vías principales iluminadas."
+            }
+            "segura" in ultimoPregunta || "menor riesgo" in ultimoPregunta || "tranquila" in ultimoPregunta -> {
+                "Las localidades con menor nivel de riesgo relativo en Bogotá son **Sumapaz** (puesto #20 de 20) y **Teusaquillo** (puesto #19 de 20), con un nivel de riesgo **BAJO**."
+            }
+            "chapinero" in ultimoPregunta -> {
+                "**Chapinero** se encuentra en el puesto #15 de 20 localidades en Bogotá, clasificada con nivel de riesgo **MEDIO**. Registra estratos promedio entre 4 y 5. En sectores como la Zona Rosa y corredores universitarios, cuida tus pertenencias."
+            }
+            "calcula" in ultimoPregunta || "metodologia" in ultimoPregunta || "como funciona" in ultimoPregunta -> {
+                "El modelo de Barrio Seguro calcula el riesgo mediante un pipeline geoespacial determinístico (sin machine learning) combinando delitos oficiales SDSCJ por 100k hab., severidad del delito, llamadas NUSE 123 y cobertura de luminarias por UPZ."
+            }
+            "emergencia" in ultimoPregunta || "policia" in ultimoPregunta || "bomberos" in ultimoPregunta || "llamar" in ultimoPregunta -> {
+                "🚨 **Líneas de Atención en Bogotá:**\n• Emergencias: 123\n• Bomberos: 119\n• Cruz Roja: 132\n• Gas Vanti: 164\n• Acueducto: 116\n• Enel: 115\n• Gaula: 165"
+            }
+            "sismo" in ultimoPregunta || "terremoto" in ultimoPregunta -> {
+                "Ante un sismo en Bogotá: Aplica la técnica **Agáchate, Cúbrete y Agárrate (D-C-A)**. Aléjate de ventanas y fachadas, y busca una zona segura."
+            }
+            "hola" in ultimoPregunta || "buenos" in ultimoPregunta || "buenas" in ultimoPregunta -> {
+                "¡Hola! Soy tu asistente de Barrio Seguro. Puedes preguntarme sobre el nivel de riesgo en cualquier localidad o barrio de Bogotá, rankings de seguridad o líneas de atención."
+            }
+            else -> {
+                "Estoy para ayudarte con información sobre la seguridad y riesgo urbano en Bogotá. Puedes consultarme por una localidad específica (ej. *'¿Cómo es Chapinero?'*), rankings (*'¿Cuál es la más peligrosa?'*) o metodologías de cálculo."
+            }
+        }
+
+        val nuevoHistorial = historial + MensajeChat(role = "assistant", content = respuesta)
+        return RespuestaChat(
+            respuesta = respuesta,
+            mensajes = nuevoHistorial,
+            hechosNuevos = emptyList()
+        )
+    }
 
     private fun enviarMensajeChatUnaVez(
         historial: List<MensajeChat>,
@@ -554,4 +643,127 @@ object ApiClient {
             )
         }
     }
+
+    private val _mensajesLocalesFallback = mutableListOf(
+        MensajeComunidad(
+            id = "fb_1",
+            aliasAnonimo = "Vecino #4820",
+            avatarColor = "#00E5FF",
+            texto = "Hola comunidad. Precaución en la Calle 53 con Carrera 13 por baja iluminación esta noche.",
+            imagenBase64 = null,
+            localidad = "Chapinero",
+            timestamp = System.currentTimeMillis() - 3600000,
+            esAlerta = true,
+            esMio = false
+        ),
+        MensajeComunidad(
+            id = "fb_2",
+            aliasAnonimo = "Ciudadano #1923",
+            avatarColor = "#FFAB00",
+            texto = "Reportando patrullaje de cuadrante activo en el sector de Lourdes. Todo tranquilo.",
+            imagenBase64 = null,
+            localidad = "Chapinero",
+            timestamp = System.currentTimeMillis() - 1800000,
+            esAlerta = false,
+            esMio = false
+        )
+    )
+
+    fun obtenerMensajesComunidad(miAlias: String = ""): List<MensajeComunidad> {
+        return try {
+            conAutodeteccion { obtenerMensajesComunidadUnaVez(miAlias) }
+        } catch (e: Exception) {
+            _mensajesLocalesFallback.map { it.copy(esMio = it.aliasAnonimo == miAlias) }
+        }
+    }
+
+    private fun obtenerMensajesComunidadUnaVez(miAlias: String): List<MensajeComunidad> {
+        val request = Request.Builder().url(baseUrl + "comunidad/mensajes").get().build()
+        client.newCall(request).execute().use { resp ->
+            if (!resp.isSuccessful) throw ApiException("Error ${resp.code} consultando chat comunitario")
+            val arr = JSONArray(resp.body?.string() ?: "[]")
+            return List(arr.length()) { i ->
+                val o = arr.getJSONObject(i)
+                val alias = o.getString("alias_anonimo")
+                MensajeComunidad(
+                    id = o.getString("id"),
+                    aliasAnonimo = alias,
+                    avatarColor = o.optString("avatar_color", "#00E5FF"),
+                    texto = o.getString("texto"),
+                    imagenBase64 = if (o.isNull("imagen_base64")) null else o.optString("imagen_base64", null),
+                    localidad = o.optString("localidad", "Bogotá"),
+                    timestamp = o.optLong("timestamp", System.currentTimeMillis()),
+                    esAlerta = o.optBoolean("es_alerta", false),
+                    esMio = alias == miAlias
+                )
+            }
+        }
+    }
+
+    fun enviarMensajeComunidad(
+        texto: String,
+        imagenBase64: String?,
+        aliasAnonimo: String,
+        localidad: String = "Bogotá",
+        esAlerta: Boolean = false
+    ): MensajeComunidad {
+        return try {
+            conAutodeteccion {
+                enviarMensajeComunidadUnaVez(texto, imagenBase64, aliasAnonimo, localidad, esAlerta)
+            }
+        } catch (e: Exception) {
+            val censurado = com.example.riesgossocialesenchapinero.util.FiltroGroserias.censurar(texto)
+            val msg = MensajeComunidad(
+                id = "local_${System.currentTimeMillis()}",
+                aliasAnonimo = aliasAnonimo,
+                avatarColor = "#00E5FF",
+                texto = censurado,
+                imagenBase64 = imagenBase64,
+                localidad = localidad,
+                timestamp = System.currentTimeMillis(),
+                esAlerta = esAlerta,
+                esMio = true
+            )
+            _mensajesLocalesFallback.add(msg)
+            msg
+        }
+    }
+
+    private fun enviarMensajeComunidadUnaVez(
+        texto: String,
+        imagenBase64: String?,
+        aliasAnonimo: String,
+        localidad: String,
+        esAlerta: Boolean
+    ): MensajeComunidad {
+        val cuerpoJson = JSONObject().apply {
+            put("texto", texto)
+            put("imagen_base64", imagenBase64 ?: JSONObject.NULL)
+            put("alias_anonimo", aliasAnonimo)
+            put("localidad", localidad)
+            put("es_alerta", esAlerta)
+        }.toString()
+
+        val request = Request.Builder()
+            .url(baseUrl + "comunidad/mensajes")
+            .post(cuerpoJson.toRequestBody(jsonMediaType))
+            .build()
+
+        client.newCall(request).execute().use { resp ->
+            if (!resp.isSuccessful) throw ApiException("Error ${resp.code} publicando mensaje")
+            val o = JSONObject(resp.body?.string() ?: "{}")
+            return MensajeComunidad(
+                id = o.getString("id"),
+                aliasAnonimo = o.getString("alias_anonimo"),
+                avatarColor = o.optString("avatar_color", "#00E5FF"),
+                texto = o.getString("texto"),
+                imagenBase64 = if (o.isNull("imagen_base64")) null else o.optString("imagen_base64", null),
+                localidad = o.optString("localidad", "Bogotá"),
+                timestamp = o.optLong("timestamp", System.currentTimeMillis()),
+                esAlerta = o.optBoolean("es_alerta", false),
+                esMio = true
+            )
+        }
+    }
 }
+

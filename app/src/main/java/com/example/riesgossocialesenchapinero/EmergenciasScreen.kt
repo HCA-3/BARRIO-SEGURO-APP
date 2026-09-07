@@ -17,6 +17,11 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.animation.animateContentSize
+import com.example.riesgossocialesenchapinero.ui.bounceClick
+import com.example.riesgossocialesenchapinero.ui.staggeredEntrance
+import com.example.riesgossocialesenchapinero.ui.rememberPulsingBorder
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
@@ -155,10 +160,23 @@ fun EmergenciasScreen(
             modifier = Modifier.weight(1f).fillMaxWidth(),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            items(lineas, key = { it.numero }) { linea ->
+            itemsIndexed(lineas, key = { _, it -> it.numero }) { index, linea ->
+                val es123 = linea.numero == "123"
+                val border = if (es123) rememberPulsingBorder(MaterialTheme.colorScheme.error, minAlpha = 0.35f, maxAlpha = 0.85f) else null
+
                 Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .staggeredEntrance(index = index)
+                        .bounceClick(scaleDown = 0.97f) {
+                            val intent = Intent(Intent.ACTION_DIAL, Uri.parse("tel:${linea.numero}")).apply {
+                                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                            }
+                            context.startActivity(intent)
+                        }
+                        .animateContentSize(),
+                    border = border,
+                    elevation = CardDefaults.cardElevation(defaultElevation = if (es123) 4.dp else 2.dp)
                 ) {
                     Row(
                         modifier = Modifier.fillMaxWidth().padding(14.dp),
