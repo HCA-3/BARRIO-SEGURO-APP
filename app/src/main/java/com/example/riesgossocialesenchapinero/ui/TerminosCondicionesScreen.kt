@@ -447,7 +447,7 @@ fun ContenidoCreditosDesarrolladores() {
         Spacer(modifier = Modifier.height(14.dp))
 
         Text(
-            text = "Esta aplicación ha sido diseñada, investigada y programada por dos estudiantes desarrolladores comprometidos con la seguridad y bienestar de la ciudadanía en Bogotá:",
+            text = "Esta aplicación ha sido diseñada y desarrollada por:",
             style = MaterialTheme.typography.bodyMedium,
             lineHeight = 20.sp
         )
@@ -467,30 +467,18 @@ fun ContenidoCreditosDesarrolladores() {
                 Surface(
                     shape = RoundedCornerShape(10.dp),
                     color = MaterialTheme.colorScheme.primaryContainer,
-                    modifier = Modifier.size(50.dp)
+                    modifier = Modifier.size(46.dp)
                 ) {
                     Box(contentAlignment = Alignment.Center) {
-                        Text("👨‍💻", fontSize = 26.sp)
+                        Text("👨‍💻", fontSize = 24.sp)
                     }
                 }
                 Spacer(modifier = Modifier.width(14.dp))
-                Column {
-                    Text(
-                        text = "David Santiago Castelblanco Artunduaga",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Text(
-                        text = "Desarrollador de Software • Arquitectura & Datos",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                    Text(
-                        text = "Especialista en Sistemas Inteligentes y Backend Móvil",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
+                Text(
+                    text = "David Santiago Castelblanco Artunduaga",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
             }
         }
 
@@ -507,30 +495,18 @@ fun ContenidoCreditosDesarrolladores() {
                 Surface(
                     shape = RoundedCornerShape(10.dp),
                     color = MaterialTheme.colorScheme.secondaryContainer,
-                    modifier = Modifier.size(50.dp)
+                    modifier = Modifier.size(46.dp)
                 ) {
                     Box(contentAlignment = Alignment.Center) {
-                        Text("👨‍💻", fontSize = 26.sp)
+                        Text("👨‍💻", fontSize = 24.sp)
                     }
                 }
                 Spacer(modifier = Modifier.width(14.dp))
-                Column {
-                    Text(
-                        text = "Johan Sebastian Fuentes Pinto",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Text(
-                        text = "Desarrollador de Software • UI/UX & Geolocalización",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.secondary
-                    )
-                    Text(
-                        text = "Especialista en Experiencia Móvil y Mapas de Calor",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
+                Text(
+                    text = "Johan Sebastian Fuentes Pinto",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
             }
         }
 
