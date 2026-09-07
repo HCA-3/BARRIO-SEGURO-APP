@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.animation.animateContentSize
 import com.example.riesgossocialesenchapinero.ui.bounceClick
 import com.example.riesgossocialesenchapinero.ui.staggeredEntrance
@@ -162,7 +163,7 @@ fun EmergenciasScreen(
         ) {
             itemsIndexed(lineas, key = { _, it -> it.numero }) { index, linea ->
                 val es123 = linea.numero == "123"
-                val border = if (es123) rememberPulsingBorder(MaterialTheme.colorScheme.error, minAlpha = 0.35f, maxAlpha = 0.85f) else null
+                val border = if (es123) BorderStroke(1.5.dp, MaterialTheme.colorScheme.error) else null
 
                 Card(
                     modifier = Modifier

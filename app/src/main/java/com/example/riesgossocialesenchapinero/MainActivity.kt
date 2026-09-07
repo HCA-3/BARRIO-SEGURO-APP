@@ -37,6 +37,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -528,7 +529,7 @@ fun ControlMonitoreo(activo: Boolean, onToggle: () -> Unit) {
             .bounceClick(scaleDown = 0.98f, onClick = null)
             .animateContentSize(),
         elevation = CardDefaults.cardElevation(defaultElevation = if (activo) 4.dp else 2.dp),
-        border = if (activo) rememberPulsingBorder(MaterialTheme.colorScheme.primary, minAlpha = 0.4f, maxAlpha = 0.9f) else null
+        border = if (activo) BorderStroke(1.5.dp, MaterialTheme.colorScheme.primary) else null
     ) {
         Row(
             modifier = Modifier.fillMaxWidth().padding(16.dp),
@@ -672,14 +673,14 @@ fun TarjetaResultadoBarrio(
     onClick: (() -> Unit)? = null
 ) {
     val isAlto = resultado.nivelRiesgo.equals("alto", ignoreCase = true)
-    val pulsingBorder = if (isAlto) rememberPulsingBorder(MaterialTheme.colorScheme.error, minAlpha = 0.35f, maxAlpha = 0.9f) else null
+    val border = if (isAlto) BorderStroke(1.2.dp, MaterialTheme.colorScheme.error.copy(alpha = 0.7f)) else null
 
     Card(
         modifier = modifier
             .fillMaxWidth()
             .bounceClick(scaleDown = 0.97f, onClick = onClick)
             .animateContentSize(),
-        border = pulsingBorder,
+        border = border,
         elevation = CardDefaults.cardElevation(defaultElevation = if (isAlto) 4.dp else 2.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
@@ -895,7 +896,7 @@ fun TarjetaLocalidad(
     onClick: (() -> Unit)? = null
 ) {
     val isAlto = localidad.nivelRiesgo.equals("alto", ignoreCase = true)
-    val pulsingBorder = if (isAlto) rememberPulsingBorder(MaterialTheme.colorScheme.error, minAlpha = 0.35f, maxAlpha = 0.9f) else null
+    val border = if (isAlto) BorderStroke(1.2.dp, MaterialTheme.colorScheme.error.copy(alpha = 0.7f)) else null
 
     Card(
         modifier = modifier
@@ -903,7 +904,7 @@ fun TarjetaLocalidad(
             .staggeredEntrance(index = index)
             .bounceClick(scaleDown = 0.97f, onClick = onClick)
             .animateContentSize(),
-        border = pulsingBorder,
+        border = border,
         elevation = CardDefaults.cardElevation(defaultElevation = if (isAlto) 4.dp else 2.dp),
     ) {
         Row(
