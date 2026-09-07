@@ -393,7 +393,7 @@ fun ContenidoPoliticaPrivacidad() {
             numero = "1",
             titulo = "Responsable del Tratamiento",
             cuerpo = "• Plataforma: Barrio Seguro - Monitoreo y Análisis de Riesgo Ciudadano\n" +
-                    "• Desarrolladores Líderes: Daniel Santiago Castelblanco & Juan Sebastián Fuentes\n" +
+                    "• Desarrolladores Líderes: David Santiago Castelblanco Artunduaga & Johan Sebastian Fuentes Pinto\n" +
                     "• Canal de Contacto y Soporte: contacto@barrioseguro.app / soporte@barrioseguro.co"
         )
 
@@ -476,7 +476,7 @@ fun ContenidoCreditosDesarrolladores() {
                 Spacer(modifier = Modifier.width(14.dp))
                 Column {
                     Text(
-                        text = "Daniel Santiago Castelblanco",
+                        text = "David Santiago Castelblanco Artunduaga",
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold
                     )
@@ -516,7 +516,7 @@ fun ContenidoCreditosDesarrolladores() {
                 Spacer(modifier = Modifier.width(14.dp))
                 Column {
                     Text(
-                        text = "Juan Sebastián Fuentes",
+                        text = "Johan Sebastian Fuentes Pinto",
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold
                     )

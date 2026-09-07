@@ -278,7 +278,7 @@ fun AjustesScreen(
                 }
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    text = "• Daniel Santiago Castelblanco\n• Juan Sebastián Fuentes",
+                    text = "• David Santiago Castelblanco Artunduaga\n• Johan Sebastian Fuentes Pinto",
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.SemiBold,
                     color = MaterialTheme.colorScheme.onSurface
