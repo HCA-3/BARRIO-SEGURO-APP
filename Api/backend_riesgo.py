@@ -263,8 +263,25 @@ Más luminarias por km² sugiere calles mejor iluminadas de noche.
 - "longitud_vias_km": km de vías registradas (OSM). Útil para preguntas \
 sobre qué tan transitada/conectada es la zona.
 - "area_km2": tamaño de la localidad, para dar contexto de escala.
-- "incidentes_nuse_recientes_total": ver nota abajo, es llamadas de \
-emergencia, no delito.
+- "incidentes_nuse_recientes_total" / "detalle_incidentes_seguridad": ver \
+nota abajo, son llamadas de emergencia, no delito.
+- "accidentes_transito_recientes_total": choques/atropellos reportados \
+2023-2025 (Observatorio de Seguridad), no delito.
+- "accidentes_domesticos": {"anio","casos","tasa"} de accidentes domésticos \
+en menores, del año más reciente disponible (dato de Salud, no delito).
+- "violencia_intrafamiliar_salud_recientes_total": casos de violencia \
+intrafamiliar registrados por el sector SALUD 2023-2025. OJO: es una \
+fuente DISTINTA a "Violencia intrafamiliar" de detalle_delitos (esa es un \
+delito verificado por Fiscalía/Policía) — nunca las sumes ni las trates \
+como el mismo número, cada una tiene su propia subnotificación.
+- "reportes_comunitarios_inseguridad_recientes_total": reportes de la \
+comunidad sobre inseguridad percibida 2023-2025, no delito verificado.
+- "organizaciones_comunitarias_registradas": juntas de acción comunal / \
+vigías en salud activas — es una señal de tejido social, no de riesgo (más \
+organizaciones no significa más inseguridad, puede ser lo contrario).
+- "personas_atendidas_sdis_recientes_total": personas atendidas por \
+Integración Social (SDIS) 2024-2025 — depende de cobertura de servicios, \
+no solo de necesidad (mismo caso que el estrato).
 Úsalas cuando la pregunta se preste (ej. "¿está bien iluminado Kennedy de \
 noche?", "¿cuál es más grande, Suba o Usaquén?"), no las fuerces si no \
 vienen al caso.
@@ -566,20 +583,23 @@ def quitar_frases_sin_respaldo(texto: str) -> str:
     return re.sub(r"\n{3,}", "\n\n", limpio).strip()
 
 
-# "delitos_recientes_total_2023_2025" e "incidentes_nuse_recientes_total" son
-# TOTALES absolutos (ver SYSTEM_PROMPT) -- el modelo local a veces los
-# convierte en una tasa inventada tipo "2.115,36 por 100k habitantes" que no
-# sale de ningún cálculo real (ni siquiera es el total dividido por
-# población: es un número de la nada). El prompt ya lo prohíbe pero
-# reaparece igual, así que se recorta el fragmento inventado directamente en
-# vez de confiar en que el modelo obedezca. OJO: se apunta solo al fragmento
-# "campo = número por 100k/100.000 habitantes" (no a la oración completa como
-# _PATRON_FRASES_SIN_RESPALDO) porque estos dos campos suelen aparecer
-# juntos en la MISMA oración (unidos por "y"), y el número decimal
-# ("2,115.36") o el "contexto.algo" con punto de acceso rompen cualquier
-# intento de detectar dónde empieza/termina la oración con un solo patrón.
+# "delitos_recientes_total_2023_2025", "incidentes_nuse_recientes_total" y el
+# resto de campos "*_recientes_total" del bloque contexto (ver SYSTEM_PROMPT)
+# son TOTALES absolutos -- el modelo local a veces los convierte en una tasa
+# inventada tipo "2.115,36 por 100k habitantes" que no sale de ningún cálculo
+# real (ni siquiera es el total dividido por población: es un número de la
+# nada). El prompt ya lo prohíbe pero reaparece igual, así que se recorta el
+# fragmento inventado directamente en vez de confiar en que el modelo
+# obedezca. OJO: se apunta solo al fragmento "campo = número por
+# 100k/100.000 habitantes" (no a la oración completa como
+# _PATRON_FRASES_SIN_RESPALDO) porque estos campos suelen aparecer juntos en
+# la MISMA oración (unidos por "y"), y el número decimal ("2,115.36") o el
+# "contexto.algo" con punto de acceso rompen cualquier intento de detectar
+# dónde empieza/termina la oración con un solo patrón.
 _PATRON_TASA_INVENTADA = re.compile(
-    r"(?:contexto\.)?\b(?:delitos_recientes_total_2023_2025|incidentes_nuse_recientes_total)\b"
+    r"(?:contexto\.)?\b(?:delitos_recientes_total_2023_2025|incidentes_nuse_recientes_total"
+    r"|accidentes_transito_recientes_total|violencia_intrafamiliar_salud_recientes_total"
+    r"|reportes_comunitarios_inseguridad_recientes_total|personas_atendidas_sdis_recientes_total)\b"
     r"\s*[:=]?\s*[\d.,]+\s*por\s*100[.,]?\s*(?:000|k)\s*habitantes",
     re.IGNORECASE,
 )
