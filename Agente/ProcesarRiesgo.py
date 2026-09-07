@@ -15,17 +15,46 @@ Fuentes de datos (todas en ./data, ver README_DATOS.md):
      ver nota ética abajo).
   4. OpenStreetMap Bogotá (vía BBBike) -> densidad de alumbrado público y de
      vías, como señal adicional de contexto urbano.
-  5. (Opcional) Incidente Reportado — NUSE/C4 (SDSCJ) -> volumen de llamadas
-     de emergencia por localidad. A diferencia de la fuente 1 (delitos
-     verificados, corte semestral/anual), esta se actualiza MENSUALMENTE, así
-     que sirve para no dejar la app tan desactualizada entre cortes oficiales
-     de delito. Se reporta como CONTEXTO (total agregado, sin desglosar por
-     categoría: los códigos de columna de este dataset — CMR, CMN, CMAOP,
-     etc. — no tienen diccionario público de fácil acceso, así que desglosar
-     mal una categoría sería peor que no desglosarla). NO se usa para
+  5. (Opcional) Llamadas tramitadas NUSE/C4 — Línea 123 (SDSCJ), histórico
+     mensual 2015-actualidad (dataset "datos abiertllamadastramitadas...") ->
+     volumen de llamadas de emergencia por localidad. A diferencia de la
+     fuente 1 (delitos verificados, corte semestral/anual), esta se
+     actualiza MENSUALMENTE, así que sirve para no dejar la app tan
+     desactualizada entre cortes oficiales de delito. Este dataset SÍ trae
+     un diccionario público de categorías (guiatipificacionincidentes.csv),
+     a diferencia de la versión anterior (IRLoc.geojson, con códigos de
+     columna sin diccionario accesible): por eso ahora se reporta un
+     desglose de "incidentes_seguridad" (ver CATEGORIAS_INCIDENTE_NUSE_
+     SEGURIDAD) además del total. Sigue siendo CONTEXTO, NO se usa para
      calcular nivel_riesgo, por la misma razón que el estrato: es volumen de
      LLAMADAS (percepción/uso del servicio), no delito verificado. Si no se
-     descargó este dataset, el pipeline sigue funcionando sin él.
+     encuentra este dataset, el pipeline cae de vuelta al IRLoc.geojson
+     agregado (sin desglose) o sigue funcionando sin ninguno de los dos.
+     NOTA: la carpeta de datos también trae ~70 archivos mensuales sueltos
+     de llamadas 123 en crudo (uno por mes, con nombres inconsistentes y
+     formatos que cambiaron con los años). Deliberadamente NO se procesan
+     uno por uno: el dataset histórico agregado de este punto 5 ya cubre el
+     mismo período con una sola fuente consistente, así que parsear los ~70
+     sueltos sería trabajo redundante y más frágil (mayor riesgo de contar
+     dos veces el mismo mes o de romperse por un cambio de columnas).
+  6. (Opcional, contexto adicional del Observatorio de Seguridad y
+     Convivencia — OSB, SDSCJ/Secretaría de Salud): accidentes de tránsito
+     (osb_evento_transporte.csv), accidentes domésticos (osb_saludmental-
+     accidentesdomesticos.csv), violencia intrafamiliar reportada en salud
+     (osb_saludmental-vintrafamiliar.csv — distinta de la fuente 1, que es
+     un DELITO verificado por la Fiscalía/Policía; esta es un REGISTRO DE
+     ATENCIÓN EN SALUD, con su propia subnotificación y sesgos, por lo que
+     se reporta aparte y tampoco afecta nivel_riesgo), reportes comunitarios
+     de inseguridad (osb_detsoc_vbc.csv) y organizaciones comunitarias
+     activas (osb_detsoc_revcom.csv, señal de tejido social/resiliencia, no
+     de riesgo). Todo esto es CONTEXTO opcional: si un archivo no aparece,
+     el campo correspondiente queda en null y el resto del pipeline sigue.
+  7. (Opcional) Personas atendidas por la Secretaría Distrital de
+     Integración Social — SDIS (2024-2025) -> volumen de atención social
+     por localidad. Igual que el estrato: es una señal de USO DE SERVICIOS
+     SOCIALES (que depende de cobertura/oferta, no solo de necesidad), así
+     que se reporta como contexto y NO se usa para nivel_riesgo, para no
+     repetir el mismo sesgo que ya se evita con el estrato.
 
 Salida: ./output/zonas_riesgo.json con:
   { "localidad_codigo": {
@@ -155,9 +184,68 @@ PESO_SEVERIDAD = {
 }
 
 
+# Códigos del dataset histórico de llamadas NUSE/123 (ver cargar_incidentes_
+# nuse) que se consideran relacionados con seguridad/convivencia, elegidos a
+# mano del diccionario público guiatipificacionincidentes.csv. Es una
+# selección editorial (igual que PESO_SEVERIDAD): se excluyen a propósito
+# categorías médicas/ambientales/de tránsito puro (esas ya se cubren, cuando
+# aplica, por accidentes_transito o accidentes_domesticos) para que este
+# desglose hable de percepción de inseguridad/convivencia, no de salud.
+# Es volumen de LLAMADAS, no delito verificado: se reporta como CONTEXTO,
+# nunca como insumo de nivel_riesgo (ver nota_incidentes_nuse en el meta).
+CATEGORIAS_INCIDENTE_NUSE_SEGURIDAD = {
+    "903": "Rapto / Secuestro",
+    "904": "Hurto Efectuado",
+    "905": "Atraco / Hurto en Proceso",
+    "906": "Violencia Sexual",
+    "910": "Lesiones Personales",
+    "911": "Disparos",
+    "913": "Vehículo Hurtado",
+    "915": "Intento/Violación de Domicilio",
+    "916": "Persona o Vehículo Sospechoso",
+    "922": "Narcóticos",
+    "932": "Alteración del Orden Público",
+    "933": "Delincuente capturado por civil",
+    "934": "Riña",
+    "944": "Manifestación / Motín",
+    "950": "Acción Subversiva",
+    "968": "Pandillas Juveniles",
+    "969": "Porte Ilegal de Armas",
+    "978": "Hallazgo de Explosivos",
+    "611": "Maltrato",
+    "611M": "Maltrato a Mujer",
+}
+
+# Alias de nombre de localidad: los datasets del Observatorio de Seguridad
+# (osb_*) escriben "La Candelaria", pero el dataset de delitos (fuente de
+# verdad de nombres/códigos en este pipeline) la llama solo "Candelaria".
+ALIAS_LOCALIDAD = {"LA CANDELARIA": "CANDELARIA"}
+
+
 def quitar_tildes(texto: str) -> str:
     nfkd = unicodedata.normalize("NFKD", texto)
     return "".join(c for c in nfkd if not unicodedata.combining(c)).upper().strip()
+
+
+def normalizar_nombre_localidad(nombre: str) -> str:
+    """Normaliza un nombre de localidad para cruzarlo por texto contra el
+    nombre oficial (de DAILoc.geojson), cuando el dataset de origen no trae
+    el código numérico de localidad."""
+    normalizado = quitar_tildes(str(nombre))
+    return ALIAS_LOCALIDAD.get(normalizado, normalizado)
+
+
+def parse_numero_es(valor) -> float:
+    """Convierte un número en formato colombiano ('.' de miles, ',' decimal)
+    a float, ej. '152.380' -> 152380.0, '8,5' -> 8.5. Si pandas ya parseó la
+    columna como numérica (sin comas, típico cuando ninguna fila de esa
+    columna llegó a miles), `valor` ya es float/int y se devuelve tal cual:
+    aplicarle el reemplazo de texto a un float como 614.0 lo arruinaría
+    (614.0 -> '6140')."""
+    if isinstance(valor, (int, float)) and not pd.isna(valor):
+        return float(valor)
+    texto = str(valor).strip().replace(".", "").replace(",", ".")
+    return float(texto)
 
 
 def cargar_delitos() -> pd.DataFrame:
@@ -320,17 +408,26 @@ def cargar_osm_contexto():
 PREFIJOS_INCIDENTES_NUSE = ["CMAOP", "CMD", "CMH", "CMHC", "CMM", "CMMM", "CMN", "CMPIA", "CMR"]
 
 
-def cargar_incidentes_nuse() -> pd.DataFrame | None:
-    """
-    Volumen de llamadas de emergencia (NUSE/C4) por localidad, dataset
-    "Incidente Reportado" de la SDSCJ. Opcional: si no se descargó (ver
-    actualizar_datos.py), el pipeline sigue sin esta columna de contexto.
-    """
+def cargar_guia_incidentes_nuse() -> dict | None:
+    """Diccionario público COD_INCIDENTE -> nombre legible, de
+    guiatipificacionincidentes.csv. Sin esto no se puede desglosar el
+    histórico de llamadas por categoría (ver cargar_incidentes_nuse)."""
+    try:
+        ruta = buscar_por_palabras("csv", incluir=["guia", "tipificacion", "incidentes"])
+    except FileNotFoundError:
+        return None
+    guia = pd.read_csv(ruta, encoding="latin-1", sep=";", dtype=str)
+    return dict(zip(guia["COD_INCIDENTE"].str.strip(), guia["INCIDENTE"].str.strip()))
+
+
+def _cargar_incidentes_nuse_geojson_legacy() -> pd.DataFrame | None:
+    """Método anterior (dataset oficial 'Incidente Reportado', IRLoc.geojson):
+    sin diccionario público de categorías, solo el total agregado. Se
+    conserva como respaldo por si el histórico de llamadas (fuente
+    preferida, ver cargar_incidentes_nuse) no está disponible."""
     try:
         ruta = buscar_archivo("IRLoc.geojson")
     except FileNotFoundError:
-        print("  (no encontré IRLoc.geojson — se omite este contexto opcional; "
-              "correr 'python actualizar_datos.py --descargar' para traerlo)")
         return None
 
     gdf = gpd.read_file(ruta)
@@ -350,6 +447,208 @@ def cargar_incidentes_nuse() -> pd.DataFrame | None:
         filas.append({"codigo": row["codigo"], "incidentes_nuse_recientes_total": int(total_reciente)})
 
     return pd.DataFrame(filas)
+
+
+def cargar_incidentes_nuse() -> pd.DataFrame | None:
+    """
+    Volumen (y, si hay diccionario, desglose) de llamadas de emergencia
+    NUSE/123 por localidad. Fuente preferida: el histórico mensual agregado
+    2015-actualidad ("...llamadastramitadas...nuse_linea-123...csv"), que
+    trae código de localidad y tipo de incidente ya contados
+    (CANT_INCIDENTES) por año/mes -- no hace falta (ni conviene, ver
+    docstring del módulo) parsear los ~70 archivos mensuales sueltos.
+    Si no está, cae de vuelta al dataset oficial IRLoc.geojson (sin
+    desglose). Opcional en ambos casos: si ninguno está, el pipeline sigue
+    sin esta columna de contexto.
+    """
+    try:
+        ruta = buscar_por_palabras("csv", incluir=["llamadastramitadas"])
+    except FileNotFoundError:
+        print("  (no encontré el histórico de llamadas NUSE/123 — probando con IRLoc.geojson)")
+        return _cargar_incidentes_nuse_geojson_legacy()
+
+    df = pd.read_csv(ruta, encoding="latin-1", sep=";", dtype={"COD_LOCALIDAD": str})
+    df["codigo"] = pd.to_numeric(df["COD_LOCALIDAD"], errors="coerce")
+    df = df.dropna(subset=["codigo"])
+    df["codigo"] = df["codigo"].astype(int)
+    df = df[df["codigo"].between(1, 20)]  # excluir "-"/Sin Localización
+
+    anios_completos = [2000 + a for a in ANIOS_RECIENTES]
+    reciente = df[df["ANIO"].isin(anios_completos)]
+
+    total = (
+        reciente.groupby("codigo")["CANT_INCIDENTES"].sum().rename("incidentes_nuse_recientes_total")
+    )
+    resultado = total.reset_index()
+
+    guia = cargar_guia_incidentes_nuse()
+    if guia is None:
+        print("  (no encontré guiatipificacionincidentes.csv — se omite el desglose por categoría)")
+        return resultado
+
+    reciente = reciente.copy()
+    reciente["categoria"] = (
+        reciente["TIPO_INCIDENTE"].astype(str).str.strip().map(CATEGORIAS_INCIDENTE_NUSE_SEGURIDAD)
+    )
+    seguridad = reciente.dropna(subset=["categoria"])
+    detalle = (
+        seguridad.groupby(["codigo", "categoria"])["CANT_INCIDENTES"].sum().unstack(fill_value=0)
+    )
+    detalle_por_codigo = {
+        codigo: {cat: int(val) for cat, val in fila.items()}
+        for codigo, fila in detalle.iterrows()
+    }
+    resultado["detalle_incidentes_seguridad"] = resultado["codigo"].map(
+        lambda c: detalle_por_codigo.get(c, {})
+    )
+    return resultado
+
+
+def cargar_accidentes_transito() -> pd.DataFrame | None:
+    """Accidentes de tránsito por localidad (Observatorio de Seguridad,
+    osb_evento_transporte.csv). Contexto opcional, no afecta nivel_riesgo."""
+    try:
+        ruta = buscar_archivo("osb_evento_transporte.csv")
+    except FileNotFoundError:
+        print("  (no encontré osb_evento_transporte.csv — se omite este contexto opcional)")
+        return None
+
+    df = pd.read_csv(ruta, encoding="utf-8-sig", sep=";")
+    df["codigo"] = pd.to_numeric(df["CODIGO_LOCALIDAD"], errors="coerce")
+    df = df.dropna(subset=["codigo"])
+    df["codigo"] = df["codigo"].astype(int)
+    df = df[df["codigo"].between(1, 20)]  # excluir "Sin dato"/citywide (0, 21)
+
+    anios_completos = [2000 + a for a in ANIOS_RECIENTES]
+    reciente = df[df["ANO"].isin(anios_completos)]
+    total = reciente.groupby("codigo")["casos"].sum().rename("accidentes_transito_recientes_total")
+    return total.reset_index()
+
+
+def cargar_accidentes_domesticos() -> pd.DataFrame | None:
+    """Accidentes domésticos en menores por localidad (Observatorio de
+    Seguridad / Salud, osb_saludmental-accidentesdomesticos.csv), ya viene
+    agregado por año. Se toma el año más reciente disponible. Contexto
+    opcional, no afecta nivel_riesgo."""
+    try:
+        ruta = buscar_archivo("osb_saludmental-accidentesdomesticos.csv")
+    except FileNotFoundError:
+        print("  (no encontré osb_saludmental-accidentesdomesticos.csv — se omite este contexto opcional)")
+        return None
+
+    df = pd.read_csv(ruta, encoding="utf-8-sig", sep=";")
+    df["nombre_norm"] = df["Área"].apply(normalizar_nombre_localidad)
+    anio_max = df["Año"].max()
+    df = df[df["Año"] == anio_max].copy()
+    df["accidentes_domesticos_casos"] = df["Casos"].apply(parse_numero_es).astype(int)
+    df["accidentes_domesticos_tasa"] = df["Tasa"].apply(parse_numero_es)
+    df["accidentes_domesticos_anio"] = int(anio_max)
+    return df[["nombre_norm", "accidentes_domesticos_casos", "accidentes_domesticos_tasa", "accidentes_domesticos_anio"]]
+
+
+def cargar_violencia_intrafamiliar_salud() -> pd.DataFrame | None:
+    """Casos de violencia intrafamiliar registrados por el sector SALUD
+    (osb_saludmental-vintrafamiliar.csv), a nivel de registro individual.
+    Distinto de 'Violencia intrafamiliar' en CATEGORIAS_DELITO (esa es un
+    DELITO verificado por Fiscalía/Policía, fuente 1 del módulo; esta es un
+    REGISTRO DE ATENCIÓN EN SALUD, con su propia subnotificación): se
+    reporta aparte para no mezclar dos fuentes con distinta naturaleza.
+    Contexto opcional, no afecta nivel_riesgo."""
+    try:
+        ruta = buscar_archivo("osb_saludmental-vintrafamiliar.csv")
+    except FileNotFoundError:
+        print("  (no encontré osb_saludmental-vintrafamiliar.csv — se omite este contexto opcional)")
+        return None
+
+    df = pd.read_csv(ruta, encoding="utf-8-sig", sep=";", usecols=["ano", "NOMBRE_LOCALIDAD"])
+    anios_completos = [2000 + a for a in ANIOS_RECIENTES]
+    reciente = df[df["ano"].isin(anios_completos)].copy()
+    reciente["nombre_norm"] = reciente["NOMBRE_LOCALIDAD"].apply(normalizar_nombre_localidad)
+    conteo = reciente.groupby("nombre_norm").size().rename("violencia_intrafamiliar_salud_recientes_total")
+    return conteo.reset_index()
+
+
+def cargar_reportes_comunitarios_inseguridad() -> pd.DataFrame | None:
+    """Reportes comunitarios de 'situación problemática' relacionados con
+    inseguridad (osb_detsoc_vbc.csv), filtrando por texto en
+    SITUACION_PROBLEMATICA (ej. 'Inseguridad, entorno propicio a violencia y
+    conflictos'). Es percepción/reporte comunitario, no delito verificado:
+    contexto opcional, no afecta nivel_riesgo."""
+    try:
+        ruta = buscar_archivo("osb_detsoc_vbc.csv")
+    except FileNotFoundError:
+        print("  (no encontré osb_detsoc_vbc.csv — se omite este contexto opcional)")
+        return None
+
+    df = pd.read_csv(ruta, encoding="utf-8-sig", sep=";")
+    anios_completos = [2000 + a for a in ANIOS_RECIENTES]
+    reciente = df[df["ANIO"].isin(anios_completos)].copy()
+    situacion_norm = reciente["SITUACION_PROBLEMATICA"].apply(quitar_tildes)
+    es_inseguridad = situacion_norm.str.contains("INSEGURIDAD", na=False)
+    df_inseg = reciente[es_inseguridad].copy()
+    df_inseg["nombre_norm"] = df_inseg["LOCALIDAD"].apply(normalizar_nombre_localidad)
+    conteo = df_inseg.groupby("nombre_norm").size().rename("reportes_comunitarios_inseguridad_recientes_total")
+    return conteo.reset_index()
+
+
+def cargar_organizaciones_comunitarias() -> pd.DataFrame | None:
+    """Organizaciones comunitarias / vigías en salud activas por localidad
+    (osb_detsoc_revcom.csv): señal de tejido social/resiliencia, NO de
+    riesgo (más organizaciones no significa más inseguridad). Contexto
+    opcional, no afecta nivel_riesgo."""
+    try:
+        ruta = buscar_archivo("osb_detsoc_revcom.csv")
+    except FileNotFoundError:
+        print("  (no encontré osb_detsoc_revcom.csv — se omite este contexto opcional)")
+        return None
+
+    df = pd.read_csv(ruta, encoding="utf-8-sig", sep=";")
+    df["nombre_norm"] = df["LOCALIDAD"].apply(normalizar_nombre_localidad)
+    conteo = df.groupby("nombre_norm").size().rename("organizaciones_comunitarias_registradas")
+    return conteo.reset_index()
+
+
+def cargar_personas_atendidas_sdis() -> pd.DataFrame | None:
+    """Volumen de personas atendidas por la Secretaría Distrital de
+    Integración Social (SDIS), 2024 (.xlsx) + 2025 (.csv), por localidad.
+    Igual que el estrato: refleja uso/cobertura de servicios sociales, no
+    solo necesidad -- contexto opcional, no afecta nivel_riesgo. El CSV 2025
+    es grande (~500MB) así que se lee por chunks, solo la columna necesaria."""
+    conteo_total = None
+
+    try:
+        ruta_csv = buscar_por_palabras("csv", incluir=["personas", "atendidas", "sdis"])
+        conteo_csv = pd.Series(dtype="int64")
+        for chunk in pd.read_csv(
+            ruta_csv, encoding="utf-8-sig", sep=";", usecols=["CODLOCALIDAD_ATENCION"], chunksize=500_000
+        ):
+            codigos = pd.to_numeric(chunk["CODLOCALIDAD_ATENCION"], errors="coerce")
+            codigos = codigos[codigos.between(1, 20)].astype(int)
+            conteo_csv = conteo_csv.add(codigos.value_counts(), fill_value=0)
+        conteo_total = conteo_csv
+    except FileNotFoundError:
+        print("  (no encontré el CSV de personas atendidas SDIS 2025 — se omite ese año)")
+
+    try:
+        ruta_xlsx = buscar_por_palabras("xlsx", incluir=["personas", "atendidas", "sdis"])
+        df_xlsx = pd.read_excel(ruta_xlsx, usecols=["CODLOCALIDAD_ATENCION"])
+        codigos = pd.to_numeric(df_xlsx["CODLOCALIDAD_ATENCION"], errors="coerce")
+        codigos = codigos[codigos.between(1, 20)].astype(int)
+        conteo_xlsx = codigos.value_counts()
+        conteo_total = conteo_xlsx if conteo_total is None else conteo_total.add(conteo_xlsx, fill_value=0)
+    except FileNotFoundError:
+        print("  (no encontré el .xlsx de personas atendidas SDIS 2024 — se omite ese año)")
+
+    if conteo_total is None:
+        return None
+
+    resultado = conteo_total.rename("personas_atendidas_sdis_recientes_total").reset_index()
+    resultado = resultado.rename(columns={"index": "codigo", "CODLOCALIDAD_ATENCION": "codigo"})
+    resultado["codigo"] = resultado["codigo"].astype(int)
+    resultado["personas_atendidas_sdis_recientes_total"] = resultado[
+        "personas_atendidas_sdis_recientes_total"
+    ].astype(int)
+    return resultado
 
 
 def clasificar_por_jenks(serie: pd.Series):
@@ -427,6 +726,56 @@ def main():
         df = df.merge(incidentes_nuse, on="codigo", how="left")
     else:
         df["incidentes_nuse_recientes_total"] = None
+    if "detalle_incidentes_seguridad" not in df.columns:
+        df["detalle_incidentes_seguridad"] = None
+
+    # Mapa nombre-normalizado -> código, para cruzar los datasets del
+    # Observatorio de Seguridad (osb_*) que solo traen el nombre de
+    # localidad en texto (sin código numérico).
+    mapa_nombre_codigo = {quitar_tildes(loc): cod for cod, loc in zip(df["codigo"], df["localidad"])}
+
+    def _unir_por_nombre(df_base: pd.DataFrame, df_nuevo: pd.DataFrame | None, columnas: list) -> pd.DataFrame:
+        if df_nuevo is None:
+            for col in columnas:
+                df_base[col] = None
+            return df_base
+        df_nuevo = df_nuevo.copy()
+        df_nuevo["codigo"] = df_nuevo["nombre_norm"].map(mapa_nombre_codigo)
+        no_encontrados = df_nuevo[df_nuevo["codigo"].isna()]["nombre_norm"].unique()
+        if len(no_encontrados) > 0:
+            print(f"    (aviso: {len(no_encontrados)} nombre(s) de localidad sin match: {list(no_encontrados)})")
+        df_nuevo = df_nuevo.dropna(subset=["codigo"]).drop(columns=["nombre_norm"])
+        df_nuevo["codigo"] = df_nuevo["codigo"].astype(int)
+        return df_base.merge(df_nuevo, on="codigo", how="left")
+
+    print("Cargando contexto adicional del Observatorio de Seguridad (osb_*, opcional)...")
+    accidentes_transito = cargar_accidentes_transito()
+    if accidentes_transito is not None:
+        df = df.merge(accidentes_transito, on="codigo", how="left")
+    else:
+        df["accidentes_transito_recientes_total"] = None
+
+    accidentes_domesticos = cargar_accidentes_domesticos()
+    df = _unir_por_nombre(
+        df, accidentes_domesticos,
+        ["accidentes_domesticos_casos", "accidentes_domesticos_tasa", "accidentes_domesticos_anio"],
+    )
+
+    violencia_intrafamiliar_salud = cargar_violencia_intrafamiliar_salud()
+    df = _unir_por_nombre(df, violencia_intrafamiliar_salud, ["violencia_intrafamiliar_salud_recientes_total"])
+
+    reportes_comunitarios = cargar_reportes_comunitarios_inseguridad()
+    df = _unir_por_nombre(df, reportes_comunitarios, ["reportes_comunitarios_inseguridad_recientes_total"])
+
+    organizaciones_comunitarias = cargar_organizaciones_comunitarias()
+    df = _unir_por_nombre(df, organizaciones_comunitarias, ["organizaciones_comunitarias_registradas"])
+
+    print("Cargando personas atendidas SDIS 2024-2025 (opcional, puede tardar por el tamaño del CSV)...")
+    personas_atendidas_sdis = cargar_personas_atendidas_sdis()
+    if personas_atendidas_sdis is not None:
+        df = df.merge(personas_atendidas_sdis, on="codigo", how="left")
+    else:
+        df["personas_atendidas_sdis_recientes_total"] = None
 
     # Alumbrado público: en OSM suele venir como highway=street_lamp
     alumbrado = puntos[puntos.get("highway") == "street_lamp"] if "highway" in puntos.columns else puntos.iloc[0:0]
@@ -519,6 +868,39 @@ def main():
                     None if pd.isna(row.get("incidentes_nuse_recientes_total"))
                     else int(row["incidentes_nuse_recientes_total"])
                 ),
+                "detalle_incidentes_seguridad": (
+                    row["detalle_incidentes_seguridad"]
+                    if isinstance(row.get("detalle_incidentes_seguridad"), dict)
+                    else None
+                ),
+                "accidentes_transito_recientes_total": (
+                    None if pd.isna(row.get("accidentes_transito_recientes_total"))
+                    else int(row["accidentes_transito_recientes_total"])
+                ),
+                "accidentes_domesticos": (
+                    None if pd.isna(row.get("accidentes_domesticos_casos"))
+                    else {
+                        "anio": int(row["accidentes_domesticos_anio"]),
+                        "casos": int(row["accidentes_domesticos_casos"]),
+                        "tasa": round(row["accidentes_domesticos_tasa"], 2),
+                    }
+                ),
+                "violencia_intrafamiliar_salud_recientes_total": (
+                    None if pd.isna(row.get("violencia_intrafamiliar_salud_recientes_total"))
+                    else int(row["violencia_intrafamiliar_salud_recientes_total"])
+                ),
+                "reportes_comunitarios_inseguridad_recientes_total": (
+                    None if pd.isna(row.get("reportes_comunitarios_inseguridad_recientes_total"))
+                    else int(row["reportes_comunitarios_inseguridad_recientes_total"])
+                ),
+                "organizaciones_comunitarias_registradas": (
+                    None if pd.isna(row.get("organizaciones_comunitarias_registradas"))
+                    else int(row["organizaciones_comunitarias_registradas"])
+                ),
+                "personas_atendidas_sdis_recientes_total": (
+                    None if pd.isna(row.get("personas_atendidas_sdis_recientes_total"))
+                    else int(row["personas_atendidas_sdis_recientes_total"])
+                ),
             },
         }
 
@@ -570,12 +952,33 @@ def main():
             ),
             "nota_incidentes_nuse": (
                 "incidentes_nuse_recientes_total (contexto.incidentes_nuse_recientes_total) "
-                "es el volumen de llamadas de emergencia NUSE/C4 (dataset 'Incidente "
-                "Reportado' de la SDSCJ), agregado sin desglosar por categoria porque "
-                "esas categorias no tienen diccionario publico de facil acceso. Se "
-                "actualiza MENSUALMENTE (a diferencia del dataset de delitos, que es "
-                "semestral/anual), pero es volumen de llamadas, no delito verificado -- "
-                "por eso tampoco se usa para calcular nivel_riesgo."
+                "es el volumen de llamadas de emergencia NUSE/123, tomado del historico "
+                "mensual agregado (2015-actualidad) publicado por la SDSCJ. A diferencia "
+                "de una version anterior de este pipeline, este dataset SI trae un "
+                "diccionario publico de categorias (guiatipificacionincidentes.csv), asi "
+                "que ademas del total se reporta detalle_incidentes_seguridad: un desglose "
+                "por tipo de llamada relacionado con seguridad/convivencia (rina, hurto, "
+                "porte ilegal de armas, etc. -- ver CATEGORIAS_INCIDENTE_NUSE_SEGURIDAD en "
+                "el codigo). Se actualiza MENSUALMENTE (a diferencia del dataset de "
+                "delitos, que es semestral/anual), pero sigue siendo volumen de LLAMADAS, "
+                "no delito verificado -- por eso ni el total ni el desglose se usan para "
+                "calcular nivel_riesgo."
+            ),
+            "nota_contexto_osb_y_sdis": (
+                "accidentes_transito_recientes_total, accidentes_domesticos, "
+                "violencia_intrafamiliar_salud_recientes_total, "
+                "reportes_comunitarios_inseguridad_recientes_total, "
+                "organizaciones_comunitarias_registradas y "
+                "personas_atendidas_sdis_recientes_total vienen del Observatorio de "
+                "Seguridad y Convivencia (SDSCJ) y de la Secretaria Distrital de "
+                "Integracion Social (SDIS). Ninguno se usa para calcular nivel_riesgo: "
+                "son reportes/registros administrativos (comunitarios, de salud o de "
+                "atencion social), no delito verificado, y varios dependen de cobertura "
+                "de servicios tanto como de necesidad real (mismo argumento que ya aplica "
+                "al estrato). violencia_intrafamiliar_salud_recientes_total en particular "
+                "NO debe sumarse a 'Violencia intrafamiliar' de detalle_delitos: son dos "
+                "fuentes distintas (registro de salud vs. delito verificado por Fiscalia/"
+                "Policia), con su propia subnotificacion cada una."
             ),
         }
     }

@@ -25,7 +25,8 @@
     "nota_pesos": "Los pesos de severidad son una decision de diseno (no una cifra oficial): reflejan que delitos contra la vida/integridad deben pesar mas que hurtos sin violencia. Se recomienda validarlos con el asesor del proyecto.",
     "nota_score_mixto": "nivel_riesgo se calcula sobre score_mixto, NO solo sobre score_ponderado_100k. Motivo: normalizar unicamente por poblacion residente infla el riesgo de localidades pequenas con mucha poblacion flotante no residente -- comercio, turismo, transito -- (ej. Los Martires por San Victorino/Paloquemao, La Candelaria por el centro historico) y diluye localidades grandes y muy pobladas donde el delito violento en cifras absolutas es alto (ej. Ciudad Bolivar, Kennedy, Bosa), a pesar de que la app alerta segun donde esta fisicamente alguien (GPS), no segun donde vive registrado. score_mixto promedia score_ponderado_100k (por habitante) y score_ponderado_por_km2 (por area), cada uno normalizado 0-1 por min-max sobre las 20 localidades, con ponderacion 50/50. Es una decision de diseno documentada, no una formula oficial: se recomienda validarla con el asesor del proyecto. score_ponderado_100k y score_ponderado_por_km2 se conservan en la salida por transparencia/comparacion.",
     "nota_etica": "El estrato socioeconomico se reporta como contexto pero NO se usa para calcular nivel_riesgo, para evitar sesgar el modelo contra localidades de bajos ingresos.",
-    "nota_incidentes_nuse": "incidentes_nuse_recientes_total (contexto.incidentes_nuse_recientes_total) es el volumen de llamadas de emergencia NUSE/C4 (dataset 'Incidente Reportado' de la SDSCJ), agregado sin desglosar por categoria porque esas categorias no tienen diccionario publico de facil acceso. Se actualiza MENSUALMENTE (a diferencia del dataset de delitos, que es semestral/anual), pero es volumen de llamadas, no delito verificado -- por eso tampoco se usa para calcular nivel_riesgo."
+    "nota_incidentes_nuse": "incidentes_nuse_recientes_total (contexto.incidentes_nuse_recientes_total) es el volumen de llamadas de emergencia NUSE/123, tomado del historico mensual agregado (2015-actualidad) publicado por la SDSCJ. A diferencia de una version anterior de este pipeline, este dataset SI trae un diccionario publico de categorias (guiatipificacionincidentes.csv), asi que ademas del total se reporta detalle_incidentes_seguridad: un desglose por tipo de llamada relacionado con seguridad/convivencia (rina, hurto, porte ilegal de armas, etc. -- ver CATEGORIAS_INCIDENTE_NUSE_SEGURIDAD en el codigo). Se actualiza MENSUALMENTE (a diferencia del dataset de delitos, que es semestral/anual), pero sigue siendo volumen de LLAMADAS, no delito verificado -- por eso ni el total ni el desglose se usan para calcular nivel_riesgo.",
+    "nota_contexto_osb_y_sdis": "accidentes_transito_recientes_total, accidentes_domesticos, violencia_intrafamiliar_salud_recientes_total, reportes_comunitarios_inseguridad_recientes_total, organizaciones_comunitarias_registradas y personas_atendidas_sdis_recientes_total vienen del Observatorio de Seguridad y Convivencia (SDSCJ) y de la Secretaria Distrital de Integracion Social (SDIS). Ninguno se usa para calcular nivel_riesgo: son reportes/registros administrativos (comunitarios, de salud o de atencion social), no delito verificado, y varios dependen de cobertura de servicios tanto como de necesidad real (mismo argumento que ya aplica al estrato). violencia_intrafamiliar_salud_recientes_total en particular NO debe sumarse a 'Violencia intrafamiliar' de detalle_delitos: son dos fuentes distintas (registro de salud vs. delito verificado por Fiscalia/Policia), con su propia subnotificacion cada una."
   },
   "9": {
     "localidad": "Fontibón",
@@ -53,9 +54,39 @@
       "estrato_promedio": 3.05,
       "luminarias_estimadas": null,
       "luminarias_por_km2": null,
-      "longitud_vias_km": 1203.9,
+      "longitud_vias_km": 1204.0,
       "area_km2": 33.25,
-      "incidentes_nuse_recientes_total": 156924
+      "incidentes_nuse_recientes_total": 338583,
+      "detalle_incidentes_seguridad": {
+        "Acción Subversiva": 1,
+        "Alteración del Orden Público": 38667,
+        "Atraco / Hurto en Proceso": 14724,
+        "Delincuente capturado por civil": 3711,
+        "Disparos": 2025,
+        "Hallazgo de Explosivos": 226,
+        "Hurto Efectuado": 7297,
+        "Intento/Violación de Domicilio": 1108,
+        "Lesiones Personales": 3987,
+        "Maltrato": 15509,
+        "Manifestación / Motín": 631,
+        "Narcóticos": 10378,
+        "Pandillas Juveniles": 38,
+        "Persona o Vehículo Sospechoso": 13364,
+        "Porte Ilegal de Armas": 724,
+        "Rapto / Secuestro": 918,
+        "Riña": 53878,
+        "Violencia Sexual": 645
+      },
+      "accidentes_transito_recientes_total": 122,
+      "accidentes_domesticos": {
+        "anio": 2026,
+        "casos": 216,
+        "tasa": 50.7
+      },
+      "violencia_intrafamiliar_salud_recientes_total": 5546,
+      "reportes_comunitarios_inseguridad_recientes_total": 49,
+      "organizaciones_comunitarias_registradas": 40,
+      "personas_atendidas_sdis_recientes_total": 88859
     }
   },
   "19": {
@@ -84,9 +115,39 @@
       "estrato_promedio": 1.27,
       "luminarias_estimadas": null,
       "luminarias_por_km2": null,
-      "longitud_vias_km": 1255.4,
+      "longitud_vias_km": 1273.8,
       "area_km2": 129.9,
-      "incidentes_nuse_recientes_total": 295978
+      "incidentes_nuse_recientes_total": 492361,
+      "detalle_incidentes_seguridad": {
+        "Acción Subversiva": 8,
+        "Alteración del Orden Público": 64053,
+        "Atraco / Hurto en Proceso": 15373,
+        "Delincuente capturado por civil": 3271,
+        "Disparos": 5510,
+        "Hallazgo de Explosivos": 113,
+        "Hurto Efectuado": 7934,
+        "Intento/Violación de Domicilio": 1277,
+        "Lesiones Personales": 9016,
+        "Maltrato": 41114,
+        "Manifestación / Motín": 504,
+        "Narcóticos": 13879,
+        "Pandillas Juveniles": 91,
+        "Persona o Vehículo Sospechoso": 9838,
+        "Porte Ilegal de Armas": 1354,
+        "Rapto / Secuestro": 1849,
+        "Riña": 114295,
+        "Violencia Sexual": 1722
+      },
+      "accidentes_transito_recientes_total": 133,
+      "accidentes_domesticos": {
+        "anio": 2026,
+        "casos": 500,
+        "tasa": 48.3
+      },
+      "violencia_intrafamiliar_salud_recientes_total": 20112,
+      "reportes_comunitarios_inseguridad_recientes_total": 10,
+      "organizaciones_comunitarias_registradas": 59,
+      "personas_atendidas_sdis_recientes_total": 488769
     }
   },
   "14": {
@@ -115,9 +176,39 @@
       "estrato_promedio": 2.92,
       "luminarias_estimadas": 14,
       "luminarias_por_km2": 2.2,
-      "longitud_vias_km": 399.2,
+      "longitud_vias_km": 391.1,
       "area_km2": 6.51,
-      "incidentes_nuse_recientes_total": 91608
+      "incidentes_nuse_recientes_total": 190850,
+      "detalle_incidentes_seguridad": {
+        "Acción Subversiva": 3,
+        "Alteración del Orden Público": 29525,
+        "Atraco / Hurto en Proceso": 10290,
+        "Delincuente capturado por civil": 2453,
+        "Disparos": 1503,
+        "Hallazgo de Explosivos": 74,
+        "Hurto Efectuado": 5790,
+        "Intento/Violación de Domicilio": 806,
+        "Lesiones Personales": 3679,
+        "Maltrato": 6383,
+        "Manifestación / Motín": 240,
+        "Narcóticos": 5388,
+        "Pandillas Juveniles": 13,
+        "Persona o Vehículo Sospechoso": 6040,
+        "Porte Ilegal de Armas": 420,
+        "Rapto / Secuestro": 380,
+        "Riña": 24863,
+        "Violencia Sexual": 549
+      },
+      "accidentes_transito_recientes_total": 68,
+      "accidentes_domesticos": {
+        "anio": 2026,
+        "casos": 53,
+        "tasa": 57.4
+      },
+      "violencia_intrafamiliar_salud_recientes_total": 1808,
+      "reportes_comunitarios_inseguridad_recientes_total": 15,
+      "organizaciones_comunitarias_registradas": 20,
+      "personas_atendidas_sdis_recientes_total": 78054
     }
   },
   "15": {
@@ -146,9 +237,39 @@
       "estrato_promedio": 2.95,
       "luminarias_estimadas": null,
       "luminarias_por_km2": null,
-      "longitud_vias_km": 304.3,
+      "longitud_vias_km": 304.0,
       "area_km2": 4.88,
-      "incidentes_nuse_recientes_total": 65628
+      "incidentes_nuse_recientes_total": 137959,
+      "detalle_incidentes_seguridad": {
+        "Acción Subversiva": 2,
+        "Alteración del Orden Público": 19299,
+        "Atraco / Hurto en Proceso": 7918,
+        "Delincuente capturado por civil": 2324,
+        "Disparos": 855,
+        "Hallazgo de Explosivos": 59,
+        "Hurto Efectuado": 2553,
+        "Intento/Violación de Domicilio": 735,
+        "Lesiones Personales": 1670,
+        "Maltrato": 4848,
+        "Manifestación / Motín": 178,
+        "Narcóticos": 3585,
+        "Pandillas Juveniles": 6,
+        "Persona o Vehículo Sospechoso": 5374,
+        "Porte Ilegal de Armas": 307,
+        "Rapto / Secuestro": 260,
+        "Riña": 19747,
+        "Violencia Sexual": 352
+      },
+      "accidentes_transito_recientes_total": 46,
+      "accidentes_domesticos": {
+        "anio": 2026,
+        "casos": 51,
+        "tasa": 63.2
+      },
+      "violencia_intrafamiliar_salud_recientes_total": 1224,
+      "reportes_comunitarios_inseguridad_recientes_total": 21,
+      "organizaciones_comunitarias_registradas": 21,
+      "personas_atendidas_sdis_recientes_total": 30692
     }
   },
   "2": {
@@ -177,9 +298,39 @@
       "estrato_promedio": 4.05,
       "luminarias_estimadas": 89,
       "luminarias_por_km2": 2.3,
-      "longitud_vias_km": 955.7,
+      "longitud_vias_km": 954.5,
       "area_km2": 37.98,
-      "incidentes_nuse_recientes_total": 110932
+      "incidentes_nuse_recientes_total": 261868,
+      "detalle_incidentes_seguridad": {
+        "Acción Subversiva": 5,
+        "Alteración del Orden Público": 37790,
+        "Atraco / Hurto en Proceso": 13022,
+        "Delincuente capturado por civil": 3301,
+        "Disparos": 943,
+        "Hallazgo de Explosivos": 333,
+        "Hurto Efectuado": 6004,
+        "Intento/Violación de Domicilio": 924,
+        "Lesiones Personales": 2982,
+        "Maltrato": 6845,
+        "Manifestación / Motín": 741,
+        "Narcóticos": 4838,
+        "Pandillas Juveniles": 31,
+        "Persona o Vehículo Sospechoso": 12022,
+        "Porte Ilegal de Armas": 427,
+        "Rapto / Secuestro": 586,
+        "Riña": 31653,
+        "Violencia Sexual": 747
+      },
+      "accidentes_transito_recientes_total": 46,
+      "accidentes_domesticos": {
+        "anio": 2026,
+        "casos": 87,
+        "tasa": 48.6
+      },
+      "violencia_intrafamiliar_salud_recientes_total": 1832,
+      "reportes_comunitarios_inseguridad_recientes_total": 13,
+      "organizaciones_comunitarias_registradas": 25,
+      "personas_atendidas_sdis_recientes_total": 31642
     }
   },
   "20": {
@@ -210,7 +361,37 @@
       "luminarias_por_km2": null,
       "longitud_vias_km": null,
       "area_km2": 780.35,
-      "incidentes_nuse_recientes_total": 113
+      "incidentes_nuse_recientes_total": 254,
+      "detalle_incidentes_seguridad": {
+        "Acción Subversiva": 0,
+        "Alteración del Orden Público": 12,
+        "Atraco / Hurto en Proceso": 10,
+        "Delincuente capturado por civil": 2,
+        "Disparos": 0,
+        "Hallazgo de Explosivos": 0,
+        "Hurto Efectuado": 11,
+        "Intento/Violación de Domicilio": 0,
+        "Lesiones Personales": 3,
+        "Maltrato": 18,
+        "Manifestación / Motín": 1,
+        "Narcóticos": 6,
+        "Pandillas Juveniles": 0,
+        "Persona o Vehículo Sospechoso": 3,
+        "Porte Ilegal de Armas": 0,
+        "Rapto / Secuestro": 0,
+        "Riña": 39,
+        "Violencia Sexual": 0
+      },
+      "accidentes_transito_recientes_total": 3,
+      "accidentes_domesticos": {
+        "anio": 2026,
+        "casos": 4,
+        "tasa": 149.8
+      },
+      "violencia_intrafamiliar_salud_recientes_total": 173,
+      "reportes_comunitarios_inseguridad_recientes_total": 5,
+      "organizaciones_comunitarias_registradas": 27,
+      "personas_atendidas_sdis_recientes_total": 6057
     }
   },
   "18": {
@@ -241,7 +422,37 @@
       "luminarias_por_km2": null,
       "longitud_vias_km": 633.2,
       "area_km2": 13.82,
-      "incidentes_nuse_recientes_total": 204968
+      "incidentes_nuse_recientes_total": 346456,
+      "detalle_incidentes_seguridad": {
+        "Acción Subversiva": 2,
+        "Alteración del Orden Público": 53269,
+        "Atraco / Hurto en Proceso": 13892,
+        "Delincuente capturado por civil": 2408,
+        "Disparos": 3620,
+        "Hallazgo de Explosivos": 106,
+        "Hurto Efectuado": 5617,
+        "Intento/Violación de Domicilio": 1197,
+        "Lesiones Personales": 5409,
+        "Maltrato": 23569,
+        "Manifestación / Motín": 184,
+        "Narcóticos": 13444,
+        "Pandillas Juveniles": 30,
+        "Persona o Vehículo Sospechoso": 9319,
+        "Porte Ilegal de Armas": 946,
+        "Rapto / Secuestro": 1008,
+        "Riña": 70442,
+        "Violencia Sexual": 881
+      },
+      "accidentes_transito_recientes_total": 68,
+      "accidentes_domesticos": {
+        "anio": 2026,
+        "casos": 257,
+        "tasa": 55.2
+      },
+      "violencia_intrafamiliar_salud_recientes_total": 6726,
+      "reportes_comunitarios_inseguridad_recientes_total": 13,
+      "organizaciones_comunitarias_registradas": 30,
+      "personas_atendidas_sdis_recientes_total": 233458
     }
   },
   "17": {
@@ -270,9 +481,39 @@
       "estrato_promedio": 2.36,
       "luminarias_estimadas": 1,
       "luminarias_por_km2": 0.5,
-      "longitud_vias_km": 122.8,
+      "longitud_vias_km": 129.2,
       "area_km2": 2.06,
-      "incidentes_nuse_recientes_total": 16927
+      "incidentes_nuse_recientes_total": 39779,
+      "detalle_incidentes_seguridad": {
+        "Acción Subversiva": 0,
+        "Alteración del Orden Público": 5354,
+        "Atraco / Hurto en Proceso": 1514,
+        "Delincuente capturado por civil": 410,
+        "Disparos": 123,
+        "Hallazgo de Explosivos": 31,
+        "Hurto Efectuado": 667,
+        "Intento/Violación de Domicilio": 163,
+        "Lesiones Personales": 498,
+        "Maltrato": 1316,
+        "Manifestación / Motín": 218,
+        "Narcóticos": 1019,
+        "Pandillas Juveniles": 4,
+        "Persona o Vehículo Sospechoso": 1332,
+        "Porte Ilegal de Armas": 68,
+        "Rapto / Secuestro": 59,
+        "Riña": 5292,
+        "Violencia Sexual": 97
+      },
+      "accidentes_transito_recientes_total": 3,
+      "accidentes_domesticos": {
+        "anio": 2026,
+        "casos": 12,
+        "tasa": 77.6
+      },
+      "violencia_intrafamiliar_salud_recientes_total": 381,
+      "reportes_comunitarios_inseguridad_recientes_total": 9,
+      "organizaciones_comunitarias_registradas": 15,
+      "personas_atendidas_sdis_recientes_total": 26098
     }
   },
   "12": {
@@ -301,9 +542,39 @@
       "estrato_promedio": 3.29,
       "luminarias_estimadas": null,
       "luminarias_por_km2": null,
-      "longitud_vias_km": 689.7,
+      "longitud_vias_km": 689.0,
       "area_km2": 11.89,
-      "incidentes_nuse_recientes_total": 104401
+      "incidentes_nuse_recientes_total": 229451,
+      "detalle_incidentes_seguridad": {
+        "Acción Subversiva": 3,
+        "Alteración del Orden Público": 32007,
+        "Atraco / Hurto en Proceso": 12805,
+        "Delincuente capturado por civil": 1948,
+        "Disparos": 1085,
+        "Hallazgo de Explosivos": 146,
+        "Hurto Efectuado": 4577,
+        "Intento/Violación de Domicilio": 1423,
+        "Lesiones Personales": 2582,
+        "Maltrato": 7276,
+        "Manifestación / Motín": 258,
+        "Narcóticos": 7283,
+        "Pandillas Juveniles": 12,
+        "Persona o Vehículo Sospechoso": 11355,
+        "Porte Ilegal de Armas": 448,
+        "Rapto / Secuestro": 381,
+        "Riña": 30709,
+        "Violencia Sexual": 797
+      },
+      "accidentes_transito_recientes_total": 49,
+      "accidentes_domesticos": {
+        "anio": 2026,
+        "casos": 110,
+        "tasa": 83.9
+      },
+      "violencia_intrafamiliar_salud_recientes_total": 2187,
+      "reportes_comunitarios_inseguridad_recientes_total": 9,
+      "organizaciones_comunitarias_registradas": 23,
+      "personas_atendidas_sdis_recientes_total": 34882
     }
   },
   "13": {
@@ -332,9 +603,39 @@
       "estrato_promedio": 3.9,
       "luminarias_estimadas": 87,
       "luminarias_por_km2": 6.1,
-      "longitud_vias_km": 812.0,
+      "longitud_vias_km": 810.8,
       "area_km2": 14.18,
-      "incidentes_nuse_recientes_total": 100705
+      "incidentes_nuse_recientes_total": 238264,
+      "detalle_incidentes_seguridad": {
+        "Acción Subversiva": 1,
+        "Alteración del Orden Público": 28746,
+        "Atraco / Hurto en Proceso": 14232,
+        "Delincuente capturado por civil": 2622,
+        "Disparos": 1005,
+        "Hallazgo de Explosivos": 242,
+        "Hurto Efectuado": 4913,
+        "Intento/Violación de Domicilio": 1468,
+        "Lesiones Personales": 2367,
+        "Maltrato": 6255,
+        "Manifestación / Motín": 911,
+        "Narcóticos": 5732,
+        "Pandillas Juveniles": 98,
+        "Persona o Vehículo Sospechoso": 12262,
+        "Porte Ilegal de Armas": 441,
+        "Rapto / Secuestro": 376,
+        "Riña": 28366,
+        "Violencia Sexual": 564
+      },
+      "accidentes_transito_recientes_total": 63,
+      "accidentes_domesticos": {
+        "anio": 2026,
+        "casos": 95,
+        "tasa": 67.1
+      },
+      "violencia_intrafamiliar_salud_recientes_total": 2040,
+      "reportes_comunitarios_inseguridad_recientes_total": 15,
+      "organizaciones_comunitarias_registradas": 20,
+      "personas_atendidas_sdis_recientes_total": 11388
     }
   },
   "16": {
@@ -363,9 +664,39 @@
       "estrato_promedio": 3.0,
       "luminarias_estimadas": null,
       "luminarias_por_km2": null,
-      "longitud_vias_km": 895.1,
+      "longitud_vias_km": 894.4,
       "area_km2": 17.3,
-      "incidentes_nuse_recientes_total": 143336
+      "incidentes_nuse_recientes_total": 326489,
+      "detalle_incidentes_seguridad": {
+        "Acción Subversiva": 0,
+        "Alteración del Orden Público": 41811,
+        "Atraco / Hurto en Proceso": 16899,
+        "Delincuente capturado por civil": 3665,
+        "Disparos": 2437,
+        "Hallazgo de Explosivos": 196,
+        "Hurto Efectuado": 6411,
+        "Intento/Violación de Domicilio": 1699,
+        "Lesiones Personales": 4485,
+        "Maltrato": 12069,
+        "Manifestación / Motín": 328,
+        "Narcóticos": 8116,
+        "Pandillas Juveniles": 21,
+        "Persona o Vehículo Sospechoso": 14841,
+        "Porte Ilegal de Armas": 730,
+        "Rapto / Secuestro": 651,
+        "Riña": 42519,
+        "Violencia Sexual": 1730
+      },
+      "accidentes_transito_recientes_total": 109,
+      "accidentes_domesticos": {
+        "anio": 2026,
+        "casos": 128,
+        "tasa": 51.2
+      },
+      "violencia_intrafamiliar_salud_recientes_total": 4484,
+      "reportes_comunitarios_inseguridad_recientes_total": 20,
+      "organizaciones_comunitarias_registradas": 41,
+      "personas_atendidas_sdis_recientes_total": 68733
     }
   },
   "1": {
@@ -394,9 +725,39 @@
       "estrato_promedio": 3.68,
       "luminarias_estimadas": 177,
       "luminarias_por_km2": 2.7,
-      "longitud_vias_km": 1617.9,
+      "longitud_vias_km": 1615.7,
       "area_km2": 65.15,
-      "incidentes_nuse_recientes_total": 217047
+      "incidentes_nuse_recientes_total": 460449,
+      "detalle_incidentes_seguridad": {
+        "Acción Subversiva": 4,
+        "Alteración del Orden Público": 73381,
+        "Atraco / Hurto en Proceso": 17242,
+        "Delincuente capturado por civil": 4146,
+        "Disparos": 2591,
+        "Hallazgo de Explosivos": 440,
+        "Hurto Efectuado": 8585,
+        "Intento/Violación de Domicilio": 1466,
+        "Lesiones Personales": 4967,
+        "Maltrato": 19324,
+        "Manifestación / Motín": 548,
+        "Narcóticos": 11246,
+        "Pandillas Juveniles": 36,
+        "Persona o Vehículo Sospechoso": 21676,
+        "Porte Ilegal de Armas": 939,
+        "Rapto / Secuestro": 1020,
+        "Riña": 66190,
+        "Violencia Sexual": 1133
+      },
+      "accidentes_transito_recientes_total": 110,
+      "accidentes_domesticos": {
+        "anio": 2026,
+        "casos": 263,
+        "tasa": 39.7
+      },
+      "violencia_intrafamiliar_salud_recientes_total": 6496,
+      "reportes_comunitarios_inseguridad_recientes_total": 18,
+      "organizaciones_comunitarias_registradas": 28,
+      "personas_atendidas_sdis_recientes_total": 113416
     }
   },
   "4": {
@@ -425,9 +786,39 @@
       "estrato_promedio": 1.99,
       "luminarias_estimadas": null,
       "luminarias_por_km2": null,
-      "longitud_vias_km": 931.9,
+      "longitud_vias_km": 1136.7,
       "area_km2": 49.06,
-      "incidentes_nuse_recientes_total": 200234
+      "incidentes_nuse_recientes_total": 347154,
+      "detalle_incidentes_seguridad": {
+        "Acción Subversiva": 7,
+        "Alteración del Orden Público": 44869,
+        "Atraco / Hurto en Proceso": 13541,
+        "Delincuente capturado por civil": 2567,
+        "Disparos": 3119,
+        "Hallazgo de Explosivos": 107,
+        "Hurto Efectuado": 5369,
+        "Intento/Violación de Domicilio": 1331,
+        "Lesiones Personales": 6366,
+        "Maltrato": 25433,
+        "Manifestación / Motín": 166,
+        "Narcóticos": 10004,
+        "Pandillas Juveniles": 52,
+        "Persona o Vehículo Sospechoso": 9278,
+        "Porte Ilegal de Armas": 806,
+        "Rapto / Secuestro": 1066,
+        "Riña": 75740,
+        "Violencia Sexual": 1140
+      },
+      "accidentes_transito_recientes_total": 72,
+      "accidentes_domesticos": {
+        "anio": 2026,
+        "casos": 260,
+        "tasa": 52.1
+      },
+      "violencia_intrafamiliar_salud_recientes_total": 7339,
+      "reportes_comunitarios_inseguridad_recientes_total": 11,
+      "organizaciones_comunitarias_registradas": 31,
+      "personas_atendidas_sdis_recientes_total": 264126
     }
   },
   "5": {
@@ -458,7 +849,37 @@
       "luminarias_por_km2": null,
       "longitud_vias_km": 370.2,
       "area_km2": 214.9,
-      "incidentes_nuse_recientes_total": 183341
+      "incidentes_nuse_recientes_total": 304237,
+      "detalle_incidentes_seguridad": {
+        "Acción Subversiva": 7,
+        "Alteración del Orden Público": 38553,
+        "Atraco / Hurto en Proceso": 8734,
+        "Delincuente capturado por civil": 1657,
+        "Disparos": 3032,
+        "Hallazgo de Explosivos": 65,
+        "Hurto Efectuado": 4450,
+        "Intento/Violación de Domicilio": 955,
+        "Lesiones Personales": 6022,
+        "Maltrato": 25666,
+        "Manifestación / Motín": 356,
+        "Narcóticos": 8014,
+        "Pandillas Juveniles": 92,
+        "Persona o Vehículo Sospechoso": 6348,
+        "Porte Ilegal de Armas": 787,
+        "Rapto / Secuestro": 1115,
+        "Riña": 74670,
+        "Violencia Sexual": 847
+      },
+      "accidentes_transito_recientes_total": 83,
+      "accidentes_domesticos": {
+        "anio": 2026,
+        "casos": 227,
+        "tasa": 38.8
+      },
+      "violencia_intrafamiliar_salud_recientes_total": 11403,
+      "reportes_comunitarios_inseguridad_recientes_total": 30,
+      "organizaciones_comunitarias_registradas": 63,
+      "personas_atendidas_sdis_recientes_total": 316726
     }
   },
   "7": {
@@ -489,7 +910,37 @@
       "luminarias_por_km2": null,
       "longitud_vias_km": 1102.4,
       "area_km2": 23.91,
-      "incidentes_nuse_recientes_total": 322392
+      "incidentes_nuse_recientes_total": 537191,
+      "detalle_incidentes_seguridad": {
+        "Acción Subversiva": 1,
+        "Alteración del Orden Público": 78573,
+        "Atraco / Hurto en Proceso": 16077,
+        "Delincuente capturado por civil": 3436,
+        "Disparos": 3492,
+        "Hallazgo de Explosivos": 162,
+        "Hurto Efectuado": 8650,
+        "Intento/Violación de Domicilio": 1530,
+        "Lesiones Personales": 8255,
+        "Maltrato": 42059,
+        "Manifestación / Motín": 419,
+        "Narcóticos": 14753,
+        "Pandillas Juveniles": 90,
+        "Persona o Vehículo Sospechoso": 12368,
+        "Porte Ilegal de Armas": 1192,
+        "Rapto / Secuestro": 1847,
+        "Riña": 124820,
+        "Violencia Sexual": 1633
+      },
+      "accidentes_transito_recientes_total": 130,
+      "accidentes_domesticos": {
+        "anio": 2026,
+        "casos": 314,
+        "tasa": 29.1
+      },
+      "violencia_intrafamiliar_salud_recientes_total": 18541,
+      "reportes_comunitarios_inseguridad_recientes_total": 59,
+      "organizaciones_comunitarias_registradas": 43,
+      "personas_atendidas_sdis_recientes_total": 419641
     }
   },
   "8": {
@@ -520,7 +971,37 @@
       "luminarias_por_km2": null,
       "longitud_vias_km": 1782.8,
       "area_km2": 38.56,
-      "incidentes_nuse_recientes_total": 485060
+      "incidentes_nuse_recientes_total": 892958,
+      "detalle_incidentes_seguridad": {
+        "Acción Subversiva": 5,
+        "Alteración del Orden Público": 132205,
+        "Atraco / Hurto en Proceso": 33652,
+        "Delincuente capturado por civil": 7396,
+        "Disparos": 6362,
+        "Hallazgo de Explosivos": 335,
+        "Hurto Efectuado": 16188,
+        "Intento/Violación de Domicilio": 2793,
+        "Lesiones Personales": 13790,
+        "Maltrato": 54836,
+        "Manifestación / Motín": 782,
+        "Narcóticos": 26444,
+        "Pandillas Juveniles": 155,
+        "Persona o Vehículo Sospechoso": 25830,
+        "Porte Ilegal de Armas": 1869,
+        "Rapto / Secuestro": 2612,
+        "Riña": 168650,
+        "Violencia Sexual": 2493
+      },
+      "accidentes_transito_recientes_total": 224,
+      "accidentes_domesticos": {
+        "anio": 2026,
+        "casos": 614,
+        "tasa": 43.9
+      },
+      "violencia_intrafamiliar_salud_recientes_total": 20883,
+      "reportes_comunitarios_inseguridad_recientes_total": 63,
+      "organizaciones_comunitarias_registradas": 43,
+      "personas_atendidas_sdis_recientes_total": 386974
     }
   },
   "10": {
@@ -551,7 +1032,37 @@
       "luminarias_por_km2": 0.3,
       "longitud_vias_km": 1487.3,
       "area_km2": 35.85,
-      "incidentes_nuse_recientes_total": 400506
+      "incidentes_nuse_recientes_total": 755301,
+      "detalle_incidentes_seguridad": {
+        "Acción Subversiva": 9,
+        "Alteración del Orden Público": 115387,
+        "Atraco / Hurto en Proceso": 34903,
+        "Delincuente capturado por civil": 7980,
+        "Disparos": 5472,
+        "Hallazgo de Explosivos": 383,
+        "Hurto Efectuado": 13730,
+        "Intento/Violación de Domicilio": 3455,
+        "Lesiones Personales": 8833,
+        "Maltrato": 38043,
+        "Manifestación / Motín": 838,
+        "Narcóticos": 28031,
+        "Pandillas Juveniles": 104,
+        "Persona o Vehículo Sospechoso": 28411,
+        "Porte Ilegal de Armas": 1813,
+        "Rapto / Secuestro": 1846,
+        "Riña": 128212,
+        "Violencia Sexual": 1696
+      },
+      "accidentes_transito_recientes_total": 162,
+      "accidentes_domesticos": {
+        "anio": 2026,
+        "casos": 464,
+        "tasa": 51.4
+      },
+      "violencia_intrafamiliar_salud_recientes_total": 13183,
+      "reportes_comunitarios_inseguridad_recientes_total": 5,
+      "organizaciones_comunitarias_registradas": 45,
+      "personas_atendidas_sdis_recientes_total": 231996
     }
   },
   "11": {
@@ -580,9 +1091,39 @@
       "estrato_promedio": 2.93,
       "luminarias_estimadas": 219,
       "luminarias_por_km2": 2.2,
-      "longitud_vias_km": 2063.0,
+      "longitud_vias_km": 2060.9,
       "area_km2": 100.48,
-      "incidentes_nuse_recientes_total": 509301
+      "incidentes_nuse_recientes_total": 919696,
+      "detalle_incidentes_seguridad": {
+        "Acción Subversiva": 6,
+        "Alteración del Orden Público": 143805,
+        "Atraco / Hurto en Proceso": 29751,
+        "Delincuente capturado por civil": 8229,
+        "Disparos": 4887,
+        "Hallazgo de Explosivos": 496,
+        "Hurto Efectuado": 17412,
+        "Intento/Violación de Domicilio": 2932,
+        "Lesiones Personales": 11279,
+        "Maltrato": 54271,
+        "Manifestación / Motín": 853,
+        "Narcóticos": 33390,
+        "Pandillas Juveniles": 111,
+        "Persona o Vehículo Sospechoso": 29838,
+        "Porte Ilegal de Armas": 1812,
+        "Rapto / Secuestro": 2509,
+        "Riña": 177399,
+        "Violencia Sexual": 2057
+      },
+      "accidentes_transito_recientes_total": 143,
+      "accidentes_domesticos": {
+        "anio": 2026,
+        "casos": 541,
+        "tasa": 36.6
+      },
+      "violencia_intrafamiliar_salud_recientes_total": 19215,
+      "reportes_comunitarios_inseguridad_recientes_total": 6,
+      "organizaciones_comunitarias_registradas": 47,
+      "personas_atendidas_sdis_recientes_total": 319611
     }
   },
   "6": {
@@ -613,7 +1154,37 @@
       "luminarias_por_km2": null,
       "longitud_vias_km": 480.4,
       "area_km2": 9.9,
-      "incidentes_nuse_recientes_total": 89952
+      "incidentes_nuse_recientes_total": 175247,
+      "detalle_incidentes_seguridad": {
+        "Acción Subversiva": 1,
+        "Alteración del Orden Público": 24918,
+        "Atraco / Hurto en Proceso": 6981,
+        "Delincuente capturado por civil": 1412,
+        "Disparos": 1440,
+        "Hallazgo de Explosivos": 49,
+        "Hurto Efectuado": 2665,
+        "Intento/Violación de Domicilio": 562,
+        "Lesiones Personales": 2693,
+        "Maltrato": 9244,
+        "Manifestación / Motín": 172,
+        "Narcóticos": 4579,
+        "Pandillas Juveniles": 35,
+        "Persona o Vehículo Sospechoso": 5492,
+        "Porte Ilegal de Armas": 415,
+        "Rapto / Secuestro": 478,
+        "Riña": 32080,
+        "Violencia Sexual": 488
+      },
+      "accidentes_transito_recientes_total": 72,
+      "accidentes_domesticos": {
+        "anio": 2026,
+        "casos": 111,
+        "tasa": 51.6
+      },
+      "violencia_intrafamiliar_salud_recientes_total": 3508,
+      "reportes_comunitarios_inseguridad_recientes_total": 17,
+      "organizaciones_comunitarias_registradas": 20,
+      "personas_atendidas_sdis_recientes_total": 95079
     }
   },
   "3": {
@@ -642,9 +1213,39 @@
       "estrato_promedio": 2.25,
       "luminarias_estimadas": 2,
       "luminarias_por_km2": 0.0,
-      "longitud_vias_km": 769.4,
+      "longitud_vias_km": 854.1,
       "area_km2": 45.13,
-      "incidentes_nuse_recientes_total": 89889
+      "incidentes_nuse_recientes_total": 193915,
+      "detalle_incidentes_seguridad": {
+        "Acción Subversiva": 5,
+        "Alteración del Orden Público": 19784,
+        "Atraco / Hurto en Proceso": 10352,
+        "Delincuente capturado por civil": 2813,
+        "Disparos": 1195,
+        "Hallazgo de Explosivos": 133,
+        "Hurto Efectuado": 3774,
+        "Intento/Violación de Domicilio": 610,
+        "Lesiones Personales": 3751,
+        "Maltrato": 8182,
+        "Manifestación / Motín": 696,
+        "Narcóticos": 7174,
+        "Pandillas Juveniles": 21,
+        "Persona o Vehículo Sospechoso": 6054,
+        "Porte Ilegal de Armas": 513,
+        "Rapto / Secuestro": 379,
+        "Riña": 30586,
+        "Violencia Sexual": 388
+      },
+      "accidentes_transito_recientes_total": 75,
+      "accidentes_domesticos": {
+        "anio": 2026,
+        "casos": 73,
+        "tasa": 51.4
+      },
+      "violencia_intrafamiliar_salud_recientes_total": 2315,
+      "reportes_comunitarios_inseguridad_recientes_total": 31,
+      "organizaciones_comunitarias_registradas": 31,
+      "personas_atendidas_sdis_recientes_total": 80173
     }
   }
 }

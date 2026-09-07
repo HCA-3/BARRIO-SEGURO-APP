@@ -19,6 +19,11 @@ Agente/manzanaestratificacion/manzanaestratificacion.json
 Agente/estratificación_socioeconómica_por_manzana/
 Agente/incidente_reportado_(nuse/
 Agente/actualizacion.log
+# Datasets crudos de datos abiertos de Bogota (~1.1GB, con archivos de hasta
+# 559MB): no caben en git (limite duro de 100MB/archivo en GitHub). El
+# pipeline (ProcesarRiesgo.py) los busca dentro de esta carpeta si estan
+# presentes localmente; si no estan, cada fuente opcional se omite sola.
+Agente/datos bogota.gov/
 
 # Entornos virtuales y basura de Python
 /venv/
