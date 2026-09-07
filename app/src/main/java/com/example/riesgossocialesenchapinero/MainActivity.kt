@@ -30,13 +30,21 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
+import com.example.riesgossocialesenchapinero.ui.bounceClick
+import com.example.riesgossocialesenchapinero.ui.staggeredEntrance
+import com.example.riesgossocialesenchapinero.ui.rememberPulsingBorder
+import com.example.riesgossocialesenchapinero.ui.breathingPulse
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -84,9 +92,10 @@ import com.example.riesgossocialesenchapinero.ui.theme.RIESGOSSOCIALESENCHAPINER
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import com.example.riesgossocialesenchapinero.ui.ChatGlobalScreen
 
 private enum class Pantalla {
-    RIESGO, DESASTRES, EMERGENCIAS, CHAT, AJUSTES
+    RIESGO, EMERGENCIAS, CHAT, COMUNIDAD, AJUSTES
 }
 
 class MainActivity : AppCompatActivity() {
@@ -189,12 +198,26 @@ class MainActivity : AppCompatActivity() {
                     lanzadorPermisos.launch(permisos.toTypedArray())
                 }
 
-                // Se pide al entrar, y solo si todavía no está concedido: si el
-                // usuario ya dijo que sí, el diálogo no vuelve a salir. Va en la
-                // raíz y no dentro de PantallaRiesgo para que no dependa de en
-                // qué pestaña esté.
-                LaunchedEffect(Unit) {
-                    if (!hayPermisoUbicacion(actividad)) pedirPermisoUbicacion()
+                // Se pide al entrar, solo si los términos ya fueron aceptados y el permiso no está concedido
+                LaunchedEffect(ajustesEstado.terminosAceptados) {
+                    if (ajustesEstado.terminosAceptados && !hayPermisoUbicacion(actividad)) {
+                        pedirPermisoUbicacion()
+                    }
+                }
+
+                // Modal obligatorio de Términos y Condiciones y Privacidad (Ley 1581 de 2012)
+                if (!ajustesEstado.terminosAceptados) {
+                    com.example.riesgossocialesenchapinero.ui.ModalBienvenidaTerminos(
+                        onAceptar = {
+                            ajustesViewModel.aceptarTerminos()
+                            if (!hayPermisoUbicacion(actividad)) {
+                                pedirPermisoUbicacion()
+                            }
+                        },
+                        onRechazar = {
+                            actividad.finish()
+                        }
+                    )
                 }
 
                 Scaffold(
@@ -205,9 +228,9 @@ class MainActivity : AppCompatActivity() {
                                 Text(
                                     when (pantallaActual) {
                                         Pantalla.RIESGO -> stringResource(R.string.pantalla_riesgo)
-                                        Pantalla.DESASTRES -> stringResource(R.string.pantalla_desastres)
                                         Pantalla.EMERGENCIAS -> stringResource(R.string.pantalla_emergencias)
                                         Pantalla.CHAT -> stringResource(R.string.pantalla_agente)
+                                        Pantalla.COMUNIDAD -> stringResource(R.string.pantalla_comunidad)
                                         Pantalla.AJUSTES -> stringResource(R.string.pantalla_ajustes)
                                     }
                                 )
@@ -223,12 +246,6 @@ class MainActivity : AppCompatActivity() {
                                 label = { Text(stringResource(R.string.pantalla_riesgo)) },
                             )
                             NavigationBarItem(
-                                selected = pantallaActual == Pantalla.DESASTRES,
-                                onClick = { pantallaActual = Pantalla.DESASTRES },
-                                icon = { Text("🌋") },
-                                label = { Text(stringResource(R.string.pantalla_desastres)) },
-                            )
-                            NavigationBarItem(
                                 selected = pantallaActual == Pantalla.EMERGENCIAS,
                                 onClick = { pantallaActual = Pantalla.EMERGENCIAS },
                                 icon = { Text("📞") },
@@ -239,6 +256,12 @@ class MainActivity : AppCompatActivity() {
                                 onClick = { pantallaActual = Pantalla.CHAT },
                                 icon = { Text("💬") },
                                 label = { Text(stringResource(R.string.pantalla_agente)) },
+                            )
+                            NavigationBarItem(
+                                selected = pantallaActual == Pantalla.COMUNIDAD,
+                                onClick = { pantallaActual = Pantalla.COMUNIDAD },
+                                icon = { Text("🌐") },
+                                label = { Text(stringResource(R.string.pantalla_comunidad)) },
                             )
                             NavigationBarItem(
                                 selected = pantallaActual == Pantalla.AJUSTES,
@@ -278,9 +301,9 @@ class MainActivity : AppCompatActivity() {
                                     }
                                 },
                             )
-                            Pantalla.DESASTRES -> DesastresAmbientalesScreen(modifier = Modifier.fillMaxSize())
                             Pantalla.EMERGENCIAS -> EmergenciasScreen(modifier = Modifier.fillMaxSize())
                             Pantalla.CHAT -> PantallaChat(modifier = Modifier.fillMaxSize())
+                            Pantalla.COMUNIDAD -> ChatGlobalScreen(modifier = Modifier.fillMaxSize())
                             Pantalla.AJUSTES -> AjustesScreen(
                                 modifier = Modifier.fillMaxSize(),
                                 viewModel = ajustesViewModel
@@ -477,12 +500,14 @@ fun PantallaRiesgo(
                 } else {
                     LazyColumn(
                         modifier = Modifier.weight(1f).fillMaxWidth(),
-                        contentPadding = PaddingValues(12.dp),
+                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        items(actual.localidades) { localidad ->
+                        itemsIndexed(actual.localidades, key = { _, loc -> loc.nombre }) { index, localidad ->
                             TarjetaLocalidad(
-                                localidad,
-                                modifier = Modifier.clickable {
+                                localidad = localidad,
+                                index = index,
+                                onClick = {
                                     seleccion = SeleccionDetalle(localidad = localidad.nombre)
                                 },
                             )
@@ -496,7 +521,15 @@ fun PantallaRiesgo(
 
 @Composable
 fun ControlMonitoreo(activo: Boolean, onToggle: () -> Unit) {
-    Card(modifier = Modifier.fillMaxWidth().padding(12.dp)) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(12.dp)
+            .bounceClick(scaleDown = 0.98f, onClick = null)
+            .animateContentSize(),
+        elevation = CardDefaults.cardElevation(defaultElevation = if (activo) 4.dp else 2.dp),
+        border = if (activo) rememberPulsingBorder(MaterialTheme.colorScheme.primary, minAlpha = 0.4f, maxAlpha = 0.9f) else null
+    ) {
         Row(
             modifier = Modifier.fillMaxWidth().padding(16.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -605,11 +638,13 @@ fun ResultadoBusquedaBarrio(
                             style = MaterialTheme.typography.titleSmall,
                             modifier = Modifier.padding(bottom = 8.dp),
                         )
-                        LazyColumn {
-                            items(busqueda.opciones) { opcion ->
+                        LazyColumn(
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            itemsIndexed(busqueda.opciones) { index, opcion ->
                                 TarjetaResultadoBarrio(
                                     opcion,
-                                    modifier = Modifier.clickable { onElegirOpcion(opcion) },
+                                    onClick = { onElegirOpcion(opcion) },
                                 )
                             }
                         }
@@ -631,10 +666,21 @@ fun ResultadoBusquedaBarrio(
 }
 
 @Composable
-fun TarjetaResultadoBarrio(resultado: ApiClient.ResultadoBarrio, modifier: Modifier = Modifier) {
+fun TarjetaResultadoBarrio(
+    resultado: ApiClient.ResultadoBarrio,
+    modifier: Modifier = Modifier,
+    onClick: (() -> Unit)? = null
+) {
+    val isAlto = resultado.nivelRiesgo.equals("alto", ignoreCase = true)
+    val pulsingBorder = if (isAlto) rememberPulsingBorder(MaterialTheme.colorScheme.error, minAlpha = 0.35f, maxAlpha = 0.9f) else null
+
     Card(
-        modifier = modifier.fillMaxWidth().padding(vertical = 6.dp).animateContentSize(),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        modifier = modifier
+            .fillMaxWidth()
+            .bounceClick(scaleDown = 0.97f, onClick = onClick)
+            .animateContentSize(),
+        border = pulsingBorder,
+        elevation = CardDefaults.cardElevation(defaultElevation = if (isAlto) 4.dp else 2.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(
@@ -842,13 +888,23 @@ private fun detenerServicioMonitoreo(context: Context) {
 }
 
 @Composable
-fun TarjetaLocalidad(localidad: ApiClient.Localidad, modifier: Modifier = Modifier) {
+fun TarjetaLocalidad(
+    localidad: ApiClient.Localidad,
+    index: Int = 0,
+    modifier: Modifier = Modifier,
+    onClick: (() -> Unit)? = null
+) {
+    val isAlto = localidad.nivelRiesgo.equals("alto", ignoreCase = true)
+    val pulsingBorder = if (isAlto) rememberPulsingBorder(MaterialTheme.colorScheme.error, minAlpha = 0.35f, maxAlpha = 0.9f) else null
+
     Card(
         modifier = modifier
             .fillMaxWidth()
-            .padding(vertical = 6.dp)
+            .staggeredEntrance(index = index)
+            .bounceClick(scaleDown = 0.97f, onClick = onClick)
             .animateContentSize(),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        border = pulsingBorder,
+        elevation = CardDefaults.cardElevation(defaultElevation = if (isAlto) 4.dp else 2.dp),
     ) {
         Row(
             modifier = Modifier.fillMaxWidth().padding(16.dp),
@@ -856,10 +912,17 @@ fun TarjetaLocalidad(localidad: ApiClient.Localidad, modifier: Modifier = Modifi
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Column(modifier = Modifier.weight(1f)) {
-                Text("${localidad.posicion}. ${localidad.nombre}", style = MaterialTheme.typography.titleMedium)
+                val sufijo = if (localidad.posicion == 20) " (Localidad 20 - zona rural)" else " (Localidad ${localidad.posicion})"
+                Text(
+                    text = "${localidad.nombre}$sufijo",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+                Spacer(modifier = Modifier.height(2.dp))
                 Text(
                     stringResource(R.string.tasa_formato, localidad.tasaDelitos100k),
                     style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
             BadgeRiesgo(localidad.nivelRiesgo)

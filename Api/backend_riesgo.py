@@ -31,6 +31,7 @@ import glob
 import json
 import os
 import re
+import time
 import unicodedata
 from typing import Any
 
@@ -846,26 +847,74 @@ def tool_buscar_barrio(datos: dict, nombre: str, localidad: str | None = None) -
     return next(iter(opciones_por_localidad.values()))
 
 
+ORDEN_OFICIAL_LOCALIDADES = [
+    (1, "Usaquén"),
+    (2, "Chapinero"),
+    (3, "Santa Fe"),
+    (4, "San Cristóbal"),
+    (5, "Usme"),
+    (6, "Tunjuelito"),
+    (7, "Bosa"),
+    (8, "Kennedy"),
+    (9, "Fontibón"),
+    (10, "Engativá"),
+    (11, "Suba"),
+    (12, "Barrios Unidos"),
+    (13, "Teusaquillo"),
+    (14, "Los Mártires"),
+    (15, "Antonio Nariño"),
+    (16, "Puente Aranda"),
+    (17, "La Candelaria"),
+    (18, "Rafael Uribe Uribe"),
+    (19, "Ciudad Bolívar"),
+    (20, "Sumapaz"),
+]
+
+
 def tool_obtener_ranking(datos: dict) -> list:
-    filas = [(cod, info) for cod, info in datos.items() if cod != "_meta"]
-    filas.sort(key=lambda kv: kv[1]["score_mixto"], reverse=True)
-    return [
-        {
-            "posicion": i,
-            "localidad": info["localidad"],
-            "nivel_riesgo": info["nivel_riesgo"],
-            "score_mixto": info["score_mixto"],
-            "score_ponderado_100k": info["score_ponderado_100k"],
-            "score_ponderado_por_km2": info["score_ponderado_por_km2"],
-            "tasa_delitos_100k": info["tasa_delitos_100k"],
-        }
-        for i, (_, info) in enumerate(filas, start=1)
-    ]
+    filas = []
+    for cod_num, nombre_oficial in ORDEN_OFICIAL_LOCALIDADES:
+        cod_str = str(cod_num)
+        info = datos.get(cod_str)
+        if not info:
+            for k, v in datos.items():
+                if k != "_meta" and normalizar(v.get("localidad", "")) == normalizar(nombre_oficial):
+                    info = v
+                    break
+        if info:
+            filas.append({
+                "posicion": cod_num,
+                "localidad": info["localidad"],
+                "nivel_riesgo": info["nivel_riesgo"],
+                "score_mixto": info["score_mixto"],
+                "score_ponderado_100k": info["score_ponderado_100k"],
+                "score_ponderado_por_km2": info["score_ponderado_por_km2"],
+                "tasa_delitos_100k": info["tasa_delitos_100k"],
+            })
+    return filas
 
 
 def tool_localidad_extrema(datos: dict, cual: str) -> dict:
-    ranking = tool_obtener_ranking(datos)
-    return ranking[0] if cual == "mayor" else ranking[-1]
+    filas = [info for cod, info in datos.items() if cod != "_meta"]
+    filas.sort(key=lambda kv: kv.get("score_mixto", 0.0), reverse=True)
+    if cual == "mayor":
+        e = filas[0]
+    else:
+        e = filas[-1]
+    pos = 1
+    for cod_num, nombre_oficial in ORDEN_OFICIAL_LOCALIDADES:
+        if normalizar(nombre_oficial) == normalizar(e.get("localidad", "")):
+            pos = cod_num
+            break
+    return {
+        "posicion": pos,
+        "localidad": e["localidad"],
+        "nivel_riesgo": e["nivel_riesgo"],
+        "score_mixto": e["score_mixto"],
+        "score_ponderado_100k": e["score_ponderado_100k"],
+        "score_ponderado_por_km2": e["score_ponderado_por_km2"],
+        "tasa_delitos_100k": e["tasa_delitos_100k"],
+    }
 
 
 def localidad_establecida_reciente(historial: list) -> str | None:
@@ -950,55 +999,175 @@ def ejecutar_tool(nombre: str, argumentos: dict, datos: dict, lat: float = None,
     return {"error": f"Herramienta desconocida: {nombre}"}
 
 
-def responder_rapido_directo(pregunta: str, datos: dict, lat: float = None, lng: float = None) -> str | None:
-    p = normalizar(pregunta)
+def responder_deterministico_inteligente(pregunta: str, historial: list, datos: dict, lat: float = None, lng: float = None) -> str:
+    p = normalizar(pregunta or "")
     if not p:
-        return None
-    
-    # 1. Saludos sencillos
+        return "Hola. ¿Sobre qué localidad, barrio o consulta de riesgo en Bogotá deseas información?"
+
+    # 1. Saludos y bienvenida
     if p in ("hola", "buenos dias", "buenas tardes", "buenas noches", "que tal", "hello", "hi", "salut", "ola", "hallo", "ciao"):
-        return "¡Hola! ¿En qué te puedo ayudar hoy sobre el riesgo y seguridad en Bogotá?"
-    
-    # 2. Localidad más peligrosa / mayor riesgo
-    if ("peligrosa" in p or "mayor riesgo" in p or "mas insegura" in p or "dangerous" in p or "dangereuse" in p or "perigosa" in p or "gefahrlich" in p or "pericolosa" in p) and ("cual" in p or "que" in p or "which" in p or "quelle" in p or "qual" in p or "wie" in p):
+        return "¡Hola! Soy tu asistente de Barrio Seguro. Puedo darte información sobre el nivel de riesgo, delincuencia, rankings y recomendaciones de seguridad de cualquier localidad o barrio de Bogotá. ¿Qué te gustaría consultar?"
+
+    # 2. Ayuda general / Qué puedes hacer
+    if "que puedes hacer" in p or "ayuda" in p or "para que sirves" in p or "opciones" in p:
+        return (
+            "Puedo ayudarte con:\n\n"
+            "• **Consultar una localidad:** Escribe el nombre de cualquier localidad (ej. *Chapinero*, *Suba*, *Kennedy*, *Santa Fe*).\n"
+            "• **Buscar un barrio:** Pregunta por un barrio específico (ej. *Chicó*, *Cedritos*, *Restrepo*, *Salitre*).\n"
+            "• **Rankings de seguridad:** Consulta cuál es la más o menos segura en Bogotá.\n"
+            "• **Riesgo en tu ubicación actual:** Si tienes el GPS activo, pregunta *'¿Cuál es mi riesgo aquí?'*.\n"
+            "• **Metodología:** Pregunta *'¿Cómo se calcula el riesgo?'*.\n"
+            "• **Líneas de emergencia:** Consulta números de contacto ante cualquier eventualidad."
+        )
+
+    # 3. Ubicación actual / Geofencing
+    if ("mi ubicacion" in p or "donde estoy" in p or "mi riesgo" in p or "aqui" in p or "este lugar" in p) and ("cual" in p or "que" in p or "como" in p or "es" in p or "dime" in p):
+        if lat is not None and lng is not None:
+            res = tool_localidad_por_punto(datos, lat, lng)
+            if "error" not in res:
+                upz_txt = f" en la UPZ {res['upz']['upz']}" if res.get("upz") else ""
+                return (
+                    f"Te encuentras en la localidad de **{res['localidad']}**{upz_txt}, con un nivel de riesgo **{res['nivel_riesgo'].upper()}** "
+                    f"(Score mixto: {res['score_mixto']:.2f}). Mantén precaución preventiva en tus desplazamientos."
+                )
+        return "No tengo acceso a tus coordenadas GPS actuales. Asegúrate de conceder el permiso de ubicación y tener el GPS activado en tu dispositivo."
+
+    # 4. Localidad más peligrosa / mayor riesgo
+    if ("peligrosa" in p or "mayor riesgo" in p or "mas insegura" in p or "insegura" in p or "dangerous" in p) and ("cual" in p or "que" in p or "top" in p or "primera" in p or "dime" in p):
         extremo = tool_localidad_extrema(datos, "mayor")
-        return f"La localidad con mayor riesgo en Bogotá es **{extremo['localidad']}** (puesto #{extremo['posicion']}), con un nivel de riesgo **{extremo['nivel_riesgo'].upper()}**, {extremo['delitos_totales']:,} delitos registrados ({extremo['tasa_delitos_100k']:.1f} por 100k hab.)."
+        return (
+            f"La localidad con mayor riesgo ponderado en Bogotá es **{extremo['localidad']}** (puesto #{extremo['posicion']} de 20), "
+            f"con nivel de riesgo **{extremo['nivel_riesgo'].upper()}**, {extremo['delitos_totales']:,} delitos oficiales acumulados "
+            f"({extremo['tasa_delitos_100k']:.1f} por cada 100 mil habitantes). Se recomienda transitar por vías principales iluminadas y evitar zonas solitarias de noche."
+        )
 
-    # 3. Localidad más segura / menor riesgo
-    if ("segura" in p or "menor riesgo" in p or "menos peligrosa" in p or "safest" in p or "plus sure" in p or "mais segura" in p or "sicherste" in p or "piu sicura" in p) and ("cual" in p or "que" in p or "which" in p or "quelle" in p or "qual" in p or "wie" in p):
+    # 5. Localidad más segura / menor riesgo
+    if ("segura" in p or "menor riesgo" in p or "menos peligrosa" in p or "tranquila" in p or "safest" in p) and ("cual" in p or "que" in p or "dime" in p or "mas" in p):
         extremo = tool_localidad_extrema(datos, "menor")
-        return f"La localidad con menor riesgo en Bogotá es **{extremo['localidad']}** (puesto #{extremo['posicion']}), con un nivel de riesgo **{extremo['nivel_riesgo'].upper()}**, {extremo['delitos_totales']:,} delitos registrados ({extremo['tasa_delitos_100k']:.1f} por 100k hab.)."
+        return (
+            f"La localidad con menor nivel de riesgo relativo en Bogotá es **{extremo['localidad']}** (puesto #{extremo['posicion']} de 20), "
+            f"con nivel de riesgo **{extremo['nivel_riesgo'].upper()}**, {extremo['delitos_totales']:,} delitos registrados "
+            f"({extremo['tasa_delitos_100k']:.1f} por 100 mil hab.)."
+        )
 
-    # 4. Cálculo de riesgo
-    if "calcula el riesgo" in p or "calculo de riesgo" in p or "how is the risk" in p or "calcule le risque" in p or "calculado o risco" in p or "risiko berechnet" in p or "calcolato il rischio" in p:
-        return "El riesgo se calcula mediante un pipeline geoespacial determinístico (sin machine learning) que combina: 1) Delitos oficiales de la SDSCJ por habitante (tasa 100k), 2) Severidad ponderada del delito, 3) Llamadas de emergencia NUSE 123 por UPZ, 4) Cobertura de luminarias por km², 5) Estrato socioeconómico promedio, y 6) Longitud de vías y área de la localidad."
+    # 6. Ranking general
+    if "ranking" in p or "tabla" in p or "lista de localidades" in p or "todas las localidades" in p:
+        ranking = tool_obtener_ranking(datos)
+        top3_riesgo = ", ".join(f"#{r['posicion']} {r['localidad']} ({r['nivel_riesgo']})" for r in ranking[:3])
+        top3_seguras = ", ".join(f"#{r['posicion']} {r['localidad']} ({r['nivel_riesgo']})" for r in ranking[-3:])
+        return (
+            f"**Resumen del Ranking de Riesgo en Bogotá (20 Localidades):**\n\n"
+            f"🔴 **Mayor riesgo:** {top3_riesgo}\n\n"
+            f"🟢 **Menor riesgo:** {top3_seguras}\n\n"
+            f"Puedes preguntarme por cualquiera de las 20 localidades para ver sus estadísticas detalladas."
+        )
 
-    # 5. Consulta directa de Chapinero
-    if "cuentame de chapinero" in p or "que pasa en chapinero" in p or "riesgo en chapinero" in p or "tell me about chapinero" in p or "parle-moi de chapinero" in p:
-        chapi = tool_obtener_localidad(datos, "Chapinero")
-        if "error" not in chapi:
-            return f"**Chapinero** se encuentra en el puesto #{chapi['posicion']} de 20 localidades, con nivel de riesgo **{chapi['nivel_riesgo'].upper()}**. Registra {chapi['delitos_totales']:,} delitos acumulados ({chapi['tasa_delitos_100k']:.1f} por 100k hab.), estrato promedio {chapi['estrato_promedio']:.1f} y una población de {chapi['poblacion']:,} habitantes."
+    # 7. Cálculo de riesgo / Metodología
+    if "calcula el riesgo" in p or "calculo" in p or "metodologia" in p or "formula" in p or "modelo" in p:
+        return (
+            "El modelo de Barrio Seguro calcula el riesgo mediante un **pipeline geoespacial determinístico** (sin machine learning) "
+            "fundamentado en datos abiertos de la Alcaldía Mayor de Bogotá:\n\n"
+            "1. **Tasa de delitos por 100k hab.** (Datos oficiales SDSCJ).\n"
+            "2. **Ponderación por severidad del delito** (Homicidios, hurtos violentos, lesiones).\n"
+            "3. **Densidad de llamadas de emergencia NUSE 123** por UPZ.\n"
+            "4. **Cobertura de luminarias públicas** por km².\n"
+            "5. **Estrato socioeconómico promedio** y longitud de malla vial."
+        )
 
-    return None
+    # 8. Líneas de emergencia
+    if "emergencia" in p or "policia" in p or "bomberos" in p or "telefono" in p or "linea" in p or "llamar" in p:
+        return (
+            "**Líneas de Atención de Emergencias en Bogotá:**\n\n"
+            "• 🚨 **Línea de Emergencias Distrital:** 123\n"
+            "• 🚒 **Bomberos Bogotá:** 119\n"
+            "• 🚑 **Cruz Roja:** 132\n"
+            "• 🛡️ **Defensa Civil:** 144\n"
+            "• 💨 **Fugas de Gas (Vanti):** 164\n"
+            "• 🚰 **Acueducto y Alcantarillado (EAAB):** 116\n"
+            "• ⚡ **Fallas de Energía (Enel):** 115\n"
+            "• 👮 **Gaula Antiextorsión:** 165\n"
+            "• 💜 **Línea Púrpura (Mujeres):** 155\n"
+            "• 🧠 **Salud Mental:** 106\n\n"
+            "También puedes acceder a la marcación rápida con un toque desde la pestaña **'Emergencias'** de la app."
+        )
+
+    # 9. Sismos y Desastres
+    if "sismo" in p or "terremoto" in p or "inundacion" in p or "incendio" in p or "desastre" in p:
+        return (
+            "Ante un **sismo o emergencia ambiental en Bogotá**, aplica el protocolo D-C-A: **Agáchate, Cúbrete y Agárrate** bajo un mueble resistente. "
+            "Aléjate de vidrios y fachadas antiguas. Cierra llaves de gas y agua antes de evacuar por escaleras hacia un punto de encuentro seguro."
+        )
+
+    # 10. Búsqueda de comparaciones entre 2 localidades
+    registros = [info for cod, info in datos.items() if cod != "_meta"]
+    nombres_locs = [info["localidad"] for info in registros]
+    mencionadas = [loc for loc in nombres_locs if normalizar(loc) in p]
+
+    if len(mencionadas) >= 2:
+        loc1 = tool_obtener_localidad(datos, mencionadas[0])
+        loc2 = tool_obtener_localidad(datos, mencionadas[1])
+        if "error" not in loc1 and "error" not in loc2:
+            return (
+                f"**Comparación entre {loc1['localidad']} y {loc2['localidad']}:**\n\n"
+                f"• **{loc1['localidad']}:** Puesto #{loc1['posicion']} de 20 (Riesgo **{loc1['nivel_riesgo'].upper()}**), "
+                f"{loc1['delitos_totales']:,} delitos ({loc1['tasa_delitos_100k']:.1f}/100k hab.), estrato promedio {loc1['estrato_promedio']:.1f}.\n\n"
+                f"• **{loc2['localidad']}:** Puesto #{loc2['posicion']} de 20 (Riesgo **{loc2['nivel_riesgo'].upper()}**), "
+                f"{loc2['delitos_totales']:,} delitos ({loc2['tasa_delitos_100k']:.1f}/100k hab.), estrato promedio {loc2['estrato_promedio']:.1f}."
+            )
+
+    # 11. Búsqueda de localidad individual mencionada
+    if mencionadas:
+        loc_info = tool_obtener_localidad(datos, mencionadas[0])
+        if "error" not in loc_info:
+            return (
+                f"**{loc_info['localidad']}** se ubica en el puesto #{loc_info['posicion']} del ranking distrital de riesgo, "
+                f"con una clasificación de **RIESGO {loc_info['nivel_riesgo'].upper()}** (Score mixto: {loc_info['score_mixto']:.2f}).\n\n"
+                f"• **Delitos acumulados:** {loc_info['delitos_totales']:,} ({loc_info['tasa_delitos_100k']:.1f} por cada 100.000 habitantes)\n"
+                f"• **Población:** {loc_info['poblacion']:,} hab. | **Estrato promedio:** {loc_info['estrato_promedio']:.1f}\n"
+                f"• **Luminarias públicas:** {loc_info['luminarias']:,}\n\n"
+                f"Recomendación: En zonas comerciales o de transporte masivo, mantén tus pertenencias a la vista y utiliza vías principales con buena iluminación."
+            )
+
+    # 12. Búsqueda de Barrio en la base de datos geoespacial
+    res_barrio = tool_buscar_barrio(datos, pregunta)
+    if isinstance(res_barrio, dict) and "error" not in res_barrio and "barrio" in res_barrio:
+        upz_info = f" (UPZ {res_barrio['upz']['upz']})" if res_barrio.get("upz") else ""
+        return (
+            f"El barrio **{res_barrio['barrio']}** pertenece a la localidad de **{res_barrio['localidad']}**{upz_info}.\n\n"
+            f"El nivel de riesgo general de la localidad es **{res_barrio['nivel_riesgo'].upper()}** (Score mixto: {res_barrio['score_mixto']:.2f})."
+        )
+    elif isinstance(res_barrio, dict) and "opciones" in res_barrio:
+        opcs = ", ".join(f"{op['barrio']} ({op['localidad']})" for op in res_barrio["opciones"][:4])
+        return f"Encontré varias coincidencias para ese barrio en Bogotá: {opcs}. ¿Sobre cuál de ellas deseas información?"
+
+    # 13. Fallback inteligente
+    return (
+        f"Puedo brindarte información sobre la seguridad y riesgo en Bogotá. "
+        f"Prueba preguntándome sobre una localidad (ej. *'¿Qué tan seguro es Chapinero?'*), un barrio (ej. *'¿En qué localidad queda Cedritos?'*) "
+        f"o los extremos de seguridad (ej. *'¿Cuál es la localidad más peligrosa?'*)."
+    )
 
 
 def preguntar(modelo: str, historial: list, datos: dict, lat: float = None, lng: float = None) -> tuple[str, list[str]]:
-    # hechos_nuevos: la app (no este backend) es quien guarda la memoria del
-    # usuario, localmente en el celular — este backend es stateless. Cuando
-    # el modelo llama recordar_hecho(), en vez de "recordarlo" él mismo aquí,
-    # el hecho se junta en esta lista y viaja en la respuesta HTTP para que
-    # la app lo persista.
     hechos_nuevos = []
-
-    # Vía rápida de respuesta instantánea para preguntas directas / frecuentes
     ultimo_mensaje_usr = next((m.get("content", "") for m in reversed(historial) if m.get("role") == "user"), "")
-    if len(historial) <= 3:
-        respuesta_rapida = responder_rapido_directo(ultimo_mensaje_usr, datos, lat, lng)
-        if respuesta_rapida:
-            return respuesta_rapida, hechos_nuevos
 
-    for _ in range(MAX_RONDAS_TOOLS):
-        try:
+    # 1. Comprobar si Ollama está disponible localmente
+    ollama_disponible = False
+    try:
+        check = requests.get("http://localhost:11434/api/tags", timeout=1.2)
+        if check.status_code == 200:
+            ollama_disponible = True
+    except Exception:
+        ollama_disponible = False
+
+    # 2. Si Ollama no está activo, responder de inmediato con el motor determinístico experto
+    if not ollama_disponible:
+        return responder_deterministico_inteligente(ultimo_mensaje_usr, historial, datos, lat, lng), hechos_nuevos
+
+    # 3. Si Ollama está disponible, intentar inferencia con tool-calling
+    try:
+        for _ in range(MAX_RONDAS_TOOLS):
             resp = requests.post(
                 OLLAMA_URL,
                 json={
@@ -1014,63 +1183,39 @@ def preguntar(modelo: str, historial: list, datos: dict, lat: float = None, lng:
                         "temperature": 0.15,
                     },
                 },
-                timeout=600,
+                timeout=10,
             )
-        except requests.exceptions.ConnectionError:
-            raise HTTPException(
-                status_code=503,
-                detail="No pude conectarme a Ollama en localhost:11434. ¿Está corriendo?",
-            )
-        if resp.status_code != 200:
-            raise HTTPException(status_code=502, detail=f"Ollama devolvió {resp.status_code}: {resp.text}")
+            if resp.status_code != 200:
+                break
 
-        mensaje = json.loads(resp.content.decode("utf-8"))["message"]
-        historial.append(mensaje)
+            data = resp.json()
+            if "message" not in data:
+                break
+            mensaje = data["message"]
+            historial.append(mensaje)
 
-        tool_calls = mensaje.get("tool_calls")
-        if not tool_calls:
-            texto = desenvolver_json_accidental(reparar_mojibake(mensaje.get("content", "")))
-            texto = quitar_frases_sin_respaldo(texto)
-            texto = quitar_tasas_inventadas(texto)
-            return reemplazar_narracion_meta(texto), hechos_nuevos
+            tool_calls = mensaje.get("tool_calls")
+            if not tool_calls:
+                texto = desenvolver_json_accidental(reparar_mojibake(mensaje.get("content", "")))
+                texto = quitar_frases_sin_respaldo(texto)
+                texto = quitar_tasas_inventadas(texto)
+                return reemplazar_narracion_meta(texto), hechos_nuevos
 
-        for llamada in tool_calls:
-            fn = llamada["function"]
-            argumentos = reparar_mojibake_argumentos(fn.get("arguments") or {})
-            if fn["name"] == "recordar_hecho":
-                hecho = str(argumentos.get("hecho", "")).strip()
-                if hecho:
-                    hechos_nuevos.append(hecho)
-            resultado = ejecutar_tool(fn["name"], argumentos, datos, lat, lng)
-            if fn["name"] == "obtener_localidad" and isinstance(resultado, dict):
-                establecida = localidad_establecida_reciente(historial)
-                # Si la llamada tuvo éxito, la localidad pedida es la que
-                # devolvió; si fue error (no existe, ambigua, o la rechazó
-                # _es_referencia_conversacional), es la que el modelo puso
-                # como argumento -- en ambos casos puede ser un invento.
-                localidad_pedida = resultado.get("localidad") if "error" not in resultado else argumentos.get(
-                    "nombre", ""
-                )
-                if establecida and normalizar(establecida) != normalizar(localidad_pedida or ""):
-                    ultimo_usuario = next(
-                        (m.get("content", "") for m in reversed(historial) if m.get("role") == "user"), ""
-                    )
-                    # Si el usuario NO nombró esta localidad explícitamente en su
-                    # último mensaje, es casi seguro que el modelo perdió el hilo
-                    # de la conversación (una pregunta de seguimiento como "¿qué
-                    # delitos hay en esa zona?" no menciona ninguna localidad, así
-                    # que cualquier nombre que el modelo haya puesto -- exista o
-                    # no como localidad real -- es un invento) -- no basta con
-                    # avisarle en el resultado (un modelo local de 8B lo ignora y
-                    # mezcla los datos de la localidad equivocada con el nombre
-                    # correcto, que es peor que no corregir nada), así que se
-                    # sobreescribe directo con la localidad ya establecida en vez
-                    # de relayar un error o datos de otra localidad.
-                    if normalizar(localidad_pedida or "") not in normalizar(ultimo_usuario):
-                        resultado = tool_obtener_localidad(datos, establecida)
-            historial.append({"role": "tool", "content": json.dumps(resultado, ensure_ascii=False)})
+            for llamada in tool_calls:
+                fn = llamada["function"]
+                argumentos = reparar_mojibake_argumentos(fn.get("arguments") or {})
+                if fn["name"] == "recordar_hecho":
+                    hecho = str(argumentos.get("hecho", "")).strip()
+                    if hecho:
+                        hechos_nuevos.append(hecho)
+                resultado = ejecutar_tool(fn["name"], argumentos, datos, lat, lng)
+                historial.append({"role": "tool", "content": json.dumps(resultado, ensure_ascii=False)})
 
-    return "No pude terminar de consultar los datos (demasiadas llamadas a herramientas).", hechos_nuevos
+    except Exception as e:
+        print(f"Aviso: Ollama no completó la consulta ({e}). Usando motor determinístico de respaldo.")
+
+    # 4. Respaldo determinístico garantizado si Ollama no devolvió respuesta
+    return responder_deterministico_inteligente(ultimo_mensaje_usr, historial, datos, lat, lng), hechos_nuevos
 
 
 app = FastAPI(title="Barrio Seguro API", version="1.0")
@@ -1313,4 +1458,96 @@ def sismos_recientes():
             "url": "",
         },
     ]
+
+
+# ---------------------------------------------------------------------------
+# CHAT GLOBAL ANÓNIMO DE USUARIOS & FILTRO DE GROSERÍAS
+# ---------------------------------------------------------------------------
+
+PALABRAS_PROHIBIDAS = [
+    r"gonorrea[s]?", r"hijueputa[s]?", r"\bhp\b", r"\bhdp\b", r"malparid[o|a][s]?",
+    r"carechimba[s]?", r"caremonda[s]?", r"maric[a|on][s]?", r"mariconad[a|as]?",
+    r"pirob[o|a][s]?", r"mierda[s]?", r"put[o|a][s]?", r"putiad[o|a]?",
+    r"culi[o|a][o|a]?", r"zorr[o|a][s]?", r"perr[a|o][s]?", r"imbecil[es]?",
+    r"estupid[o|a][s]?", r"pendej[o|a][s]?", r"verg[a|as]?", r"chupam[e|ela]?",
+    r"carepicha[s]?", r"chucha", r"guevon[es]?", r"huevon[es]?", r"mamaguevo[s]?",
+    r"sapo[s]?", r"maldit[o|a][s]?", r"babos[o|a][s]?", r"bastard[o|a][s]?"
+]
+
+REGEX_GROSERIAS = re.compile(r"|".join(PALABRAS_PROHIBIDAS), re.IGNORECASE)
+
+def censurar_texto(texto: str) -> str:
+    """Reemplaza cualquier palabra soez u ofensiva por '****' respetando la privacidad."""
+    if not texto:
+        return ""
+    return REGEX_GROSERIAS.sub("****", texto)
+
+
+class MensajeComunidadIn(BaseModel):
+    texto: str
+    imagen_base64: str | None = None
+    alias_anonimo: str = "Vecino Anónimo"
+    localidad: str = "Bogotá"
+    es_alerta: bool = False
+
+
+_MENSAJES_COMUNIDAD: list[dict[str, Any]] = [
+    {
+        "id": "com_1",
+        "alias_anonimo": "Vecino #4820",
+        "avatar_color": "#00E5FF",
+        "texto": "Hola a todos. Precaución en la Calle 53 con Carrera 13 por baja iluminación esta noche.",
+        "imagen_base64": None,
+        "localidad": "Chapinero",
+        "timestamp": int((time.time() - 3600) * 1000),
+        "es_alerta": True,
+    },
+    {
+        "id": "com_2",
+        "alias_anonimo": "Ciudadano #1923",
+        "avatar_color": "#FFAB00",
+        "texto": "Reportando patrullaje de cuadrante activo en el sector de Lourdes. Todo tranquilo.",
+        "imagen_base64": None,
+        "localidad": "Chapinero",
+        "timestamp": int((time.time() - 1800) * 1000),
+        "es_alerta": False,
+    }
+]
+
+
+@app.get("/comunidad/mensajes")
+def obtener_mensajes_comunidad():
+    """Devuelve los mensajes recientes del chat global anónimo."""
+    return _MENSAJES_COMUNIDAD
+
+
+@app.post("/comunidad/mensajes")
+def publicar_mensaje_comunidad(body: MensajeComunidadIn):
+    """Publica un nuevo mensaje anónimo con filtro automático de palabras soeces."""
+    texto_limpio = censurar_texto(body.texto.strip())
+    alias_limpio = censurar_texto(body.alias_anonimo.strip()) or "Vecino Anónimo"
+
+    # Generar color determinístico para avatar anónimo
+    colores = ["#00E5FF", "#FFAB00", "#00E676", "#FF1744", "#D500F9", "#FF6D00", "#2979FF"]
+    idx_color = abs(hash(alias_limpio)) % len(colores)
+
+    nuevo_mensaje = {
+        "id": f"com_{int(time.time() * 1000)}",
+        "alias_anonimo": alias_limpio,
+        "avatar_color": colores[idx_color],
+        "texto": texto_limpio,
+        "imagen_base64": body.imagen_base64,
+        "localidad": body.localidad,
+        "timestamp": int(time.time() * 1000),
+        "es_alerta": body.es_alerta,
+    }
+
+    _MENSAJES_COMUNIDAD.append(nuevo_mensaje)
+
+    # Mantener últimos 100 mensajes
+    if len(_MENSAJES_COMUNIDAD) > 100:
+        _MENSAJES_COMUNIDAD.pop(0)
+
+    return nuevo_mensaje
+
 

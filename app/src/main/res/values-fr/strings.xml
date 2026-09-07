@@ -4,6 +4,7 @@
     <string name="pantalla_desastres">Catastrophes</string>
     <string name="pantalla_emergencias">Urgences</string>
     <string name="pantalla_agente">Agent</string>
+    <string name="pantalla_comunidad">Communauté</string>
     <string name="pantalla_ajustes">Paramètres</string>
 
     <string name="lineas_titulo_banner">Lignes d\'urgence</string>

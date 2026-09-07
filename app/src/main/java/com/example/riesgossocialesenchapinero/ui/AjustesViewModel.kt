@@ -13,7 +13,8 @@ data class AjustesUiState(
     val tema: TemaApp = TemaApp.SISTEMA,
     val idioma: String = "", // "" para sistema
     val intervaloMinutos: Int = 2,
-    val alertasHabilitadas: Boolean = true
+    val alertasHabilitadas: Boolean = true,
+    val terminosAceptados: Boolean = false
 )
 
 /**
@@ -27,7 +28,8 @@ class AjustesViewModel(application: Application) : AndroidViewModel(application)
             tema = ajustesManager.tema,
             idioma = ajustesManager.idioma,
             intervaloMinutos = ajustesManager.intervaloMinutos,
-            alertasHabilitadas = ajustesManager.alertasHabilitadas
+            alertasHabilitadas = ajustesManager.alertasHabilitadas,
+            terminosAceptados = ajustesManager.terminosAceptados
         )
     )
     val estado: StateFlow<AjustesUiState> = _estado
@@ -40,6 +42,11 @@ class AjustesViewModel(application: Application) : AndroidViewModel(application)
                 AppCompatDelegate.setApplicationLocales(appLocales)
             }
         }
+    }
+
+    fun aceptarTerminos() {
+        ajustesManager.terminosAceptados = true
+        _estado.value = _estado.value.copy(terminosAceptados = true)
     }
 
     fun cambiarTema(nuevoTema: TemaApp) {

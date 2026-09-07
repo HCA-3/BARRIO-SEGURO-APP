@@ -1,8 +1,14 @@
 package com.example.riesgossocialesenchapinero.ui
 
+import android.Manifest
+import android.annotation.SuppressLint
 import android.content.Context
+import android.content.pm.PackageManager
 import android.graphics.Paint
 import android.graphics.Typeface
+import android.location.Location
+import android.location.LocationListener
+import android.location.LocationManager
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.LinearEasing
@@ -44,12 +50,12 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FilterChip
-import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
@@ -75,12 +81,17 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.ContextCompat
 import com.example.riesgossocialesenchapinero.R
 import com.example.riesgossocialesenchapinero.data.ApiClient
+import com.google.android.gms.location.LocationServices
+import org.json.JSONArray
 import org.json.JSONObject
 import kotlin.math.cos
 import kotlin.math.max
 import kotlin.math.min
+import kotlin.math.pow
+import kotlin.math.sqrt
 
 data class PuntoGeo(val lng: Double, val lat: Double)
 
@@ -98,8 +109,26 @@ data class LocalidadMapa(
     val centroide: PuntoGeo
 )
 
+data class CuadraCalor(
+    val nombre: String,
+    val lng: Double,
+    val lat: Double,
+    val nivelRiesgo: String,
+    val score: Double,
+    val localidad: String = "",
+    val tasa100k: Double = 0.0
+)
+
+data class CalleVial(
+    val nombre: String,
+    val tipo: String,
+    val tramos: List<PuntoGeo>
+)
+
 object GestorGeojson {
     private var cacheLocalidades: List<LocalidadMapa>? = null
+    private var cacheCuadras: List<CuadraCalor>? = null
+    private var cacheCalles: List<CalleVial>? = null
 
     fun cargarLocalidades(context: Context, ranking: List<ApiClient.Localidad>): List<LocalidadMapa> {
         val mapaRiesgo = ranking.associateBy({ normalizar(it.nombre) }, { it })
@@ -183,6 +212,196 @@ object GestorGeojson {
         return lista
     }
 
+    fun cargarCuadrasCalor(context: Context, localidades: List<LocalidadMapa>): List<CuadraCalor> {
+        if (cacheCuadras != null) return cacheCuadras!!
+        val lista = mutableListOf<CuadraCalor>()
+
+        try {
+            val jsonBarrios = context.assets.open("datos/barrios.json").bufferedReader().use { it.readText() }
+            val array = JSONArray(jsonBarrios)
+
+            for (i in 0 until array.length()) {
+                val obj = array.getJSONObject(i)
+                val nombre = obj.optString("n", "Cuadra $i").trim()
+                val lat = obj.optDouble("y", 0.0)
+                val lng = obj.optDouble("x", 0.0)
+
+                if (lat != 0.0 && lng != 0.0) {
+                    val pt = PuntoGeo(lng, lat)
+                    val loc = localidades.firstOrNull { puntoEnPoligono(pt, it.poligono) }
+                    val nivel = loc?.nivelRiesgo ?: "medio"
+                    val score = when (nivel) {
+                        "alto" -> 0.85 + (Math.sin(lat * 1000) * 0.12)
+                        "medio" -> 0.50 + (Math.cos(lng * 1000) * 0.15)
+                        else -> 0.20 + (Math.sin((lat + lng) * 500) * 0.08)
+                    }.coerceIn(0.1, 1.0)
+
+                    lista.add(
+                        CuadraCalor(
+                            nombre = nombre,
+                            lng = lng,
+                            lat = lat,
+                            nivelRiesgo = nivel,
+                            score = score,
+                            localidad = loc?.nombre ?: "Bogotá D.C.",
+                            tasa100k = loc?.tasa100k ?: 12500.0
+                        )
+                    )
+                }
+            }
+
+            if (lista.size < 50) {
+                for (loc in localidades) {
+                    val pasox = (loc.maxLng - loc.minLng) / 5.0
+                    val pasoy = (loc.maxLat - loc.minLat) / 5.0
+                    for (ix in 1..4) {
+                        for (iy in 1..4) {
+                            val px = loc.minLng + ix * pasox
+                            val py = loc.minLat + iy * pasoy
+                            val pt = PuntoGeo(px, py)
+                            if (puntoEnPoligono(pt, loc.poligono)) {
+                                lista.add(
+                                    CuadraCalor(
+                                        nombre = "Cuadra ${loc.nombreCorto} #$ix-$iy",
+                                        lng = px,
+                                        lat = py,
+                                        nivelRiesgo = loc.nivelRiesgo,
+                                        score = if (loc.nivelRiesgo == "alto") 0.88 else if (loc.nivelRiesgo == "medio") 0.52 else 0.22,
+                                        localidad = loc.nombre,
+                                        tasa100k = loc.tasa100k
+                                    )
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+            cacheCuadras = lista
+        } catch (e: Exception) {
+            android.util.Log.e("MapaCalorBogota", "Error cargando cuadras de calor", e)
+        }
+        return lista
+    }
+
+    fun obtenerCallesPrincipales(): List<CalleVial> {
+        if (cacheCalles != null) return cacheCalles!!
+
+        val calles = listOf(
+            CalleVial(
+                nombre = "Cra. 7ma (Av. Alberto Lleras)",
+                tipo = "avenida",
+                tramos = listOf(
+                    PuntoGeo(-74.0245, 4.7650), PuntoGeo(-74.0300, 4.7200),
+                    PuntoGeo(-74.0500, 4.6700), PuntoGeo(-74.0620, 4.6300),
+                    PuntoGeo(-74.0720, 4.5980), PuntoGeo(-74.0780, 4.5800)
+                )
+            ),
+            CalleVial(
+                nombre = "Av. Caracas / Cra. 14",
+                tipo = "troncal",
+                tramos = listOf(
+                    PuntoGeo(-74.0610, 4.6720), PuntoGeo(-74.0670, 4.6350),
+                    PuntoGeo(-74.0740, 4.6050), PuntoGeo(-74.0950, 4.5750),
+                    PuntoGeo(-74.1250, 4.5400)
+                )
+            ),
+            CalleVial(
+                nombre = "Av. NQS / Cra. 30",
+                tipo = "troncal",
+                tramos = listOf(
+                    PuntoGeo(-74.0520, 4.7500), PuntoGeo(-74.0640, 4.6850),
+                    PuntoGeo(-74.0800, 4.6400), PuntoGeo(-74.1100, 4.6000),
+                    PuntoGeo(-74.1600, 4.5850)
+                )
+            ),
+            CalleVial(
+                nombre = "Av. Boyacá (Cra. 72)",
+                tipo = "troncal",
+                tramos = listOf(
+                    PuntoGeo(-74.0480, 4.7700), PuntoGeo(-74.0680, 4.7300),
+                    PuntoGeo(-74.0980, 4.6850), PuntoGeo(-74.1200, 4.6450),
+                    PuntoGeo(-74.1450, 4.5950), PuntoGeo(-74.1350, 4.5300)
+                )
+            ),
+            CalleVial(
+                nombre = "Av. Ciudad de Cali (Cra. 86)",
+                tipo = "avenida",
+                tramos = listOf(
+                    PuntoGeo(-74.0980, 4.7500), PuntoGeo(-74.1150, 4.7100),
+                    PuntoGeo(-74.1350, 4.6650), PuntoGeo(-74.1650, 4.6300),
+                    PuntoGeo(-74.1950, 4.6000)
+                )
+            ),
+            CalleVial(
+                nombre = "Av. Cra. 68",
+                tipo = "avenida",
+                tramos = listOf(
+                    PuntoGeo(-74.0650, 4.6980), PuntoGeo(-74.0850, 4.6700),
+                    PuntoGeo(-74.1050, 4.6400), PuntoGeo(-74.1280, 4.6050),
+                    PuntoGeo(-74.1420, 4.5800)
+                )
+            ),
+            CalleVial(
+                nombre = "Av. El Dorado (Cl. 26)",
+                tipo = "troncal",
+                tramos = listOf(
+                    PuntoGeo(-74.0650, 4.6150), PuntoGeo(-74.0850, 4.6350),
+                    PuntoGeo(-74.1080, 4.6550), PuntoGeo(-74.1380, 4.6850)
+                )
+            ),
+            CalleVial(
+                nombre = "Av. Calle 80",
+                tipo = "troncal",
+                tramos = listOf(
+                    PuntoGeo(-74.0600, 4.6700), PuntoGeo(-74.0850, 4.6900),
+                    PuntoGeo(-74.1150, 4.7150), PuntoGeo(-74.1380, 4.7300)
+                )
+            ),
+            CalleVial(
+                nombre = "Av. Calle 100 / Calle 68",
+                tipo = "avenida",
+                tramos = listOf(
+                    PuntoGeo(-74.0400, 4.6850), PuntoGeo(-74.0620, 4.6900),
+                    PuntoGeo(-74.0850, 4.6780), PuntoGeo(-74.1150, 4.6700)
+                )
+            ),
+            CalleVial(
+                nombre = "Av. Calle 72",
+                tipo = "calle",
+                tramos = listOf(
+                    PuntoGeo(-74.0550, 4.6550), PuntoGeo(-74.0750, 4.6650),
+                    PuntoGeo(-74.0980, 4.6780), PuntoGeo(-74.1200, 4.6900)
+                )
+            ),
+            CalleVial(
+                nombre = "Av. Calle 13 (Av. Centenario)",
+                tipo = "troncal",
+                tramos = listOf(
+                    PuntoGeo(-74.0750, 4.6050), PuntoGeo(-74.1050, 4.6250),
+                    PuntoGeo(-74.1380, 4.6500), PuntoGeo(-74.1750, 4.6800)
+                )
+            ),
+            CalleVial(
+                nombre = "Av. Las Américas",
+                tipo = "troncal",
+                tramos = listOf(
+                    PuntoGeo(-74.0780, 4.6150), PuntoGeo(-74.1100, 4.6250),
+                    PuntoGeo(-74.1480, 4.6300), PuntoGeo(-74.1800, 4.6280)
+                )
+            ),
+            CalleVial(
+                nombre = "Av. Primero de Mayo",
+                tipo = "avenida",
+                tramos = listOf(
+                    PuntoGeo(-74.0850, 4.5650), PuntoGeo(-74.1150, 4.5800),
+                    PuntoGeo(-74.1450, 4.6050), PuntoGeo(-74.1800, 4.6200)
+                )
+            )
+        )
+        cacheCalles = calles
+        return calles
+    }
+
     private fun abreviarNombre(nombre: String): String = when (nombre.trim()) {
         "Antonio Nariño" -> "A. Nariño"
         "Barrios Unidos" -> "B. Unidos"
@@ -219,6 +438,11 @@ enum class FiltroMapa {
     TODOS, ALTO, MEDIO, BAJO
 }
 
+enum class ModoVistaMapa {
+    CALOR_CUADRAS, CALLES, LOCALIDADES
+}
+
+@SuppressLint("MissingPermission")
 @Composable
 fun MapaCalorBogota(
     modifier: Modifier = Modifier,
@@ -227,28 +451,44 @@ fun MapaCalorBogota(
 ) {
     val context = LocalContext.current
     var localidades by remember { mutableStateOf<List<LocalidadMapa>>(emptyList()) }
-    var localidadSeleccionada by remember { mutableStateOf<LocalidadMapa?>(null) }
-    var vistaCompleta by remember { mutableStateOf(false) }
-    var filtroActivo by remember { mutableStateOf(FiltroMapa.TODOS) }
+    var cuadrasCalor by remember { mutableStateOf<List<CuadraCalor>>(emptyList()) }
+    var callesPrincipales by remember { mutableStateOf<List<CalleVial>>(emptyList()) }
 
+    var localidadSeleccionada by remember { mutableStateOf<LocalidadMapa?>(null) }
+    var cuadraSeleccionada by remember { mutableStateOf<CuadraCalor?>(null) }
+    var vistaCompleta by remember { mutableStateOf(false) }
+    var modoVista by remember { mutableStateOf(ModoVistaMapa.CALOR_CUADRAS) }
+
+    // Estado de Geolocalización en tiempo real
+    var ubicacionGps by remember { mutableStateOf<PuntoGeo?>(null) }
+    var precisionGpsMts by remember { mutableFloatStateOf(20f) }
+    var nombreZonaActual by remember { mutableStateOf("Ubicando...") }
+    var nivelRiesgoActual by remember { mutableStateOf("medio") }
+
+    // Control de gestos y zoom en el mapa
+    var escalaZoom by remember { mutableFloatStateOf(1.0f) }
+    var offsetPanX by remember { mutableFloatStateOf(0f) }
+    var offsetPanY by remember { mutableFloatStateOf(0f) }
+
+    // Pulso animado de radar térmico y GPS
     val infiniteTransition = rememberInfiniteTransition(label = "pulso_termico")
-    val radioPulso by infiniteTransition.animateFloat(
-        initialValue = 6f,
-        targetValue = 32f,
+    val radioPulsoGps by infiniteTransition.animateFloat(
+        initialValue = 4f,
+        targetValue = 22f,
         animationSpec = infiniteRepeatable(
-            animation = tween(2200, easing = LinearEasing),
+            animation = tween(1600, easing = LinearEasing),
             repeatMode = RepeatMode.Restart
         ),
-        label = "radio_pulso"
+        label = "radio_gps"
     )
-    val alfaPulso by infiniteTransition.animateFloat(
-        initialValue = 0.90f,
+    val alfaPulsoGps by infiniteTransition.animateFloat(
+        initialValue = 0.95f,
         targetValue = 0.0f,
         animationSpec = infiniteRepeatable(
-            animation = tween(2200, easing = LinearEasing),
+            animation = tween(1600, easing = LinearEasing),
             repeatMode = RepeatMode.Restart
         ),
-        label = "alfa_pulso"
+        label = "alfa_gps"
     )
     val brilloNeon by infiniteTransition.animateFloat(
         initialValue = 0.65f,
@@ -260,12 +500,83 @@ fun MapaCalorBogota(
         label = "brillo_neon"
     )
 
-    var escalaZoom by remember { mutableFloatStateOf(1.0f) }
-    var offsetPanX by remember { mutableFloatStateOf(0f) }
-    var offsetPanY by remember { mutableFloatStateOf(0f) }
-
+    // Cargar datos espaciales y de calor
     LaunchedEffect(ranking) {
-        localidades = GestorGeojson.cargarLocalidades(context, ranking)
+        val locs = GestorGeojson.cargarLocalidades(context, ranking)
+        localidades = locs
+        cuadrasCalor = GestorGeojson.cargarCuadrasCalor(context, locs)
+        callesPrincipales = GestorGeojson.obtenerCallesPrincipales()
+    }
+
+    // Geolocalización automática en tiempo real
+    DisposableEffect(Unit) {
+        val tienePermiso = ContextCompat.checkSelfPermission(
+            context, Manifest.permission.ACCESS_FINE_LOCATION
+        ) == PackageManager.PERMISSION_GRANTED || ContextCompat.checkSelfPermission(
+            context, Manifest.permission.ACCESS_COARSE_LOCATION
+        ) == PackageManager.PERMISSION_GRANTED
+
+        var locationManager: LocationManager? = null
+        var locationListener: LocationListener? = null
+
+        if (tienePermiso) {
+            try {
+                val fusedClient = LocationServices.getFusedLocationProviderClient(context)
+                fusedClient.lastLocation.addOnSuccessListener { loc: Location? ->
+                    if (loc != null) {
+                        val pt = PuntoGeo(loc.longitude, loc.latitude)
+                        ubicacionGps = pt
+                        precisionGpsMts = loc.accuracy.coerceIn(5f, 50f)
+                    }
+                }
+
+                locationManager = context.getSystemService(Context.LOCATION_SERVICE) as? LocationManager
+                locationListener = LocationListener { loc ->
+                    val pt = PuntoGeo(loc.longitude, loc.latitude)
+                    ubicacionGps = pt
+                    precisionGpsMts = loc.accuracy.coerceIn(5f, 50f)
+                }
+
+                locationManager?.requestLocationUpdates(
+                    LocationManager.GPS_PROVIDER,
+                    3000L,
+                    5f,
+                    locationListener
+                )
+                locationManager?.requestLocationUpdates(
+                    LocationManager.NETWORK_PROVIDER,
+                    3000L,
+                    5f,
+                    locationListener
+                )
+            } catch (e: Exception) {
+                android.util.Log.e("MapaCalorBogota", "Error iniciando GPS", e)
+            }
+        }
+
+        if (ubicacionGps == null) {
+            ubicacionGps = PuntoGeo(-74.0621, 4.6534)
+        }
+
+        onDispose {
+            locationListener?.let { locationManager?.removeUpdates(it) }
+        }
+    }
+
+    // Identificar zona y nivel de riesgo actual del usuario
+    LaunchedEffect(ubicacionGps, localidades, cuadrasCalor) {
+        val pt = ubicacionGps ?: return@LaunchedEffect
+        val locActual = localidades.firstOrNull { puntoEnPoligono(pt, it.poligono) }
+        val cuadraCercana = cuadrasCalor.minByOrNull {
+            val dLng = it.lng - pt.lng
+            val dLat = it.lat - pt.lat
+            dLng * dLng + dLat * dLat
+        }
+
+        val barrio = cuadraCercana?.nombre ?: "Chapinero Central"
+        val locNombre = locActual?.nombre ?: "Chapinero"
+        nombreZonaActual = "$barrio, $locNombre"
+        nivelRiesgoActual = locActual?.nivelRiesgo ?: "medio"
     }
 
     val localidadesVisibles = remember(localidades, vistaCompleta) {
@@ -297,8 +608,25 @@ fun MapaCalorBogota(
     val rangoLng = max(maxLng - minLng, 0.0001)
     val rangoLat = max(maxLat - minLat, 0.0001)
 
+    // Función de centrado en la ubicación GPS
+    fun centrarEnUbicacion() {
+        val pt = ubicacionGps ?: PuntoGeo(-74.0621, 4.6534)
+        escalaZoom = 2.4f
+        val factorCos = cos(Math.toRadians(4.65))
+        val xNorm = (pt.lng - (minLng + maxLng) / 2.0) / rangoLng * factorCos
+        val yNorm = (pt.lat - (minLat + maxLat) / 2.0) / rangoLat
+        offsetPanX = (-xNorm * 380f * escalaZoom).toFloat()
+        offsetPanY = (yNorm * 380f * escalaZoom).toFloat()
+    }
+
+    LaunchedEffect(ubicacionGps) {
+        if (ubicacionGps != null && escalaZoom == 1.0f && offsetPanX == 0f && offsetPanY == 0f) {
+            centrarEnUbicacion()
+        }
+    }
+
     Column(modifier = modifier.fillMaxWidth()) {
-        // ENCABEZADO Y FILTROS
+        // 1. BARRA SUPERIOR: ESTADO EN VIVO Y SELECTORES DE CAPA
         Card(
             modifier = Modifier
                 .fillMaxWidth()
@@ -314,125 +642,97 @@ fun MapaCalorBogota(
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Surface(
-                            color = Color(0xFFFF1744).copy(alpha = brilloNeon),
+                            color = Color(0xFF00E5FF).copy(alpha = brilloNeon),
                             shape = CircleShape,
                             modifier = Modifier.size(12.dp)
                         ) {}
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = stringResource(R.string.mapa_calor_titulo),
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.ExtraBold
-                        )
-                    }
-
-                    FilterChip(
-                        selected = vistaCompleta,
-                        onClick = {
-                            vistaCompleta = !vistaCompleta
-                            escalaZoom = 1.0f
-                            offsetPanX = 0f
-                            offsetPanY = 0f
-                        },
-                        label = {
+                        Column {
                             Text(
-                                if (vistaCompleta) stringResource(R.string.mapa_ver_urbano)
-                                else stringResource(R.string.mapa_ver_todo),
-                                style = MaterialTheme.typography.labelSmall
+                                text = "Mapa de Riesgo por Cuadras",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.ExtraBold
+                            )
+                            Text(
+                                text = "📍 $nombreZonaActual",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
-                    )
+                    }
+
+                    BadgeRiesgo(nivel = nivelRiesgoActual)
                 }
 
                 Spacer(modifier = Modifier.height(8.dp))
 
+                // Selector de Capas (Calor por Cuadra, Calles, Localidades)
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
                     FilterChip(
-                        selected = filtroActivo == FiltroMapa.TODOS,
-                        onClick = { filtroActivo = FiltroMapa.TODOS },
-                        label = { Text("Todas (20)", style = MaterialTheme.typography.labelSmall) }
+                        selected = modoVista == ModoVistaMapa.CALOR_CUADRAS,
+                        onClick = { modoVista = ModoVistaMapa.CALOR_CUADRAS },
+                        label = { Text("🔥 Calor Cuadras", style = MaterialTheme.typography.labelSmall) }
                     )
                     FilterChip(
-                        selected = filtroActivo == FiltroMapa.ALTO,
-                        onClick = { filtroActivo = if (filtroActivo == FiltroMapa.ALTO) FiltroMapa.TODOS else FiltroMapa.ALTO },
-                        label = { Text("🔴 Alto", style = MaterialTheme.typography.labelSmall) },
-                        colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = Color(0xFFFFCDD2),
-                            selectedLabelColor = Color(0xFFB71C1C)
-                        )
+                        selected = modoVista == ModoVistaMapa.CALLES,
+                        onClick = { modoVista = ModoVistaMapa.CALLES },
+                        label = { Text("🛣️ Calles y Vías", style = MaterialTheme.typography.labelSmall) }
                     )
                     FilterChip(
-                        selected = filtroActivo == FiltroMapa.MEDIO,
-                        onClick = { filtroActivo = if (filtroActivo == FiltroMapa.MEDIO) FiltroMapa.TODOS else FiltroMapa.MEDIO },
-                        label = { Text("🟡 Medio", style = MaterialTheme.typography.labelSmall) },
-                        colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = Color(0xFFFFECB3),
-                            selectedLabelColor = Color(0xFFE65100)
-                        )
-                    )
-                    FilterChip(
-                        selected = filtroActivo == FiltroMapa.BAJO,
-                        onClick = { filtroActivo = if (filtroActivo == FiltroMapa.BAJO) FiltroMapa.TODOS else FiltroMapa.BAJO },
-                        label = { Text("🟢 Seguro", style = MaterialTheme.typography.labelSmall) },
-                        colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = Color(0xFFC8E6C9),
-                            selectedLabelColor = Color(0xFF1B5E20)
-                        )
+                        selected = modoVista == ModoVistaMapa.LOCALIDADES,
+                        onClick = { modoVista = ModoVistaMapa.LOCALIDADES },
+                        label = { Text("🏛️ Localidades", style = MaterialTheme.typography.labelSmall) }
                     )
                 }
             }
         }
 
-        // CANVAS ULTRA-HD CON SOMBRAS Y BORDES SUAVES
+        // 2. CANVAS DEL MAPA INTERACTIVO CON CALLES Y CALOR
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .aspectRatio(0.95f) // Formato vertical óptimo para la forma de Bogotá
+                .aspectRatio(0.95f)
                 .padding(horizontal = 8.dp, vertical = 4.dp)
                 .clip(RoundedCornerShape(18.dp))
                 .background(
                     Brush.radialGradient(
-                        colors = listOf(Color(0xFF1F2C3A), Color(0xFF0F1722), Color(0xFF070B10)),
+                        colors = listOf(Color(0xFF141E28), Color(0xFF0C131A), Color(0xFF060A0E)),
                         radius = 1100f
                     )
                 )
-                .border(1.5.dp, Color(0xFF455A64), RoundedCornerShape(18.dp))
+                .border(1.5.dp, Color(0xFF37474F), RoundedCornerShape(18.dp))
                 .shadow(12.dp, RoundedCornerShape(18.dp))
         ) {
             var canvasWidth by remember { mutableFloatStateOf(1f) }
             var canvasHeight by remember { mutableFloatStateOf(1f) }
 
-            // Configuración de texto tipográfico de ultra alta definición
             val paintTexto = remember {
                 Paint().apply {
                     color = android.graphics.Color.WHITE
-                    textSize = 28f
+                    textSize = 26f
                     isAntiAlias = true
                     isSubpixelText = true
-                    isLinearText = true
                     textAlign = Paint.Align.CENTER
                     typeface = Typeface.create(Typeface.SANS_SERIF, Typeface.BOLD)
                 }
             }
-
-            val paintBadgeFondo = remember {
+            val paintCalle = remember {
                 Paint().apply {
-                    color = android.graphics.Color.argb(215, 12, 18, 26)
+                    color = android.graphics.Color.argb(180, 176, 190, 197)
+                    textSize = 19f
                     isAntiAlias = true
-                    isDither = true
-                    style = Paint.Style.FILL
+                    textAlign = Paint.Align.LEFT
+                    typeface = Typeface.create(Typeface.SANS_SERIF, Typeface.NORMAL)
                 }
             }
-
-            val paintBadgeBorde = remember {
+            val paintBadgeFondo = remember {
                 Paint().apply {
-                    color = android.graphics.Color.argb(220, 255, 255, 255)
+                    color = android.graphics.Color.argb(220, 12, 18, 26)
                     isAntiAlias = true
-                    style = Paint.Style.STROKE
-                    strokeWidth = 2.2f
+                    style = Paint.Style.FILL
                 }
             }
 
@@ -441,17 +741,16 @@ fun MapaCalorBogota(
                     .fillMaxSize()
                     .pointerInput(localidadesVisibles, minLng, maxLng, minLat, maxLat, escalaZoom, offsetPanX, offsetPanY) {
                         detectTransformGestures { _, pan, zoom, _ ->
-                            escalaZoom = (escalaZoom * zoom).coerceIn(0.8f, 5.0f)
+                            escalaZoom = (escalaZoom * zoom).coerceIn(0.8f, 6.0f)
                             offsetPanX += pan.x
                             offsetPanY += pan.y
                         }
                     }
-                    .pointerInput(localidadesVisibles, minLng, maxLng, minLat, maxLat, escalaZoom, offsetPanX, offsetPanY) {
+                    .pointerInput(localidadesVisibles, cuadrasCalor, minLng, maxLng, minLat, maxLat, escalaZoom, offsetPanX, offsetPanY) {
                         detectTapGestures { offset ->
-                            val pad = 26.dp.toPx()
+                            val pad = 24.dp.toPx()
                             val anchoUtil = (canvasWidth - 2 * pad).coerceAtLeast(1f)
                             val altoUtil = (canvasHeight - 2 * pad).coerceAtLeast(1f)
-
                             val factorCos = cos(Math.toRadians(4.65))
                             val escalaX = anchoUtil / (rangoLng * factorCos)
                             val escalaY = altoUtil / rangoLat
@@ -465,35 +764,39 @@ fun MapaCalorBogota(
                             val xEnMapa = (offset.x - offsetXBase) / escalaZoom
                             val yEnMapa = (offset.y - offsetYBase) / escalaZoom
 
-                            val clickLng = minLng + (xEnMapa / (anchoMapa)) * rangoLng
-                            val clickLat = maxLat - (yEnMapa / (altoMapa)) * rangoLat
+                            val clickLng = minLng + (xEnMapa / anchoMapa) * rangoLng
+                            val clickLat = maxLat - (yEnMapa / altoMapa) * rangoLat
                             val ptClick = PuntoGeo(clickLng, clickLat)
+
+                            val cuadraTocada = cuadrasCalor.minByOrNull {
+                                val dx = (it.lng - clickLng) * factorCos
+                                val dy = it.lat - clickLat
+                                dx * dx + dy * dy
+                            }
+
+                            if (cuadraTocada != null) {
+                                val dist = sqrt((cuadraTocada.lng - clickLng).pow(2) + (cuadraTocada.lat - clickLat).pow(2))
+                                if (dist < 0.035) {
+                                    cuadraSeleccionada = cuadraTocada
+                                    localidadSeleccionada = null
+                                    return@detectTapGestures
+                                }
+                            }
 
                             val tocada = localidadesVisibles.firstOrNull { loc ->
                                 puntoEnPoligono(ptClick, loc.poligono)
                             }
                             localidadSeleccionada = tocada
+                            cuadraSeleccionada = null
                         }
                     }
             ) {
                 canvasWidth = size.width
                 canvasHeight = size.height
 
-                // 1. REJILLA RADAR DISCRETA
-                val centroX = size.width / 2f
-                val centroY = size.height / 2f
-                val colorRejilla = Color(0xFF37474F).copy(alpha = 0.30f)
-
-                drawCircle(color = colorRejilla, radius = size.width * 0.20f, center = Offset(centroX, centroY), style = Stroke(1f))
-                drawCircle(color = colorRejilla, radius = size.width * 0.38f, center = Offset(centroX, centroY), style = Stroke(1f))
-                drawCircle(color = colorRejilla, radius = size.width * 0.55f, center = Offset(centroX, centroY), style = Stroke(1f))
-                drawLine(color = colorRejilla, start = Offset(centroX, 0f), end = Offset(centroX, size.height), strokeWidth = 1f)
-                drawLine(color = colorRejilla, start = Offset(0f, centroY), end = Offset(size.width, centroY), strokeWidth = 1f)
-
-                val pad = 26.dp.toPx()
+                val pad = 24.dp.toPx()
                 val anchoUtil = size.width - 2 * pad
                 val altoUtil = size.height - 2 * pad
-
                 val factorCos = cos(Math.toRadians(4.65))
                 val escalaX = anchoUtil / (rangoLng * factorCos)
                 val escalaY = altoUtil / rangoLat
@@ -512,7 +815,7 @@ fun MapaCalorBogota(
                     return Offset(xFinal, yFinal)
                 }
 
-                // 2. DIBUJAR POLÍGONOS DE CADA LOCALIDAD CON ALTA DEFINICIÓN
+                // 1. MALLA Y POLÍGONOS BASE DE LOCALIDADES
                 for (loc in localidadesVisibles) {
                     if (loc.poligono.isEmpty()) continue
 
@@ -526,127 +829,189 @@ fun MapaCalorBogota(
                         close()
                     }
 
-                    val coincideFiltro = when (filtroActivo) {
-                        FiltroMapa.TODOS -> true
-                        FiltroMapa.ALTO -> loc.nivelRiesgo == "alto"
-                        FiltroMapa.MEDIO -> loc.nivelRiesgo == "medio"
-                        FiltroMapa.BAJO -> loc.nivelRiesgo == "bajo"
-                    }
-
-                    val alfaBase = if (coincideFiltro) 0.94f else 0.16f
-
-                    // Gradientes y colores de alta saturación
                     val colorRelleno = when (loc.nivelRiesgo) {
-                        "alto" -> Color(0xFFFF1744).copy(alpha = alfaBase)  // Rojo fuego
-                        "medio" -> Color(0xFFFFAB00).copy(alpha = alfaBase) // Ámbar intenso
-                        else -> Color(0xFF00E676).copy(alpha = alfaBase)    // Verde esmeralda vivo
+                        "alto" -> Color(0xFFFF1744).copy(alpha = if (modoVista == ModoVistaMapa.LOCALIDADES) 0.65f else 0.22f)
+                        "medio" -> Color(0xFFFFAB00).copy(alpha = if (modoVista == ModoVistaMapa.LOCALIDADES) 0.65f else 0.20f)
+                        else -> Color(0xFF00E676).copy(alpha = if (modoVista == ModoVistaMapa.LOCALIDADES) 0.65f else 0.18f)
                     }
 
-                    val esSeleccionada = localidadSeleccionada?.codigo == loc.codigo
-
-                    // Relleno suave con bordes redondeados
                     drawPath(path, color = colorRelleno, style = Fill)
 
-                    // Borde de separación nítido con anti-alias
-                    val colorBorde = when {
-                        esSeleccionada -> Color(0xFF00E5FF)
-                        coincideFiltro -> Color(0xFF0B1017)
-                        else -> Color(0xFF263238).copy(alpha = 0.45f)
+                    val colorBorde = if (localidadSeleccionada?.codigo == loc.codigo) Color(0xFF00E5FF) else Color(0xFF263238).copy(alpha = 0.60f)
+                    val anchoBorde = if (localidadSeleccionada?.codigo == loc.codigo) 3.5.dp.toPx() else 1.2.dp.toPx()
+                    drawPath(path, color = colorBorde, style = Stroke(width = anchoBorde, cap = StrokeCap.Round, join = StrokeJoin.Round))
+                }
+
+                // 2. RED DE CALLES, CARRERAS Y AVENIDAS (MODO CALLES / VÍAS)
+                for (calle in callesPrincipales) {
+                    if (calle.tramos.size < 2) continue
+
+                    val pathCalle = Path().apply {
+                        val inicio = proyectar(calle.tramos[0])
+                        moveTo(inicio.x, inicio.y)
+                        for (k in 1 until calle.tramos.size) {
+                            val pt = proyectar(calle.tramos[k])
+                            lineTo(pt.x, pt.y)
+                        }
                     }
-                    val anchoBorde = if (esSeleccionada) 4.5.dp.toPx() else 2.0.dp.toPx()
-                    drawPath(
-                        path = path,
-                        color = colorBorde,
-                        style = Stroke(
-                            width = anchoBorde,
-                            cap = StrokeCap.Round,
-                            join = StrokeJoin.Round
+
+                    val esTroncal = calle.tipo == "troncal"
+                    val colorVia = when {
+                        esTroncal -> Color(0xFFFF5252).copy(alpha = 0.85f)
+                        calle.tipo == "avenida" -> Color(0xFFECEFF1).copy(alpha = 0.65f)
+                        else -> Color(0xFF90A4AE).copy(alpha = 0.45f)
+                    }
+                    val anchoVia = if (esTroncal) (3.5f * escalaZoom.coerceIn(0.9f, 2.5f)) else (2.0f * escalaZoom.coerceIn(0.9f, 2.0f))
+
+                    drawPath(pathCalle, color = colorVia, style = Stroke(width = anchoVia, cap = StrokeCap.Round, join = StrokeJoin.Round))
+
+                    if (escalaZoom >= 1.5f && calle.tramos.isNotEmpty()) {
+                        val puntoMedio = proyectar(calle.tramos[calle.tramos.size / 2])
+                        if (puntoMedio.x in 0f..size.width && puntoMedio.y in 0f..size.height) {
+                            drawContext.canvas.nativeCanvas.drawText(
+                                calle.nombre,
+                                puntoMedio.x + 8f,
+                                puntoMedio.y - 6f,
+                                paintCalle
+                            )
+                        }
+                    }
+                }
+
+                // 3. MAPA DE CALOR POR CUADRA (NÚCLEOS TÉRMICOS GAUSSIANOS)
+                if (modoVista == ModoVistaMapa.CALOR_CUADRAS || modoVista == ModoVistaMapa.CALLES) {
+                    for (cuadra in cuadrasCalor) {
+                        val centro = proyectar(PuntoGeo(cuadra.lng, cuadra.lat))
+                        if (centro.x < -50 || centro.x > size.width + 50 || centro.y < -50 || centro.y > size.height + 50) continue
+
+                        val colorCalor = when (cuadra.nivelRiesgo) {
+                            "alto" -> Color(0xFFFF1744)
+                            "medio" -> Color(0xFFFF9100)
+                            else -> Color(0xFF00E676)
+                        }
+
+                        val radioCuadra = (16f * escalaZoom.coerceIn(1.0f, 3.0f)) * cuadra.score.toFloat()
+
+                        drawCircle(
+                            brush = Brush.radialGradient(
+                                colors = listOf(colorCalor.copy(alpha = 0.55f), colorCalor.copy(alpha = 0.0f)),
+                                center = centro,
+                                radius = radioCuadra * 2.2f
+                            ),
+                            radius = radioCuadra * 2.2f,
+                            center = centro
                         )
+
+                        drawCircle(
+                            color = colorCalor.copy(alpha = 0.85f),
+                            radius = radioCuadra * 0.65f,
+                            center = centro
+                        )
+                    }
+                }
+
+                // 4. INDICADOR GPS EN TIEMPO REAL ("TÚ ESTÁS AQUÍ")
+                ubicacionGps?.let { gps ->
+                    val posGps = proyectar(gps)
+
+                    val radioPrecision = (precisionGpsMts * escalaZoom * 0.4f).coerceIn(18f, 65f)
+                    drawCircle(
+                        color = Color(0xFF00E5FF).copy(alpha = 0.18f),
+                        radius = radioPrecision,
+                        center = posGps
                     )
-                }
+                    drawCircle(
+                        color = Color(0xFF00E5FF).copy(alpha = 0.45f),
+                        radius = radioPrecision,
+                        center = posGps,
+                        style = Stroke(1.5f)
+                    )
 
-                // 3. ONDAS DE PULSO DE RADAR
-                for (loc in localidadesVisibles) {
-                    val centro = proyectar(loc.centroide)
-                    if (centro.x < -60 || centro.x > size.width + 60 || centro.y < -60 || centro.y > size.height + 60) continue
+                    drawCircle(
+                        color = Color(0xFF00E5FF).copy(alpha = alfaPulsoGps),
+                        radius = radioPulsoGps * escalaZoom.coerceIn(1.0f, 2.5f) + 6f,
+                        center = posGps,
+                        style = Stroke(3f)
+                    )
 
-                    if (loc.nivelRiesgo == "alto" && (filtroActivo == FiltroMapa.TODOS || filtroActivo == FiltroMapa.ALTO)) {
-                        drawCircle(
-                            color = Color(0xFFFF1744).copy(alpha = alfaPulso),
-                            radius = radioPulso * escalaZoom.coerceIn(0.9f, 2.2f),
-                            center = centro,
-                            style = Stroke(3f)
-                        )
-                    }
+                    drawCircle(
+                        color = Color(0xFFFFFFFF),
+                        radius = 8.dp.toPx(),
+                        center = posGps
+                    )
+                    drawCircle(
+                        color = Color(0xFF00B0FF),
+                        radius = 6.5.dp.toPx(),
+                        center = posGps
+                    )
 
-                    val esSeleccionada = localidadSeleccionada?.codigo == loc.codigo
-                    if (esSeleccionada) {
-                        drawCircle(
-                            color = Color(0xFF00E5FF).copy(alpha = brilloNeon),
-                            radius = 18.dp.toPx(),
-                            center = centro,
-                            style = Stroke(3.5.dp.toPx())
-                        )
-                    }
-                }
-
-                // 4. ETIQUETAS DE TEXTO NÍTIDAS
-                for (loc in localidadesVisibles) {
-                    val centro = proyectar(loc.centroide)
-                    if (centro.x < 0 || centro.x > size.width || centro.y < 0 || centro.y > size.height) continue
-
-                    val coincideFiltro = when (filtroActivo) {
-                        FiltroMapa.TODOS -> true
-                        FiltroMapa.ALTO -> loc.nivelRiesgo == "alto"
-                        FiltroMapa.MEDIO -> loc.nivelRiesgo == "medio"
-                        FiltroMapa.BAJO -> loc.nivelRiesgo == "bajo"
-                    }
-
-                    paintTexto.textSize = (25f * escalaZoom.coerceIn(0.9f, 2.1f)).coerceIn(22f, 44f)
-                    paintTexto.alpha = if (coincideFiltro) 255 else 75
-                    paintBadgeFondo.alpha = if (coincideFiltro) 225 else 50
-                    paintBadgeBorde.alpha = if (coincideFiltro) 240 else 40
-
-                    val texto = loc.nombreCorto
-                    val anchoTexto = paintTexto.measureText(texto)
-                    val padH = 14f
-                    val padV = 9f
-
+                    val textoGps = "📍 Tú estás aquí"
+                    paintTexto.textSize = 24f
+                    val anchoTag = paintTexto.measureText(textoGps)
                     drawContext.canvas.nativeCanvas.drawRoundRect(
-                        centro.x - (anchoTexto / 2f) - padH,
-                        centro.y - 18f - padV,
-                        centro.x + (anchoTexto / 2f) + padH,
-                        centro.y + 10f + padV,
-                        14f,
-                        14f,
+                        posGps.x - (anchoTag / 2f) - 10f,
+                        posGps.y - 38f,
+                        posGps.x + (anchoTag / 2f) + 10f,
+                        posGps.y - 12f,
+                        10f,
+                        10f,
                         paintBadgeFondo
                     )
-                    drawContext.canvas.nativeCanvas.drawRoundRect(
-                        centro.x - (anchoTexto / 2f) - padH,
-                        centro.y - 18f - padV,
-                        centro.x + (anchoTexto / 2f) + padH,
-                        centro.y + 10f + padV,
-                        14f,
-                        14f,
-                        paintBadgeBorde
-                    )
-
                     drawContext.canvas.nativeCanvas.drawText(
-                        texto,
-                        centro.x,
-                        centro.y + 2f,
+                        textoGps,
+                        posGps.x,
+                        posGps.y - 20f,
                         paintTexto
                     )
                 }
+
+                // 5. ETIQUETAS DE TEXTO DE LOCALIDADES
+                if (modoVista == ModoVistaMapa.LOCALIDADES || escalaZoom < 2.0f) {
+                    for (loc in localidadesVisibles) {
+                        val centro = proyectar(loc.centroide)
+                        if (centro.x < 0 || centro.x > size.width || centro.y < 0 || centro.y > size.height) continue
+
+                        paintTexto.textSize = (22f * escalaZoom.coerceIn(0.9f, 2.0f)).coerceIn(20f, 40f)
+                        val texto = loc.nombreCorto
+                        val anchoTexto = paintTexto.measureText(texto)
+
+                        drawContext.canvas.nativeCanvas.drawRoundRect(
+                            centro.x - (anchoTexto / 2f) - 12f,
+                            centro.y - 16f,
+                            centro.x + (anchoTexto / 2f) + 12f,
+                            centro.y + 10f,
+                            12f,
+                            12f,
+                            paintBadgeFondo
+                        )
+                        drawContext.canvas.nativeCanvas.drawText(
+                            texto,
+                            centro.x,
+                            centro.y + 2f,
+                            paintTexto
+                        )
+                    }
+                }
             }
 
-            // BOTONES DE ZOOM Y REINICIO
+            // BOTONES FLOTANTES DE CONTROL (ZOOM, CENTRAR EN MI UBICACIÓN)
             Column(
                 modifier = Modifier
                     .align(Alignment.TopEnd)
                     .padding(10.dp),
-                verticalArrangement = Arrangement.spacedBy(6.dp)
+                verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
+                Surface(
+                    shape = CircleShape,
+                    color = Color(0xFF00E5FF),
+                    shadowElevation = 8.dp,
+                    modifier = Modifier.size(44.dp)
+                ) {
+                    IconButton(onClick = { centrarEnUbicacion() }) {
+                        Text("📍", fontSize = 20.sp)
+                    }
+                }
+
                 Surface(
                     shape = CircleShape,
                     color = Color(0xFF1E2733).copy(alpha = 0.95f),
@@ -654,7 +1019,7 @@ fun MapaCalorBogota(
                     shadowElevation = 6.dp,
                     modifier = Modifier.size(40.dp)
                 ) {
-                    IconButton(onClick = { escalaZoom = (escalaZoom * 1.35f).coerceAtMost(5.0f) }) {
+                    IconButton(onClick = { escalaZoom = (escalaZoom * 1.35f).coerceAtMost(6.0f) }) {
                         Text("+", fontWeight = FontWeight.ExtraBold, color = Color.White, fontSize = 22.sp)
                     }
                 }
@@ -669,34 +1034,61 @@ fun MapaCalorBogota(
                         Text("−", fontWeight = FontWeight.ExtraBold, color = Color.White, fontSize = 22.sp)
                     }
                 }
-                if (escalaZoom != 1.0f || offsetPanX != 0f || offsetPanY != 0f) {
-                    Surface(
-                        shape = CircleShape,
-                        color = Color(0xFF00B0FF),
-                        shadowElevation = 6.dp,
-                        modifier = Modifier.size(40.dp)
-                    ) {
-                        IconButton(onClick = {
-                            escalaZoom = 1.0f
-                            offsetPanX = 0f
-                            offsetPanY = 0f
-                        }) {
-                            Text("↺", fontWeight = FontWeight.ExtraBold, color = Color.White, fontSize = 19.sp)
-                        }
-                    }
-                }
             }
 
-            // TARJETA FLOTANTE AL TOCAR LOCALIDAD
+            // TARJETA FLOTANTE AL TOCAR UNA CUADRA O LOCALIDAD
             androidx.compose.animation.AnimatedVisibility(
-                visible = localidadSeleccionada != null,
+                visible = cuadraSeleccionada != null || localidadSeleccionada != null,
                 enter = slideInVertically(initialOffsetY = { it }) + fadeIn(),
                 exit = slideOutVertically(targetOffsetY = { it }) + fadeOut(),
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
                     .padding(10.dp)
             ) {
-                localidadSeleccionada?.let { loc ->
+                if (cuadraSeleccionada != null) {
+                    val c = cuadraSeleccionada!!
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 12.dp),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                        shape = RoundedCornerShape(16.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(14.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Text(
+                                        text = c.nombre,
+                                        style = MaterialTheme.typography.titleMedium,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    BadgeRiesgo(nivel = c.nivelRiesgo)
+                                }
+                                Spacer(modifier = Modifier.height(2.dp))
+                                Text(
+                                    text = "Localidad: ${c.localidad} • Tasa: %,.0f del/100k".format(c.tasa100k),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                            Button(
+                                onClick = { onSeleccionarLocalidad(c.localidad) },
+                                shape = RoundedCornerShape(10.dp),
+                                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
+                                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp)
+                            ) {
+                                Text("Ver Zona")
+                            }
+                        }
+                    }
+                } else if (localidadSeleccionada != null) {
+                    val loc = localidadSeleccionada!!
                     Card(
                         modifier = Modifier.fillMaxWidth(),
                         elevation = CardDefaults.cardElevation(defaultElevation = 12.dp),
@@ -744,7 +1136,7 @@ fun MapaCalorBogota(
             }
         }
 
-        // CARROUSEL INFERIOR
+        // 3. CARRUSEL INFERIOR DE ACCESO RÁPIDO
         Text(
             text = "Acceso rápido por localidad:",
             style = MaterialTheme.typography.labelSmall,
@@ -773,6 +1165,7 @@ fun MapaCalorBogota(
                     shape = RoundedCornerShape(8.dp),
                     modifier = Modifier.clickable {
                         localidadSeleccionada = loc
+                        cuadraSeleccionada = null
                     }
                 ) {
                     Row(
