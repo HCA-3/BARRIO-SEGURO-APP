@@ -3,12 +3,13 @@ package com.example.riesgossocialesenchapinero.ui
 import android.Manifest
 import android.annotation.SuppressLint
 import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Paint
 import android.graphics.Typeface
 import android.location.Location
-import android.location.LocationListener
-import android.location.LocationManager
+import android.net.Uri
+import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.LinearEasing
@@ -74,9 +75,11 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Fill
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.withTransform
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -86,7 +89,12 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import com.example.riesgossocialesenchapinero.R
 import com.example.riesgossocialesenchapinero.data.ApiClient
+import com.example.riesgossocialesenchapinero.ui.theme.ColoresDatos
+import com.google.android.gms.location.LocationCallback
+import com.google.android.gms.location.LocationRequest
+import com.google.android.gms.location.LocationResult
 import com.google.android.gms.location.LocationServices
+import com.google.android.gms.location.Priority
 import org.json.JSONArray
 import org.json.JSONObject
 import kotlin.math.cos
@@ -126,6 +134,87 @@ data class CalleVial(
     val tipo: String,
     val tramos: List<PuntoGeo>
 )
+
+/**
+ * Cache de los Path de polígonos/calles ya proyectados a coordenadas LOCALES
+ * (sin aplicar pan/zoom). Antes, cada polígono/calle se reconstruía punto por
+ * punto en CADA frame del Canvas -- incluyendo cada frame de un gesto de
+ * arrastre o pellizco, que dispara decenas de recomposiciones por segundo --
+ * lo que hacía el mapa notablemente lento con polígonos de cientos de
+ * vértices. Ahora el Path se construye una sola vez (solo se invalida si
+ * cambian los datos o el tamaño del Canvas) y pan/zoom se aplican como una
+ * transformación de canvas (ver withTransform en el Canvas), no recalculando
+ * cada vértice.
+ */
+class CacheRutasMapa {
+    private var localidadesRef: List<LocalidadMapa>? = null
+    private var callesRef: List<CalleVial>? = null
+    private var anchoMapaCache = -1f
+    private var altoMapaCache = -1f
+
+    val poligonos = mutableMapOf<Int, Path>()
+    val calles = mutableMapOf<String, Path>()
+
+    fun actualizarSiHaceFalta(
+        localidadesVisibles: List<LocalidadMapa>,
+        callesPrincipales: List<CalleVial>,
+        minLng: Double,
+        maxLat: Double,
+        rangoLng: Double,
+        rangoLat: Double,
+        anchoMapa: Float,
+        altoMapa: Float
+    ) {
+        val cambioLocalidades = localidadesRef !== localidadesVisibles
+        val cambioCalles = callesRef !== callesPrincipales
+        val cambioTamano = anchoMapaCache != anchoMapa || altoMapaCache != altoMapa
+        if (!cambioLocalidades && !cambioCalles && !cambioTamano) return
+
+        fun proyectarLocal(p: PuntoGeo): Offset {
+            val x = ((p.lng - minLng) / rangoLng * anchoMapa).toFloat()
+            val y = ((maxLat - p.lat) / rangoLat * altoMapa).toFloat()
+            return Offset(x, y)
+        }
+
+        if (cambioLocalidades || cambioTamano) {
+            poligonos.clear()
+            for (loc in localidadesVisibles) {
+                if (loc.poligono.isEmpty()) continue
+                val path = Path().apply {
+                    val inicio = proyectarLocal(loc.poligono[0])
+                    moveTo(inicio.x, inicio.y)
+                    for (k in 1 until loc.poligono.size) {
+                        val pt = proyectarLocal(loc.poligono[k])
+                        lineTo(pt.x, pt.y)
+                    }
+                    close()
+                }
+                poligonos[loc.codigo] = path
+            }
+            localidadesRef = localidadesVisibles
+        }
+
+        if (cambioCalles || cambioTamano) {
+            calles.clear()
+            for (calle in callesPrincipales) {
+                if (calle.tramos.size < 2) continue
+                val path = Path().apply {
+                    val inicio = proyectarLocal(calle.tramos[0])
+                    moveTo(inicio.x, inicio.y)
+                    for (k in 1 until calle.tramos.size) {
+                        val pt = proyectarLocal(calle.tramos[k])
+                        lineTo(pt.x, pt.y)
+                    }
+                }
+                calles[calle.nombre] = path
+            }
+            callesRef = callesPrincipales
+        }
+
+        anchoMapaCache = anchoMapa
+        altoMapaCache = altoMapa
+    }
+}
 
 object GestorGeojson {
     private var cacheLocalidades: List<LocalidadMapa>? = null
@@ -436,6 +525,25 @@ fun puntoEnPoligono(pt: PuntoGeo, poligono: List<PuntoGeo>): Boolean {
     return adentro
 }
 
+/**
+ * Abre la app de Google Maps ya instalada en el celular, centrada en el
+ * punto dado -- sin API key ni SDK propio, a diferencia de embeber un mapa
+ * real dentro de esta app. Un Intent implícito con esquema "geo:" no
+ * necesita declarar <queries> en el manifest (eso solo hace falta si se
+ * consulta el paquete con PackageManager antes de lanzar el intent). Si no
+ * hay ninguna app que lo resuelva (celular sin Google Maps), se avisa con un
+ * Toast en vez de crashear.
+ */
+fun abrirEnGoogleMaps(context: Context, lat: Double, lng: Double, etiqueta: String) {
+    try {
+        val uri = Uri.parse("geo:$lat,$lng?q=$lat,$lng(${Uri.encode(etiqueta)})&z=17")
+        val intent = Intent(Intent.ACTION_VIEW, uri)
+        context.startActivity(intent)
+    } catch (e: Exception) {
+        Toast.makeText(context, "No encontré una app de mapas instalada", Toast.LENGTH_SHORT).show()
+    }
+}
+
 enum class FiltroMapa {
     TODOS, ALTO, MEDIO, BAJO
 }
@@ -452,6 +560,13 @@ fun MapaCalorBogota(
     onSeleccionarLocalidad: (String) -> Unit
 ) {
     val context = LocalContext.current
+    val density = LocalDensity.current
+    // Tamaño real del Canvas en píxeles, para poder centrar con precisión
+    // (ver centrarEnUbicacion): antes se vivía solo dentro del Box del mapa y
+    // centrarEnUbicacion aproximaba el tamaño con una constante fija, que se
+    // desalineaba al cambiar el nivel de zoom por defecto.
+    var canvasWidth by remember { mutableFloatStateOf(1f) }
+    var canvasHeight by remember { mutableFloatStateOf(1f) }
     var localidades by remember { mutableStateOf<List<LocalidadMapa>>(emptyList()) }
     var cuadrasCalor by remember { mutableStateOf<List<CuadraCalor>>(emptyList()) }
     var callesPrincipales by remember { mutableStateOf<List<CalleVial>>(emptyList()) }
@@ -485,7 +600,14 @@ fun MapaCalorBogota(
         callesPrincipales = calles
     }
 
-    // Geolocalización automática en tiempo real
+    // Geolocalización automática en tiempo real. Antes esto levantaba DOS
+    // fuentes a la vez (FusedLocationProviderClient.lastLocation +
+    // LocationManager con GPS_PROVIDER y NETWORK_PROVIDER simultáneos): tres
+    // listeners de ubicación corriendo a la vez, cada uno disparando
+    // recomposición del mapa por su lado. Con solo el cliente "fused" (el
+    // mismo patrón que ya usa MonitoreoUbicacionService) alcanza para
+    // ubicación en tiempo real, con menos batería/CPU y sin recomposiciones
+    // redundantes.
     DisposableEffect(Unit) {
         val tienePermiso = ContextCompat.checkSelfPermission(
             context, Manifest.permission.ACCESS_FINE_LOCATION
@@ -493,39 +615,29 @@ fun MapaCalorBogota(
             context, Manifest.permission.ACCESS_COARSE_LOCATION
         ) == PackageManager.PERMISSION_GRANTED
 
-        var locationManager: LocationManager? = null
-        var locationListener: LocationListener? = null
+        val fusedClient = LocationServices.getFusedLocationProviderClient(context)
+        var callback: LocationCallback? = null
 
         if (tienePermiso) {
             try {
-                val fusedClient = LocationServices.getFusedLocationProviderClient(context)
                 fusedClient.lastLocation.addOnSuccessListener { loc: Location? ->
                     if (loc != null) {
-                        val pt = PuntoGeo(loc.longitude, loc.latitude)
-                        ubicacionGps = pt
+                        ubicacionGps = PuntoGeo(loc.longitude, loc.latitude)
                         precisionGpsMts = loc.accuracy.coerceIn(5f, 50f)
                     }
                 }
 
-                locationManager = context.getSystemService(Context.LOCATION_SERVICE) as? LocationManager
-                locationListener = LocationListener { loc ->
-                    val pt = PuntoGeo(loc.longitude, loc.latitude)
-                    ubicacionGps = pt
-                    precisionGpsMts = loc.accuracy.coerceIn(5f, 50f)
+                callback = object : LocationCallback() {
+                    override fun onLocationResult(resultado: LocationResult) {
+                        val loc = resultado.lastLocation ?: return
+                        ubicacionGps = PuntoGeo(loc.longitude, loc.latitude)
+                        precisionGpsMts = loc.accuracy.coerceIn(5f, 50f)
+                    }
                 }
-
-                locationManager?.requestLocationUpdates(
-                    LocationManager.GPS_PROVIDER,
-                    3000L,
-                    5f,
-                    locationListener
-                )
-                locationManager?.requestLocationUpdates(
-                    LocationManager.NETWORK_PROVIDER,
-                    3000L,
-                    5f,
-                    locationListener
-                )
+                val solicitud = LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, 3000L)
+                    .setMinUpdateIntervalMillis(3000L)
+                    .build()
+                fusedClient.requestLocationUpdates(solicitud, callback, context.mainLooper)
             } catch (e: Exception) {
                 android.util.Log.e("MapaCalorBogota", "Error iniciando GPS", e)
             }
@@ -536,7 +648,7 @@ fun MapaCalorBogota(
         }
 
         onDispose {
-            locationListener?.let { locationManager?.removeUpdates(it) }
+            callback?.let { fusedClient.removeLocationUpdates(it) }
         }
     }
 
@@ -585,19 +697,42 @@ fun MapaCalorBogota(
     val rangoLng = max(maxLng - minLng, 0.0001)
     val rangoLat = max(maxLat - minLat, 0.0001)
 
-    // Función de centrado en la ubicación GPS
+    // Función de centrado en la ubicación GPS. Zoom alto (4x) a propósito:
+    // el pedido era que "se acerque" de verdad, a nivel de cuadra, no solo
+    // que recentre sin acercar.
+    //
+    // La fórmula deriva offsetPanX/Y despejando la misma ecuación que usa
+    // proyectar() en el Canvas (offsetXBase + xLocal*zoom == centro del área
+    // útil visible), con el tamaño REAL del canvas -- antes usaba una
+    // constante fija (380f) como aproximación del tamaño en píxeles, que
+    // dejaba de cuadrar al subir el zoom por defecto y terminaba paneando el
+    // mapa completamente fuera de la pantalla.
     fun centrarEnUbicacion() {
         val pt = ubicacionGps ?: PuntoGeo(-74.0621, 4.6534)
-        escalaZoom = 2.4f
+        escalaZoom = 4.0f
+
+        val padPx = with(density) { 24.dp.toPx() }
+        val anchoUtil = (canvasWidth - 2 * padPx).coerceAtLeast(1f)
+        val altoUtil = (canvasHeight - 2 * padPx).coerceAtLeast(1f)
         val factorCos = cos(Math.toRadians(4.65))
-        val xNorm = (pt.lng - (minLng + maxLng) / 2.0) / rangoLng * factorCos
-        val yNorm = (pt.lat - (minLat + maxLat) / 2.0) / rangoLat
-        offsetPanX = (-xNorm * 380f * escalaZoom).toFloat()
-        offsetPanY = (yNorm * 380f * escalaZoom).toFloat()
+        val escalaBase = min(anchoUtil / (rangoLng * factorCos), altoUtil / rangoLat)
+        val anchoMapa = (rangoLng * factorCos * escalaBase).toFloat()
+        val altoMapa = (rangoLat * escalaBase).toFloat()
+
+        val xLocal = ((pt.lng - minLng) / rangoLng * anchoMapa).toFloat()
+        val yLocal = ((maxLat - pt.lat) / rangoLat * altoMapa).toFloat()
+
+        offsetPanX = anchoMapa / 2f - xLocal * escalaZoom
+        offsetPanY = altoMapa / 2f - yLocal * escalaZoom
     }
 
-    LaunchedEffect(ubicacionGps) {
-        if (ubicacionGps != null && escalaZoom == 1.0f && offsetPanX == 0f && offsetPanY == 0f) {
+    // Depende también de canvasWidth: si el GPS resuelve antes de que el
+    // Canvas haya medido su tamaño real (canvasWidth sigue en su valor
+    // inicial de 1f), centrar ahí produciría un desplazamiento sin sentido.
+    // Al depender de canvasWidth, este efecto se reintenta en cuanto el
+    // Canvas mide de verdad.
+    LaunchedEffect(ubicacionGps, canvasWidth) {
+        if (ubicacionGps != null && canvasWidth > 1f && escalaZoom == 1.0f && offsetPanX == 0f && offsetPanY == 0f) {
             centrarEnUbicacion()
         }
     }
@@ -683,8 +818,7 @@ fun MapaCalorBogota(
                 .border(1.5.dp, Color(0xFF37474F), RoundedCornerShape(18.dp))
                 .shadow(12.dp, RoundedCornerShape(18.dp))
         ) {
-            var canvasWidth by remember { mutableFloatStateOf(1f) }
-            var canvasHeight by remember { mutableFloatStateOf(1f) }
+            val cacheRutas = remember { CacheRutasMapa() }
 
             val paintTexto = remember {
                 Paint().apply {
@@ -792,66 +926,67 @@ fun MapaCalorBogota(
                     return Offset(xFinal, yFinal)
                 }
 
-                // 1. MALLA Y POLÍGONOS BASE DE LOCALIDADES
-                for (loc in localidadesVisibles) {
-                    if (loc.poligono.isEmpty()) continue
+                // 1 y 2. POLÍGONOS DE LOCALIDADES + RED DE CALLES.
+                // Los Path ya vienen proyectados a coordenadas locales (cache
+                // en CacheRutasMapa, solo se reconstruyen si cambian los
+                // datos o el tamaño del Canvas). Pan/zoom se aplican acá como
+                // una transformación del canvas (traslada + escala), en vez
+                // de recalcular cada vértice de cada polígono en cada frame
+                // de un gesto -- esto es lo que hacía el mapa lento al
+                // arrastrar/hacer zoom con polígonos de cientos de puntos.
+                cacheRutas.actualizarSiHaceFalta(
+                    localidadesVisibles, callesPrincipales, minLng, maxLat, rangoLng, rangoLat, anchoMapa, altoMapa
+                )
+                withTransform({
+                    translate(offsetXBase, offsetYBase)
+                    scale(escalaZoom, escalaZoom, pivot = Offset.Zero)
+                }) {
+                    for (loc in localidadesVisibles) {
+                        val path = cacheRutas.poligonos[loc.codigo] ?: continue
 
-                    val path = Path().apply {
-                        val inicio = proyectar(loc.poligono[0])
-                        moveTo(inicio.x, inicio.y)
-                        for (k in 1 until loc.poligono.size) {
-                            val pt = proyectar(loc.poligono[k])
-                            lineTo(pt.x, pt.y)
+                        val colorRelleno = ColoresDatos.relleno(loc.nivelRiesgo)
+                            .copy(alpha = if (modoVista == ModoVistaMapa.LOCALIDADES) 0.65f else 0.20f)
+                        drawPath(path, color = colorRelleno, style = Fill)
+
+                        val seleccionada = localidadSeleccionada?.codigo == loc.codigo
+                        val colorBorde = if (seleccionada) Color(0xFF00E5FF) else Color(0xFF263238).copy(alpha = 0.60f)
+                        // Los anchos de trazo están en píxeles de pantalla ya
+                        // deseados; como este bloque va dentro de un scale(),
+                        // hay que dividir por escalaZoom para que el grosor
+                        // final en pantalla no cambie con el zoom (igual que
+                        // antes, cuando se calculaba ya en espacio de pantalla).
+                        val anchoBorde = (if (seleccionada) 3.5.dp.toPx() else 1.2.dp.toPx()) / escalaZoom
+                        drawPath(path, color = colorBorde, style = Stroke(width = anchoBorde, cap = StrokeCap.Round, join = StrokeJoin.Round))
+                    }
+
+                    for (calle in callesPrincipales) {
+                        val pathCalle = cacheRutas.calles[calle.nombre] ?: continue
+                        val esTroncal = calle.tipo == "troncal"
+                        val colorVia = when {
+                            esTroncal -> Color(0xFFFF5252).copy(alpha = 0.85f)
+                            calle.tipo == "avenida" -> Color(0xFFECEFF1).copy(alpha = 0.65f)
+                            else -> Color(0xFF90A4AE).copy(alpha = 0.45f)
                         }
-                        close()
+                        val anchoViaPantalla = if (esTroncal) (3.5f * escalaZoom.coerceIn(0.9f, 2.5f)) else (2.0f * escalaZoom.coerceIn(0.9f, 2.0f))
+                        drawPath(pathCalle, color = colorVia, style = Stroke(width = anchoViaPantalla / escalaZoom, cap = StrokeCap.Round, join = StrokeJoin.Round))
                     }
-
-                    val colorRelleno = when (loc.nivelRiesgo) {
-                        "alto" -> Color(0xFFFF1744).copy(alpha = if (modoVista == ModoVistaMapa.LOCALIDADES) 0.65f else 0.22f)
-                        "medio" -> Color(0xFFFFAB00).copy(alpha = if (modoVista == ModoVistaMapa.LOCALIDADES) 0.65f else 0.20f)
-                        else -> Color(0xFF00E676).copy(alpha = if (modoVista == ModoVistaMapa.LOCALIDADES) 0.65f else 0.18f)
-                    }
-
-                    drawPath(path, color = colorRelleno, style = Fill)
-
-                    val colorBorde = if (localidadSeleccionada?.codigo == loc.codigo) Color(0xFF00E5FF) else Color(0xFF263238).copy(alpha = 0.60f)
-                    val anchoBorde = if (localidadSeleccionada?.codigo == loc.codigo) 3.5.dp.toPx() else 1.2.dp.toPx()
-                    drawPath(path, color = colorBorde, style = Stroke(width = anchoBorde, cap = StrokeCap.Round, join = StrokeJoin.Round))
                 }
 
-                // 2. RED DE CALLES, CARRERAS Y AVENIDAS (MODO CALLES / VÍAS)
+                // Etiquetas de texto de las calles: fuera de la transformación
+                // de arriba (el texto no debe escalarse con el zoom del mapa,
+                // su tamaño ya se controla a mano más abajo), así que siguen
+                // usando proyectar() en espacio de pantalla como antes. Es un
+                // bucle de ~12 calles, no el cuello de botella.
                 for (calle in callesPrincipales) {
-                    if (calle.tramos.size < 2) continue
-
-                    val pathCalle = Path().apply {
-                        val inicio = proyectar(calle.tramos[0])
-                        moveTo(inicio.x, inicio.y)
-                        for (k in 1 until calle.tramos.size) {
-                            val pt = proyectar(calle.tramos[k])
-                            lineTo(pt.x, pt.y)
-                        }
-                    }
-
-                    val esTroncal = calle.tipo == "troncal"
-                    val colorVia = when {
-                        esTroncal -> Color(0xFFFF5252).copy(alpha = 0.85f)
-                        calle.tipo == "avenida" -> Color(0xFFECEFF1).copy(alpha = 0.65f)
-                        else -> Color(0xFF90A4AE).copy(alpha = 0.45f)
-                    }
-                    val anchoVia = if (esTroncal) (3.5f * escalaZoom.coerceIn(0.9f, 2.5f)) else (2.0f * escalaZoom.coerceIn(0.9f, 2.0f))
-
-                    drawPath(pathCalle, color = colorVia, style = Stroke(width = anchoVia, cap = StrokeCap.Round, join = StrokeJoin.Round))
-
-                    if (escalaZoom >= 1.5f && calle.tramos.isNotEmpty()) {
-                        val puntoMedio = proyectar(calle.tramos[calle.tramos.size / 2])
-                        if (puntoMedio.x in 0f..size.width && puntoMedio.y in 0f..size.height) {
-                            drawContext.canvas.nativeCanvas.drawText(
-                                calle.nombre,
-                                puntoMedio.x + 8f,
-                                puntoMedio.y - 6f,
-                                paintCalle
-                            )
-                        }
+                    if (calle.tramos.isEmpty() || escalaZoom < 1.5f) continue
+                    val puntoMedio = proyectar(calle.tramos[calle.tramos.size / 2])
+                    if (puntoMedio.x in 0f..size.width && puntoMedio.y in 0f..size.height) {
+                        drawContext.canvas.nativeCanvas.drawText(
+                            calle.nombre,
+                            puntoMedio.x + 8f,
+                            puntoMedio.y - 6f,
+                            paintCalle
+                        )
                     }
                 }
 
@@ -861,11 +996,7 @@ fun MapaCalorBogota(
                         val centro = proyectar(PuntoGeo(cuadra.lng, cuadra.lat))
                         if (centro.x < -50 || centro.x > size.width + 50 || centro.y < -50 || centro.y > size.height + 50) continue
 
-                        val colorCalor = when (cuadra.nivelRiesgo) {
-                            "alto" -> Color(0xFFFF1744)
-                            "medio" -> Color(0xFFFF9100)
-                            else -> Color(0xFF00E676)
-                        }
+                        val colorCalor = ColoresDatos.relleno(cuadra.nivelRiesgo)
 
                         val radioCuadra = (16f * escalaZoom.coerceIn(1.0f, 3.0f)) * cuadra.score.toFloat()
 
@@ -989,6 +1120,24 @@ fun MapaCalorBogota(
                     }
                 }
 
+                // Abre la ubicación actual en la app real de Google Maps del
+                // celular (calles, POIs, navegación) -- sin API key ni SDK de
+                // mapas embebido, que es lo que pesaría más.
+                Surface(
+                    shape = CircleShape,
+                    color = Color(0xFF1E2733).copy(alpha = 0.95f),
+                    border = BorderStroke(1.dp, Color(0xFF546E7A)),
+                    shadowElevation = 6.dp,
+                    modifier = Modifier.size(40.dp)
+                ) {
+                    IconButton(onClick = {
+                        val pt = ubicacionGps ?: PuntoGeo(-74.0621, 4.6534)
+                        abrirEnGoogleMaps(context, pt.lat, pt.lng, nombreZonaActual)
+                    }) {
+                        Text("🗺️", fontSize = 16.sp)
+                    }
+                }
+
                 Surface(
                     shape = CircleShape,
                     color = Color(0xFF1E2733).copy(alpha = 0.95f),
@@ -1054,13 +1203,18 @@ fun MapaCalorBogota(
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                             }
-                            Button(
-                                onClick = { onSeleccionarLocalidad(c.localidad) },
-                                shape = RoundedCornerShape(10.dp),
-                                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
-                                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp)
-                            ) {
-                                Text("Ver Zona")
+                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                IconButton(onClick = { abrirEnGoogleMaps(context, c.lat, c.lng, c.nombre) }) {
+                                    Text("🗺️", fontSize = 18.sp)
+                                }
+                                Button(
+                                    onClick = { onSeleccionarLocalidad(c.localidad) },
+                                    shape = RoundedCornerShape(10.dp),
+                                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
+                                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp)
+                                ) {
+                                    Text("Ver Zona")
+                                }
                             }
                         }
                     }
@@ -1099,13 +1253,20 @@ fun MapaCalorBogota(
                                 }
                             }
 
-                            Button(
-                                onClick = { onSeleccionarLocalidad(loc.nombre) },
-                                shape = RoundedCornerShape(10.dp),
-                                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
-                                contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp)
-                            ) {
-                                Text(stringResource(R.string.btn_ver_detalle))
+                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                IconButton(onClick = {
+                                    abrirEnGoogleMaps(context, loc.centroide.lat, loc.centroide.lng, loc.nombre)
+                                }) {
+                                    Text("🗺️", fontSize = 18.sp)
+                                }
+                                Button(
+                                    onClick = { onSeleccionarLocalidad(loc.nombre) },
+                                    shape = RoundedCornerShape(10.dp),
+                                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
+                                    contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp)
+                                ) {
+                                    Text(stringResource(R.string.btn_ver_detalle))
+                                }
                             }
                         }
                     }
@@ -1127,16 +1288,12 @@ fun MapaCalorBogota(
             horizontalArrangement = Arrangement.spacedBy(6.dp)
         ) {
             items(localidadesVisibles, key = { it.codigo }) { loc ->
-                val colorChip = when (loc.nivelRiesgo) {
-                    "alto" -> Color(0xFFFFEBEE)
-                    "medio" -> Color(0xFFFFF8E1)
-                    else -> Color(0xFFE8F5E9)
-                }
-                val colorTexto = when (loc.nivelRiesgo) {
-                    "alto" -> Color(0xFFC62828)
-                    "medio" -> Color(0xFFEF6C00)
-                    else -> Color(0xFF2E7D32)
-                }
+                // Tinte suave del mismo color oficial de riesgo (ColoresDatos),
+                // en vez de una paleta pastel propia: así el rojo/ámbar/verde
+                // significa lo mismo en todo el mapa (polígonos, calor, chips).
+                val colorBase = ColoresDatos.relleno(loc.nivelRiesgo)
+                val colorChip = colorBase.copy(alpha = 0.15f)
+                val colorTexto = colorBase
                 Surface(
                     color = if (localidadSeleccionada?.codigo == loc.codigo) MaterialTheme.colorScheme.primaryContainer else colorChip,
                     shape = RoundedCornerShape(8.dp),
