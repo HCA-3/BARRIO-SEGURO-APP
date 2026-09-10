@@ -74,7 +74,7 @@ abstract class EnsureBackendTask : DefaultTask() {
     @TaskAction
     fun run() {
         try {
-            val url = URI.create("http://127.0.0.1:8000/health").toURL()
+            val url = URI.create("http://127.0.0.1:8001/health").toURL()
             val conn = url.openConnection() as HttpURLConnection
             conn.connectTimeout = 1000
             conn.readTimeout = 1000
@@ -85,11 +85,17 @@ abstract class EnsureBackendTask : DefaultTask() {
         } catch (_: Exception) {
             // El backend no está corriendo, iniciarlo en segundo plano
         }
-        val script = scriptPath.get()
-        val workDir = File(workingDirPath.get())
-        ProcessBuilder("powershell.exe", "-ExecutionPolicy", "Bypass", "-WindowStyle", "Hidden", "-File", script)
-            .directory(workDir)
-            .start()
+        val isWindows = System.getProperty("os.name").lowercase().contains("win")
+        if (isWindows) {
+            val script = scriptPath.get()
+            val workDir = File(workingDirPath.get())
+            try {
+                ProcessBuilder("powershell.exe", "-ExecutionPolicy", "Bypass", "-WindowStyle", "Hidden", "-File", script)
+                    .directory(workDir)
+                    .start()
+            } catch (_: Exception) {
+            }
+        }
     }
 }
 
@@ -101,4 +107,57 @@ tasks.register<EnsureBackendTask>("ensureBackendRunning") {
 
 tasks.matching { it.name.startsWith("preBuild") }.configureEach {
     dependsOn("ensureBackendRunning")
+}
+
+abstract class CopyApkTask : DefaultTask() {
+    @get:InputDirectory
+    abstract val apkOutputDir: DirectoryProperty
+
+    @get:Internal
+    abstract val rootDirectory: DirectoryProperty
+
+    @TaskAction
+    fun run() {
+        val rootDir = rootDirectory.asFile.get()
+        val targetApkDir = File(rootDir, "apk")
+        if (!targetApkDir.exists()) {
+            targetApkDir.mkdirs()
+        }
+
+        // Guardar el control de versiones fuera de la carpeta apk para dejar solo archivos .apk
+        val versionFile = File(rootDir, ".apk_version")
+        var versionNumber = 0
+        if (versionFile.exists()) {
+            val text = versionFile.readText().trim()
+            versionNumber = text.toIntOrNull() ?: 0
+        }
+
+        val buildApkDir = apkOutputDir.asFile.get()
+        val apkFiles = buildApkDir.listFiles { _, name -> name.endsWith(".apk") } ?: emptyArray()
+
+        for (srcApk in apkFiles) {
+            val destVersionedApk = File(targetApkDir, "app-v${versionNumber}.apk")
+            val destLatestApk = File(targetApkDir, "app-latest.apk")
+            srcApk.copyTo(destVersionedApk, overwrite = true)
+            srcApk.copyTo(destLatestApk, overwrite = true)
+            println("==================================================")
+            println("APK instalable generado en: ${destVersionedApk.absolutePath}")
+            println("Copia 'latest' actualizada en: ${destLatestApk.absolutePath}")
+            println("Versión de APK: v${versionNumber}")
+            println("==================================================")
+        }
+
+        // Incrementar la versión para la siguiente compilación
+        versionFile.writeText("${versionNumber + 1}\n")
+    }
+}
+
+
+tasks.register<CopyApkTask>("copyApkToApkFolder") {
+    rootDirectory.set(rootDirFile)
+    apkOutputDir.set(layout.buildDirectory.dir("outputs/apk/debug"))
+}
+
+tasks.matching { it.name == "assembleDebug" }.configureEach {
+    finalizedBy("copyApkToApkFolder")
 }

@@ -27,16 +27,14 @@ object ApiClient {
 
     /**
      * Se prueban en este orden cuando no hay una URL guardada:
-     *  - 10.0.2.2  emulador de Android Studio (su alias del localhost del PC).
-     *  - 127.0.0.1 celular por USB con "adb reverse tcp:8000 tcp:8000". Es el
-     *    único que sirve si el celular y el PC están en redes distintas.
-     *  - 192.168.x celular en la MISMA wifi que el PC (la IP sale con
-     *    "ipconfig"; también se puede escribir a mano desde la app).
+     *  - 127.0.0.1 celular por USB con "adb reverse tcp:8001 tcp:8001" (Rápido e independiente de la Wi-Fi).
+     *  - 192.168.0.109 celular en la MISMA red Wi-Fi que el PC.
+     *  - 10.0.2.2  emulador de Android Studio.
      */
     val CANDIDATOS = listOf(
-        "http://10.0.2.2:8000/",
-        "http://127.0.0.1:8000/",
-        "http://192.168.0.107:8000/",
+        "http://127.0.0.1:8001/",
+        "http://192.168.0.109:8001/",
+        "http://10.0.2.2:8001/",
     )
 
     private var prefs: SharedPreferences? = null
@@ -47,19 +45,33 @@ object ApiClient {
             prefs?.edit()?.putString(CLAVE_URL, field)?.apply()
         }
 
-    /** Llamar una vez al arrancar (MainActivity) para recuperar la URL guardada. */
+    /** Llamar una vez al arrancar (MainActivity) para recuperar la URL guardada y validar conectividad. */
     fun inicializar(context: Context) {
         val guardadas = context.applicationContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
         prefs = guardadas
-        guardadas.getString(CLAVE_URL, null)?.let { baseUrl = it }
+        val guardada = guardadas.getString(CLAVE_URL, null)
+        if (guardada != null) {
+            baseUrl = guardada
+        } else {
+            baseUrl = CANDIDATOS.first()
+        }
+
+        // Probar conectividad en segundo plano. Si la URL guardada no responde, autodetectar servidor disponible.
+        Thread {
+            try {
+                if (!servidorResponde(baseUrl)) {
+                    autodetectar()
+                }
+            } catch (_: Exception) {}
+        }.start()
     }
 
-    /** Acepta "192.168.0.107", "192.168.0.107:8000" o la URL completa. */
+    /** Acepta "192.168.0.109", "192.168.0.109:8001" o la URL completa. */
     private fun normalizar(valor: String): String {
         var url = valor.trim()
         if (url.isEmpty()) return CANDIDATOS.first()
         if (!url.startsWith("http://") && !url.startsWith("https://")) url = "http://" + url
-        if (!url.substringAfter("://").contains(":")) url = url + ":8000"
+        if (!url.substringAfter("://").contains(":")) url = url + ":8001"
         if (!url.endsWith("/")) url = url + "/"
         return url
     }
@@ -690,7 +702,7 @@ object ApiClient {
                     aliasAnonimo = alias,
                     avatarColor = o.optString("avatar_color", "#00E5FF"),
                     texto = o.getString("texto"),
-                    imagenBase64 = if (o.isNull("imagen_base64")) null else o.optString("imagen_base64", null),
+                    imagenBase64 = if (o.isNull("imagen_base64")) null else o.optString("imagen_base64"),
                     localidad = o.optString("localidad", "Bogotá"),
                     timestamp = o.optLong("timestamp", System.currentTimeMillis()),
                     esAlerta = o.optBoolean("es_alerta", false),
@@ -757,7 +769,7 @@ object ApiClient {
                 aliasAnonimo = o.getString("alias_anonimo"),
                 avatarColor = o.optString("avatar_color", "#00E5FF"),
                 texto = o.getString("texto"),
-                imagenBase64 = if (o.isNull("imagen_base64")) null else o.optString("imagen_base64", null),
+                imagenBase64 = if (o.isNull("imagen_base64")) null else o.optString("imagen_base64"),
                 localidad = o.optString("localidad", "Bogotá"),
                 timestamp = o.optLong("timestamp", System.currentTimeMillis()),
                 esAlerta = o.optBoolean("es_alerta", false),
