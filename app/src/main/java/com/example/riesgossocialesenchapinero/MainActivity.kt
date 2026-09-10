@@ -437,7 +437,7 @@ fun PantallaRiesgo(
                         value = servidor,
                         onValueChange = { servidor = it },
                         label = { Text(stringResource(R.string.servidor_label)) },
-                        placeholder = { Text("192.168.0.107:8000") },
+                        placeholder = { Text("192.168.0.109:8001") },
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
                     )
