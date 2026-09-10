@@ -926,14 +926,23 @@ def tool_localidad_extrema(datos: dict, cual: str) -> dict:
         if normalizar(nombre_oficial) == normalizar(e.get("localidad", "")):
             pos = cod_num
             break
+    delitos = e.get("delitos_totales") or e.get("delitos_recientes_total_2023_2025") or 0
+    poblacion = e.get("poblacion") or e.get("poblacion_2025") or 0
+    contexto = e.get("contexto") if isinstance(e.get("contexto"), dict) else {}
+    estrato = e.get("estrato_promedio") or contexto.get("estrato_promedio", 0.0)
+    luminarias = e.get("luminarias") or contexto.get("luminarias_estimadas", 0)
     return {
         "posicion": pos,
         "localidad": e["localidad"],
         "nivel_riesgo": e["nivel_riesgo"],
-        "score_mixto": e["score_mixto"],
-        "score_ponderado_100k": e["score_ponderado_100k"],
-        "score_ponderado_por_km2": e["score_ponderado_por_km2"],
-        "tasa_delitos_100k": e["tasa_delitos_100k"],
+        "score_mixto": e.get("score_mixto", 0.0),
+        "score_ponderado_100k": e.get("score_ponderado_100k", 0.0),
+        "score_ponderado_por_km2": e.get("score_ponderado_por_km2", 0.0),
+        "tasa_delitos_100k": e.get("tasa_delitos_100k", 0.0),
+        "delitos_totales": delitos,
+        "poblacion": poblacion,
+        "estrato_promedio": estrato,
+        "luminarias": luminarias,
     }
 
 
@@ -964,6 +973,16 @@ def localidad_establecida_reciente(historial: list) -> str | None:
     return None
 
 
+def _enriquecer_info_localidad(info: dict) -> dict:
+    res = dict(info)
+    res["delitos_totales"] = res.get("delitos_totales") or res.get("delitos_recientes_total_2023_2025") or 0
+    res["poblacion"] = res.get("poblacion") or res.get("poblacion_2025") or 0
+    contexto = res.get("contexto") if isinstance(res.get("contexto"), dict) else {}
+    res["estrato_promedio"] = res.get("estrato_promedio") or contexto.get("estrato_promedio", 0.0)
+    res["luminarias"] = res.get("luminarias") or contexto.get("luminarias_estimadas", 0)
+    return res
+
+
 def tool_obtener_localidad(datos: dict, nombre: str) -> dict:
     nombre_norm = normalizar(nombre)
     if _es_referencia_conversacional(nombre_norm):
@@ -982,11 +1001,11 @@ def tool_obtener_localidad(datos: dict, nombre: str) -> dict:
 
     for info in registros:
         if normalizar(info["localidad"]) == nombre_norm:
-            return info
+            return _enriquecer_info_localidad(info)
 
     parciales = [info for info in registros if nombre_norm in normalizar(info["localidad"])]
     if len(parciales) == 1:
-        return parciales[0]
+        return _enriquecer_info_localidad(parciales[0])
     if parciales:
         return {"error": f"Nombre ambiguo. Coincidencias: {[p['localidad'] for p in parciales]}"}
     return {

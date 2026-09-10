@@ -32,6 +32,7 @@ object ApiClient {
      *  - 10.0.2.2  emulador de Android Studio.
      */
     val CANDIDATOS = listOf(
+        "https://indexes-facing-delaware-local.trycloudflare.com/",
         "http://127.0.0.1:8001/",
         "http://192.168.0.109:8001/",
         "http://10.0.2.2:8001/",
