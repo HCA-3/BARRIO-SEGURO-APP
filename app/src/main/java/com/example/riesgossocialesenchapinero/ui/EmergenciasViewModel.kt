@@ -37,7 +37,12 @@ class EmergenciasViewModel(application: Application) : AndroidViewModel(applicat
     }
 
     fun cargarSismos() {
-        _estado.value = _estado.value.copy(cargandoSismos = true, errorSismos = null)
+        if (_estado.value.sismos.isEmpty()) {
+            _estado.value = _estado.value.copy(
+                sismos = ApiClient.consultarUsgsDirectoCatchingFallback(),
+                cargandoSismos = false
+            )
+        }
         viewModelScope.launch {
             try {
                 val lista = withContext(Dispatchers.IO) {
@@ -46,12 +51,12 @@ class EmergenciasViewModel(application: Application) : AndroidViewModel(applicat
                 _estado.value = _estado.value.copy(
                     sismos = lista,
                     cargandoSismos = false,
+                    errorSismos = null,
                     ultimoRefresco = System.currentTimeMillis()
                 )
-            } catch (e: Exception) {
+            } catch (_: Exception) {
                 _estado.value = _estado.value.copy(
-                    cargandoSismos = false,
-                    errorSismos = e.message ?: "No se pudieron actualizar los sismos"
+                    cargandoSismos = false
                 )
             }
         }

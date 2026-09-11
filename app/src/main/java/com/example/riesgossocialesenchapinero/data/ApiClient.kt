@@ -27,14 +27,14 @@ object ApiClient {
 
     /**
      * Se prueban en este orden cuando no hay una URL guardada:
-     *  - 127.0.0.1 celular por USB con "adb reverse tcp:8001 tcp:8001" (Rápido e independiente de la Wi-Fi).
-     *  - 192.168.0.109 celular en la MISMA red Wi-Fi que el PC.
-     *  - 10.0.2.2  emulador de Android Studio.
+     *  - 192.168.0.109 celular en la MISMA red Wi-Fi que el PC (Inalámbrico).
+     *  - 127.0.0.1 celular por USB con "adb reverse tcp:8001 tcp:8001".
+     *  - 10.0.2.2 emulador de Android Studio.
      */
     val CANDIDATOS = listOf(
-        "https://indexes-facing-delaware-local.trycloudflare.com/",
-        "http://127.0.0.1:8001/",
+        "https://humanitarian-surgeon-conservation-allowing.trycloudflare.com/",
         "http://192.168.0.109:8001/",
+        "http://127.0.0.1:8001/",
         "http://10.0.2.2:8001/",
     )
 
@@ -51,13 +51,14 @@ object ApiClient {
         val guardadas = context.applicationContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
         prefs = guardadas
         val guardada = guardadas.getString(CLAVE_URL, null)
-        if (guardada != null) {
+        if (guardada != null && guardada.startsWith("https://")) {
             baseUrl = guardada
         } else {
             baseUrl = CANDIDATOS.first()
+            guardadas.edit().putString(CLAVE_URL, baseUrl).apply()
         }
 
-        // Probar conectividad en segundo plano. Si la URL guardada no responde, autodetectar servidor disponible.
+        // Probar conectividad en segundo plano. Si la URL guardada no responde, autodetectar la mejor URL de la lista.
         Thread {
             try {
                 if (!servidorResponde(baseUrl)) {
@@ -67,13 +68,24 @@ object ApiClient {
         }.start()
     }
 
-    /** Acepta "192.168.0.109", "192.168.0.109:8001" o la URL completa. */
+    /** Acepta "192.168.0.109", "192.168.0.109:8001", "https://xyz.trycloudflare.com" o la URL completa. */
     private fun normalizar(valor: String): String {
         var url = valor.trim()
         if (url.isEmpty()) return CANDIDATOS.first()
-        if (!url.startsWith("http://") && !url.startsWith("https://")) url = "http://" + url
-        if (!url.substringAfter("://").contains(":")) url = url + ":8001"
-        if (!url.endsWith("/")) url = url + "/"
+        if (!url.startsWith("http://") && !url.startsWith("https://")) {
+            url = if (url.contains("trycloudflare.com") || url.contains("ngrok")) "https://$url" else "http://$url"
+        }
+        val hostConPuerto = url.substringAfter("://").substringBefore("/")
+        if (!hostConPuerto.contains(":")) {
+            val host = hostConPuerto
+            val esIpOLocalhost = host.matches(Regex("^[0-9.]+$")) || host == "localhost"
+            if (esIpOLocalhost) {
+                val esquema = url.substringBefore("://")
+                val resto = url.substringAfter("://").substringAfter("/", "")
+                url = "$esquema://$host:8001/$resto"
+            }
+        }
+        if (!url.endsWith("/")) url = "$url/"
         return url
     }
 
@@ -96,8 +108,8 @@ object ApiClient {
     // Para sondear candidatos: si el PC no está en esa red el intento tiene que
     // fallar rápido, o recorrer la lista tardaría medio minuto.
     private val clientSondeo = client.newBuilder()
-        .connectTimeout(2, TimeUnit.SECONDS)
-        .readTimeout(3, TimeUnit.SECONDS)
+        .connectTimeout(1200, TimeUnit.MILLISECONDS)
+        .readTimeout(1500, TimeUnit.MILLISECONDS)
         .build()
 
     /** true si hay un backend vivo en [url] (responde /health). */
@@ -113,7 +125,8 @@ object ApiClient {
      * responda, o null si ninguna lo hace.
      */
     fun autodetectar(): String? {
-        for (url in listOf(baseUrl) + CANDIDATOS) {
+        val candidatosConActual = (listOf(baseUrl) + CANDIDATOS).distinct()
+        for (url in candidatosConActual) {
             if (servidorResponde(url)) {
                 baseUrl = url
                 return baseUrl
@@ -405,7 +418,13 @@ object ApiClient {
         return res
     }
 
-    private fun obtenerSismosFallback(): List<Sismo> {
+    fun consultarUsgsDirectoCatchingFallback(): List<Sismo> = try {
+        consultarUsgsDirecto()
+    } catch (_: Exception) {
+        obtenerSismosFallback()
+    }
+
+    fun obtenerSismosFallback(): List<Sismo> {
         val ahora = System.currentTimeMillis()
         return listOf(
             Sismo(

@@ -22,11 +22,25 @@ import importlib.util
 import os
 import sys
 
+import glob
+
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-EXTRA_SITE_PACKAGES = [
-    os.path.join(BASE_DIR, "Agente", ".venv", "Lib", "site-packages"),
-    os.path.join(BASE_DIR, "venv", "Lib", "site-packages"),
-]
+
+def _obtener_site_packages(venv_dir: str) -> list[str]:
+    rutas = []
+    # Windows layout
+    win_path = os.path.join(venv_dir, "Lib", "site-packages")
+    if os.path.isdir(win_path):
+        rutas.append(win_path)
+    # Linux layout (lib/pythonX.Y/site-packages)
+    linux_paths = glob.glob(os.path.join(venv_dir, "lib", "python*", "site-packages"))
+    rutas.extend([p for p in linux_paths if os.path.isdir(p)])
+    return rutas
+
+EXTRA_SITE_PACKAGES = (
+    _obtener_site_packages(os.path.join(BASE_DIR, "Agente", ".venv")) +
+    _obtener_site_packages(os.path.join(BASE_DIR, "venv"))
+)
 REQUERIDOS = ("geopandas", "pandas", "shapely", "fastapi", "uvicorn", "pydantic")
 
 
