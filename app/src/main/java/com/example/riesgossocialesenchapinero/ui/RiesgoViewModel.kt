@@ -32,33 +32,32 @@ class RiesgoViewModel(application: Application) : AndroidViewModel(application) 
     }
 
     fun cargarRanking() {
-        _estado.value = RiesgoUiState.Cargando
         viewModelScope.launch {
+            // 1. Cargar inmediatamente desde la caché local o del fallback oficial si la DB está vacía
+            val cacheLocal = withContext(Dispatchers.IO) { localidadDao.obtenerTodas() }
+            val localidadesIniciales = if (cacheLocal.isNotEmpty()) {
+                cacheLocal.map { it.aExternalModel() }
+            } else {
+                val fallback = ApiClient.obtenerRankingFallbackOficial()
+                withContext(Dispatchers.IO) {
+                    localidadDao.insertarTodas(fallback.map { it.aEntity() })
+                }
+                fallback
+            }
+
+            // Publicar datos inmediatamente para que la UI no se bloquee ni muestre loaders innecesarios
+            _estado.value = RiesgoUiState.Listo(localidadesIniciales, esCache = true)
+
+            // 2. Intentar actualizar asíncronamente desde el servidor en segundo plano
             try {
-                // 1. Intentar descargar del backend
-                val ranking = withContext(Dispatchers.IO) { ApiClient.obtenerRanking() }
-                
-                // 2. Si hay éxito, guardar en caché local
+                val rankingServidor = withContext(Dispatchers.IO) { ApiClient.obtenerRanking() }
                 withContext(Dispatchers.IO) {
                     localidadDao.borrarTodas()
-                    localidadDao.insertarTodas(ranking.map { it.aEntity() })
+                    localidadDao.insertarTodas(rankingServidor.map { it.aEntity() })
                 }
-                
-                _estado.value = RiesgoUiState.Listo(ranking, esCache = false)
-            } catch (e: Exception) {
-                // 3. Si falla, intentar cargar de la caché local
-                val cache = withContext(Dispatchers.IO) { localidadDao.obtenerTodas() }
-                
-                if (cache.isNotEmpty()) {
-                    _estado.value = RiesgoUiState.Listo(
-                        localidades = cache.map { it.aExternalModel() },
-                        esCache = true
-                    )
-                } else {
-                    _estado.value = RiesgoUiState.Error(
-                        getApplication<Application>().getString(R.string.error_no_conexion_no_cache)
-                    )
-                }
+                _estado.value = RiesgoUiState.Listo(rankingServidor, esCache = false)
+            } catch (_: Exception) {
+                // Si el servidor está inalcanzable, se mantienen los datos cargados previamente de forma transparente
             }
         }
     }
