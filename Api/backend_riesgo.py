@@ -38,7 +38,11 @@ from typing import Any
 import geopandas as gpd
 import pandas as pd
 import requests
-from fastapi import FastAPI, HTTPException
+try:
+    import psutil
+except ImportError:
+    psutil = None
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from shapely.geometry import Point
@@ -1265,6 +1269,131 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+_HISTORIAL_TELEMETRIA: list[dict[str, Any]] = []
+_SERVIDORES_INICIO_TS = time.time()
+_PETICIONES_ACTIVAS = 0
+_TOTAL_PETICIONES = 0
+_TOTAL_ERRORES = 0
+_ACTIVIDAD_IP_USUARIOS: dict[str, float] = {}
+
+@app.middleware("http")
+async def telemetria_middleware(request: Request, call_next):
+    global _PETICIONES_ACTIVAS, _TOTAL_PETICIONES, _TOTAL_ERRORES
+    _PETICIONES_ACTIVAS += 1
+    _TOTAL_PETICIONES += 1
+    t0 = time.time()
+    path = request.url.path
+    client_ip = request.client.host if request.client else "127.0.0.1"
+    _ACTIVIDAD_IP_USUARIOS[client_ip] = t0
+    
+    try:
+        response = await call_next(request)
+        duracion_ms = round((time.time() - t0) * 1000, 2)
+        if response.status_code >= 400:
+            _TOTAL_ERRORES += 1
+            
+        if not path.startswith("/telemetria"):
+            registro = {
+                "id": f"req_{int(t0*1000)}",
+                "timestamp": int(t0 * 1000),
+                "hora": time.strftime("%H:%M:%S", time.localtime(t0)),
+                "metodo": request.method,
+                "path": path,
+                "ip": client_ip,
+                "status": response.status_code,
+                "latencia_ms": duracion_ms,
+            }
+            _HISTORIAL_TELEMETRIA.append(registro)
+            if len(_HISTORIAL_TELEMETRIA) > 300:
+                _HISTORIAL_TELEMETRIA.pop(0)
+                
+        return response
+    except Exception as e:
+        _TOTAL_ERRORES += 1
+        duracion_ms = round((time.time() - t0) * 1000, 2)
+        if not path.startswith("/telemetria"):
+            _HISTORIAL_TELEMETRIA.append({
+                "id": f"req_{int(t0*1000)}",
+                "timestamp": int(t0 * 1000),
+                "hora": time.strftime("%H:%M:%S", time.localtime(t0)),
+                "metodo": request.method,
+                "path": path,
+                "ip": client_ip,
+                "status": 500,
+                "latencia_ms": duracion_ms,
+                "error": str(e)
+            })
+        raise e
+    finally:
+        _PETICIONES_ACTIVAS = max(0, _PETICIONES_ACTIVAS - 1)
+
+@app.get("/ping")
+@app.post("/ping")
+def ping_heartbeat(request: Request):
+    client_ip = request.client.host if request.client else "127.0.0.1"
+    _ACTIVIDAD_IP_USUARIOS[client_ip] = time.time()
+    return {"status": "ok", "timestamp": int(time.time()), "ip": client_ip}
+
+@app.get("/telemetria/resumen")
+def telemetria_resumen():
+    ahora = time.time()
+    uptime_seg = int(ahora - _SERVIDORES_INICIO_TS)
+    
+    # Usuarios activos en tiempo real (peticiones o ping en los últimos 120 segundos)
+    hace_2_min = ahora - 120
+    ips_activas_lista = [ip for ip, ts in _ACTIVIDAD_IP_USUARIOS.items() if ts >= hace_2_min]
+    usuarios_activos_tiempo_real = len(ips_activas_lista)
+
+    recientes = _HISTORIAL_TELEMETRIA[-50:]
+    latencia_media = round(sum(r["latencia_ms"] for r in recientes) / len(recientes), 2) if recientes else 0.0
+    
+    hace_un_minuto = (ahora - 60) * 1000
+    rpm = sum(1 for r in _HISTORIAL_TELEMETRIA if r.get("timestamp", 0) >= hace_un_minuto)
+    
+    cpu_pct = psutil.cpu_percent() if psutil else 0.0
+    ram_info = psutil.virtual_memory() if psutil else None
+    ram_pct = ram_info.percent if ram_info else 0.0
+    ram_libre_mb = round(ram_info.available / (1024 * 1024), 1) if ram_info else 0.0
+    ram_total_mb = round(ram_info.total / (1024 * 1024), 1) if ram_info else 0.0
+    
+    ollama_ok = False
+    try:
+        ollama_ok = requests.get("http://localhost:11434/api/tags", timeout=2).status_code == 200
+    except Exception:
+        pass
+
+    cpu_headroom = max(0.0, 100.0 - cpu_pct)
+    usuarios_adicionales_ram = int(ram_libre_mb / 40.0)
+    usuarios_adicionales_cpu = int((cpu_headroom / 100.0) * 50)
+    usuarios_adicionales_estimados = min(usuarios_adicionales_ram, usuarios_adicionales_cpu)
+    
+    return {
+        "uptime_seg": uptime_seg,
+        "total_peticiones": _TOTAL_PETICIONES,
+        "total_errores": _TOTAL_ERRORES,
+        "peticiones_activas": _PETICIONES_ACTIVAS,
+        "usuarios_activos_tiempo_real": usuarios_activos_tiempo_real,
+        "ips_activas_lista": ips_activas_lista,
+        "rpm": rpm,
+        "latencia_media_ms": latencia_media,
+        "cpu_pct": cpu_pct,
+        "ram_pct": ram_pct,
+        "ram_libre_mb": ram_libre_mb,
+        "ram_total_mb": ram_total_mb,
+        "ollama_disponible": ollama_ok,
+        "modelo_llm": MODELO_DEFECTO,
+        "capacidad": {
+            "usuarios_adicionales_estimados": max(0, usuarios_adicionales_estimados),
+            "limite_ram_usuarios": usuarios_adicionales_ram,
+            "limite_cpu_usuarios": usuarios_adicionales_cpu,
+            "estado_rendimiento": "Excelente" if cpu_pct < 70 and ram_pct < 85 else ("Moderado" if cpu_pct < 90 else "Saturado")
+        }
+    }
+
+@app.get("/telemetria/actividad")
+def telemetria_actividad(limit: int = 100):
+    return _HISTORIAL_TELEMETRIA[-limit:]
+
 
 class Mensaje(BaseModel):
     role: str
@@ -1588,5 +1717,13 @@ def publicar_mensaje_comunidad(body: MensajeComunidadIn):
         _MENSAJES_COMUNIDAD.pop(0)
 
     return nuevo_mensaje
+
+
+@app.delete("/comunidad/mensajes/{msg_id}")
+def eliminar_mensaje_comunidad(msg_id: str):
+    global _MENSAJES_COMUNIDAD
+    _MENSAJES_COMUNIDAD = [m for m in _MENSAJES_COMUNIDAD if str(m.get("id")) != msg_id]
+    return {"status": "ok", "eliminado": msg_id}
+
 
 
