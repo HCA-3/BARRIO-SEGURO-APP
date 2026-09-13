@@ -385,9 +385,14 @@ def cargar_incidentes_nuse_upz() -> gpd.GeoDataFrame | None:
     return gpd.GeoDataFrame(df, geometry="geometry", crs=gdf.crs)
 
 
-def cargar_estratificacion() -> pd.DataFrame:
+def cargar_estratificacion() -> pd.DataFrame | None:
     """Estrato promedio por manzana, agregado luego por localidad vía join espacial."""
-    gdf = gpd.read_file(buscar_archivo("manzanaestratificacion.json"))
+    try:
+        ruta = buscar_archivo("manzanaestratificacion.json")
+    except FileNotFoundError:
+        print("  (no encontré manzanaestratificacion.json — se omite estratificación de manzanas)")
+        return None
+    gdf = gpd.read_file(ruta)
     gdf = gdf[gdf["ESTRATO"] > 0].copy()  # 0 = no residencial / sin estrato
     gdf["centroid"] = gdf.geometry.centroid
     return gdf
@@ -395,10 +400,14 @@ def cargar_estratificacion() -> pd.DataFrame:
 
 def cargar_osm_contexto():
     """Capas de OSM: puntos (alumbrado/POIs) y líneas (vías) para contexto urbano."""
-    gpkg = buscar_archivo("Bogota.gpkg")
-    puntos = gpd.read_file(gpkg, layer="points")
-    lineas = gpd.read_file(gpkg, layer="lines")
-    return puntos, lineas
+    try:
+        gpkg = buscar_archivo("Bogota.gpkg")
+        puntos = gpd.read_file(gpkg, layer="points")
+        lineas = gpd.read_file(gpkg, layer="lines")
+        return puntos, lineas
+    except FileNotFoundError:
+        print("  (no encontré Bogota.gpkg — se omite contexto de alumbrado y vías OSM)")
+        return None, None
 
 
 # Prefijos de categoría del dataset "Incidente Reportado" (NUSE/C4, SDSCJ).
@@ -618,26 +627,31 @@ def cargar_personas_atendidas_sdis() -> pd.DataFrame | None:
 
     try:
         ruta_csv = buscar_por_palabras("csv", incluir=["personas", "atendidas", "sdis"])
-        conteo_csv = pd.Series(dtype="int64")
-        for chunk in pd.read_csv(
-            ruta_csv, encoding="utf-8-sig", sep=";", usecols=["CODLOCALIDAD_ATENCION"], chunksize=500_000
-        ):
-            codigos = pd.to_numeric(chunk["CODLOCALIDAD_ATENCION"], errors="coerce")
-            codigos = codigos[codigos.between(1, 20)].astype(int)
-            conteo_csv = conteo_csv.add(codigos.value_counts(), fill_value=0)
-        conteo_total = conteo_csv
+        df_csv = pd.read_csv(
+            ruta_csv, encoding="utf-8-sig", sep=";", usecols=["CODLOCALIDAD_ATENCION"], low_memory=False
+        )
+        codigos = pd.to_numeric(df_csv["CODLOCALIDAD_ATENCION"], errors="coerce")
+        codigos = codigos[codigos.between(1, 20)].astype(int)
+        conteo_total = codigos.value_counts()
     except FileNotFoundError:
         print("  (no encontré el CSV de personas atendidas SDIS 2025 — se omite ese año)")
 
     try:
+        import zipfile, re
         ruta_xlsx = buscar_por_palabras("xlsx", incluir=["personas", "atendidas", "sdis"])
-        df_xlsx = pd.read_excel(ruta_xlsx, usecols=["CODLOCALIDAD_ATENCION"])
-        codigos = pd.to_numeric(df_xlsx["CODLOCALIDAD_ATENCION"], errors="coerce")
-        codigos = codigos[codigos.between(1, 20)].astype(int)
-        conteo_xlsx = codigos.value_counts()
-        conteo_total = conteo_xlsx if conteo_total is None else conteo_total.add(conteo_xlsx, fill_value=0)
-    except FileNotFoundError:
-        print("  (no encontré el .xlsx de personas atendidas SDIS 2024 — se omite ese año)")
+        with zipfile.ZipFile(ruta_xlsx) as z:
+            content = z.read("xl/worksheets/sheet1.xml").decode("utf-8", errors="ignore")
+            raw_vals = re.findall(r'<c r="D\d+"[^>]*><v>(\d+)</v></c>', content)
+            counts = {}
+            for v in raw_vals:
+                cod = int(v)
+                if 1 <= cod <= 20:
+                    counts[cod] = counts.get(cod, 0) + 1
+            if counts:
+                conteo_xlsx = pd.Series(counts, dtype="int64")
+                conteo_total = conteo_xlsx if conteo_total is None else conteo_total.add(conteo_xlsx, fill_value=0)
+    except Exception as e:
+        print(f"  (se omitió .xlsx de SDIS 2024: {e})")
 
     if conteo_total is None:
         return None
@@ -705,17 +719,20 @@ def main():
 
     print("Cargando estratificación (puede tardar, ~44k manzanas)...")
     estratos = cargar_estratificacion()
-    estratos_centroides = estratos.set_geometry("centroid").to_crs(df.crs)
-    join_estrato = gpd.sjoin(
-        estratos_centroides,
-        df[["codigo", "localidad", "geometry"]],
-        predicate="within",
-        how="inner",
-    )
-    estrato_por_localidad = join_estrato.groupby("codigo")["ESTRATO"].mean().rename(
-        "estrato_promedio"
-    )
-    df = df.merge(estrato_por_localidad, on="codigo", how="left")
+    if estratos is not None:
+        estratos_centroides = estratos.set_geometry("centroid").to_crs(df.crs)
+        join_estrato = gpd.sjoin(
+            estratos_centroides,
+            df[["codigo", "localidad", "geometry"]],
+            predicate="within",
+            how="inner",
+        )
+        estrato_por_localidad = join_estrato.groupby("codigo")["ESTRATO"].mean().rename(
+            "estrato_promedio"
+        )
+        df = df.merge(estrato_por_localidad, on="codigo", how="left")
+    else:
+        df["estrato_promedio"] = None
 
     print("Cargando contexto OSM (puede tardar)...")
     puntos, lineas = cargar_osm_contexto()
@@ -778,8 +795,8 @@ def main():
         df["personas_atendidas_sdis_recientes_total"] = None
 
     # Alumbrado público: en OSM suele venir como highway=street_lamp
-    alumbrado = puntos[puntos.get("highway") == "street_lamp"] if "highway" in puntos.columns else puntos.iloc[0:0]
-    if not alumbrado.empty:
+    alumbrado = puntos[puntos.get("highway") == "street_lamp"] if (puntos is not None and "highway" in puntos.columns) else None
+    if alumbrado is not None and not alumbrado.empty:
         join_luz = gpd.sjoin(
             alumbrado.to_crs(df.crs),
             df[["codigo", "geometry"]],
@@ -795,7 +812,7 @@ def main():
     # geográfico (rápido, evita reproyectar ~1M de vértices de todo el país
     # recortado) y solo reproyectamos a un CRS métrico (EPSG 3116, metros)
     # para medir longitud correctamente.
-    if not lineas.empty:
+    if lineas is not None and not lineas.empty:
         lineas_ok = lineas.to_crs(df.crs)
         join_vias = gpd.sjoin(
             lineas_ok, df[["codigo", "geometry"]], predicate="intersects", how="inner"
