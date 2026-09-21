@@ -23,6 +23,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
@@ -75,7 +76,9 @@ private val PREGUNTAS_SUGERIDAS = listOf(
 @Composable
 fun PantallaChat(modifier: Modifier = Modifier, viewModel: ChatViewModel = viewModel()) {
     val estado by viewModel.estado.collectAsState()
-    val mensajes = viewModel.mensajesVisibles
+    val mensajes = remember(estado.historial) {
+        estado.historial.filter { (it.role == "user" || it.role == "assistant") && it.content.isNotBlank() }
+    }
     var texto by remember { mutableStateOf("") }
     var mostrarMemoria by remember { mutableStateOf(false) }
     val listState = rememberLazyListState()
@@ -92,8 +95,13 @@ fun PantallaChat(modifier: Modifier = Modifier, viewModel: ChatViewModel = viewM
         viewModel.refrescarPermisos()
     }
 
-    LaunchedEffect(mensajes.size) {
-        if (mensajes.isNotEmpty()) listState.animateScrollToItem(mensajes.size - 1)
+    LaunchedEffect(mensajes.size, estado.enviando) {
+        if (mensajes.isNotEmpty() || estado.enviando) {
+            val destino = if (estado.enviando) mensajes.size else mensajes.size - 1
+            if (destino >= 0) {
+                listState.animateScrollToItem(destino)
+            }
+        }
     }
 
     if (mostrarMemoria) {
@@ -108,11 +116,6 @@ fun PantallaChat(modifier: Modifier = Modifier, viewModel: ChatViewModel = viewM
     ModalNavigationDrawer(
         modifier = modifier,
         drawerState = drawerState,
-        // El gesto de swipe-para-abrir necesita un detector de arrastre sobre
-        // toda la pantalla, que en la práctica interfiere con el foco/teclado
-        // del campo de texto del chat (el texto que escribías no se veía
-        // hasta salir y volver a entrar a la pantalla). Ya hay un botón ☰
-        // para abrir el panel, así que no hace falta el gesto.
         gesturesEnabled = false,
         drawerContent = {
             ModalDrawerSheet {
@@ -189,11 +192,33 @@ fun PantallaChat(modifier: Modifier = Modifier, viewModel: ChatViewModel = viewM
                     contentPadding = PaddingValues(12.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
-                    items(mensajes) { mensaje -> BurbujaMensaje(mensaje) }
+                    itemsIndexed(
+                        items = mensajes,
+                        key = { index, m -> "${index}_${m.role}_${m.content.hashCode()}" }
+                    ) { _, mensaje ->
+                        BurbujaMensaje(mensaje)
+                    }
                     if (estado.enviando) {
-                        item {
-                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Start) {
-                                CircularProgressIndicator(modifier = Modifier.padding(8.dp))
+                        item(key = "indicador_cargando_agente") {
+                            Card(
+                                modifier = Modifier
+                                    .padding(vertical = 4.dp)
+                                    .animateContentSize(),
+                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+                                shape = RoundedCornerShape(14.dp)
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
+                                    Text(
+                                        text = "El agente está analizando...",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
                             }
                         }
                     }

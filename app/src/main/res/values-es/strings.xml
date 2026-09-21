@@ -11,7 +11,6 @@
     <string name="lineas_desc_banner">Directorio oficial de Bogotá. Toca el botón de cualquier entidad para llamar de inmediato.</string>
 
     <!-- Pestañas de Emergencia -->
-    <string name="tab_sismos">Sismos</string>
     <string name="tab_guias">Guías</string>
     <string name="tab_mochila">Mochila 72h</string>
     <string name="tab_lineas">Líneas 123</string>
@@ -23,17 +22,6 @@
     <string name="btn_ver_detalle">Ver datos</string>
     <string name="pestana_mapa">Mapa de calor</string>
     <string name="pestana_ranking">Ranking</string>
-
-    <!-- Sismos en Vivo -->
-    <string name="sismos_recientes_titulo">Sismos recientes en la región</string>
-    <string name="sismos_actualizar">Actualizar</string>
-    <string name="sismos_magnitud">Mag. %1$.1f</string>
-    <string name="sismos_profundidad">Profundidad: %1$.1f km</string>
-    <string name="sismos_distancia">A %1$.1f km de Bogotá</string>
-    <string name="sismos_sin_datos">No se registran sismos recientes en la zona.</string>
-    <string name="sismos_cargando">Consultando sismos en tiempo real...</string>
-    <string name="sismo_hace_minutos">Hace %1$d min</string>
-    <string name="sismo_hace_horas">Hace %1$d h</string>
 
     <!-- Fases de Guía -->
     <string name="guia_fase_antes">Antes</string>

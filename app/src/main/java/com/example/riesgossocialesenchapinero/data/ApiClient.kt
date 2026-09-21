@@ -26,19 +26,17 @@ object ApiClient {
     private const val CLAVE_URL = "base_url"
 
     /**
-     * Candidatos probados en orden cuando no se detecta servidor:
-     *  - 127.0.0.1:8001 celular por USB con "adb reverse tcp:8001 tcp:8001".
-     *  - 10.0.2.2:8001 emulador de Android Studio.
-     *  - 192.168.0.109:8001 celular en la misma red Wi-Fi.
-     *  - 127.0.0.1:8000 / 10.0.2.2:8000 fallback al puerto 8000.
+     * Se prueban en este orden cuando no hay una URL guardada:
+     *  - 10.0.2.2  emulador de Android Studio (su alias del localhost del PC).
+     *  - 127.0.0.1 celular por USB con "adb reverse tcp:8000 tcp:8000". Es el
+     *    único que sirve si el celular y el PC están en redes distintas.
+     *  - 192.168.x celular en la MISMA wifi que el PC (la IP sale con
+     *    "ipconfig"; también se puede escribir a mano desde la app).
      */
     val CANDIDATOS = listOf(
-        "http://127.0.0.1:8001/",
-        "http://10.0.2.2:8001/",
-        "http://192.168.0.109:8001/",
-        "https://animation-collect-garmin-profiles.trycloudflare.com/",
-        "http://127.0.0.1:8000/",
         "http://10.0.2.2:8000/",
+        "http://127.0.0.1:8000/",
+        "http://192.168.0.107:8000/",
     )
 
     private var prefs: SharedPreferences? = null
@@ -49,48 +47,20 @@ object ApiClient {
             prefs?.edit()?.putString(CLAVE_URL, field)?.apply()
         }
 
-    /** Llamar una vez al arrancar (MainActivity) para recuperar la URL guardada y validar conectividad. */
+    /** Llamar una vez al arrancar (MainActivity) para recuperar la URL guardada. */
     fun inicializar(context: Context) {
         val guardadas = context.applicationContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
         prefs = guardadas
-        val guardada = guardadas.getString(CLAVE_URL, null)
-
-        if (!guardada.isNullOrBlank()) {
-            baseUrl = guardada
-        } else {
-            baseUrl = CANDIDATOS.first()
-        }
-
-        // Probar conectividad en segundo plano. Si la URL guardada no responde (ej. trycloudflare expirado), autodetectar candidate viva.
-        Thread {
-            try {
-                if (!servidorResponde(baseUrl)) {
-                    autodetectar()
-                }
-            } catch (_: Exception) {
-                autodetectar()
-            }
-        }.start()
+        guardadas.getString(CLAVE_URL, null)?.let { baseUrl = it }
     }
 
-    /** Acepta "192.168.0.109", "192.168.0.109:8001", "https://xyz.trycloudflare.com" o la URL completa. */
+    /** Acepta "192.168.0.107", "192.168.0.107:8000" o la URL completa. */
     private fun normalizar(valor: String): String {
         var url = valor.trim()
         if (url.isEmpty()) return CANDIDATOS.first()
-        if (!url.startsWith("http://") && !url.startsWith("https://")) {
-            url = if (url.contains("trycloudflare.com") || url.contains("ngrok")) "https://$url" else "http://$url"
-        }
-        val hostConPuerto = url.substringAfter("://").substringBefore("/")
-        if (!hostConPuerto.contains(":")) {
-            val host = hostConPuerto
-            val esIpOLocalhost = host.matches(Regex("^[0-9.]+$")) || host == "localhost"
-            if (esIpOLocalhost) {
-                val esquema = url.substringBefore("://")
-                val resto = url.substringAfter("://").substringAfter("/", "")
-                url = "$esquema://$host:8001/$resto"
-            }
-        }
-        if (!url.endsWith("/")) url = "$url/"
+        if (!url.startsWith("http://") && !url.startsWith("https://")) url = "http://" + url
+        if (!url.substringAfter("://").contains(":")) url = url + ":8000"
+        if (!url.endsWith("/")) url = url + "/"
         return url
     }
 
@@ -113,8 +83,8 @@ object ApiClient {
     // Para sondear candidatos: si el PC no está en esa red el intento tiene que
     // fallar rápido, o recorrer la lista tardaría medio minuto.
     private val clientSondeo = client.newBuilder()
-        .connectTimeout(1200, TimeUnit.MILLISECONDS)
-        .readTimeout(1500, TimeUnit.MILLISECONDS)
+        .connectTimeout(2, TimeUnit.SECONDS)
+        .readTimeout(3, TimeUnit.SECONDS)
         .build()
 
     /** true si hay un backend vivo en [url] (responde /health). */
@@ -130,8 +100,7 @@ object ApiClient {
      * responda, o null si ninguna lo hace.
      */
     fun autodetectar(): String? {
-        val candidatosConActual = (listOf(baseUrl) + CANDIDATOS).distinct()
-        for (url in candidatosConActual) {
+        for (url in listOf(baseUrl) + CANDIDATOS) {
             if (servidorResponde(url)) {
                 baseUrl = url
                 return baseUrl
@@ -152,11 +121,8 @@ object ApiClient {
      */
     private fun <T> conAutodeteccion(peticion: () -> T): T = try {
         peticion()
-    } catch (e: Exception) {
-        if (e is ApiException) throw e
-        if (autodetectar() == null) {
-            throw IOException("No se pudo conectar al servidor de Barrio Seguro. Por favor asegúrate de encender el servidor desde la aplicación de control o verificar la dirección IP.", e)
-        }
+    } catch (e: IOException) {
+        if (autodetectar() == null) throw e
         peticion()
     }
 
@@ -184,20 +150,6 @@ object ApiClient {
     )
 
     data class RiesgoUpz(val upz: String, val nivelLlamadas: String, val tasaLlamadas100k: Double)
-
-    data class Sismo(
-        val id: String,
-        val magnitud: Double,
-        val lugar: String,
-        val tiempo: Long,
-        val profundidadKm: Double,
-        val lat: Double,
-        val lng: Double,
-        val distanciaBogotaKm: Double,
-        val sentido: Int = 0,
-        val alerta: String = "",
-        val url: String = ""
-    )
 
     data class MensajeComunidad(
         val id: String,
@@ -305,165 +257,6 @@ object ApiClient {
         Localidad(20, "Sumapaz", "bajo", 45100.0, 1850.2)
     )
 
-    fun obtenerSismosRecientes(): List<Sismo> {
-        return try {
-            conAutodeteccion { obtenerSismosRecientesUnaVez() }
-        } catch (e: Exception) {
-            try {
-                consultarUsgsDirecto()
-            } catch (e2: Exception) {
-                obtenerSismosFallback()
-            }
-        }
-    }
-
-    private fun obtenerSismosRecientesUnaVez(): List<Sismo> {
-        val request = Request.Builder().url(baseUrl + "sismos/recientes").get().build()
-        client.newCall(request).execute().use { resp ->
-            if (!resp.isSuccessful) throw ApiException("Error ${resp.code} consultando sismos")
-            val arr = JSONArray(resp.body?.string() ?: "[]")
-            return List(arr.length()) { i ->
-                val o = arr.getJSONObject(i)
-                Sismo(
-                    id = o.getString("id"),
-                    magnitud = o.getDouble("magnitud"),
-                    lugar = o.getString("lugar"),
-                    tiempo = o.getLong("tiempo"),
-                    profundidadKm = o.getDouble("profundidad_km"),
-                    lat = o.getDouble("lat"),
-                    lng = o.getDouble("lng"),
-                    distanciaBogotaKm = o.getDouble("distancia_bogota_km"),
-                    sentido = o.optInt("sentido", 0),
-                    alerta = o.optString("alerta", ""),
-                    url = o.optString("url", "")
-                )
-            }
-        }
-    }
-
-    /**
-     * Consulta directa a la API pública oficial de USGS (United States Geological Survey).
-     * Funciona de manera 100% independiente del backend local.
-     */
-    fun consultarUsgsDirecto(): List<Sismo> {
-        val url = "https://earthquake.usgs.gov/fdsnws/event/1/query?format=geojson&latitude=4.71&longitude=-74.07&maxradiuskm=1500&minmagnitude=2.0&limit=40"
-        val request = Request.Builder().url(url).get().build()
-        client.newCall(request).execute().use { resp ->
-            if (!resp.isSuccessful) throw ApiException("Error ${resp.code} consultando USGS")
-            val root = JSONObject(resp.body?.string() ?: "{}")
-            val features = root.optJSONArray("features") ?: JSONArray()
-            val lista = mutableListOf<Sismo>()
-            val bogotaLat = 4.7110
-            val bogotaLon = -74.0721
-
-            for (i in 0 until features.length()) {
-                val f = features.getJSONObject(i)
-                val props = f.getJSONObject("properties")
-                val geom = f.getJSONObject("geometry")
-                val coords = geom.getJSONArray("coordinates")
-                val lng = coords.getDouble(0)
-                val lat = coords.getDouble(1)
-                val depth = if (coords.length() > 2) coords.getDouble(2) else 0.0
-                val distancia = haversineKm(bogotaLat, bogotaLon, lat, lng)
-                val lugarLimpio = traducirLugarUsgs(props.optString("place", "Colombia"))
-
-                lista.add(
-                    Sismo(
-                        id = f.optString("id", "sismo_$i"),
-                        magnitud = (Math.round(props.optDouble("mag", 0.0) * 10.0) / 10.0),
-                        lugar = lugarLimpio,
-                        tiempo = props.optLong("time", System.currentTimeMillis()),
-                        profundidadKm = (Math.round(depth * 10.0) / 10.0),
-                        lat = lat,
-                        lng = lng,
-                        distanciaBogotaKm = (Math.round(distancia * 10.0) / 10.0),
-                        sentido = props.optInt("felt", 0),
-                        alerta = props.optString("alert", ""),
-                        url = props.optString("url", "")
-                    )
-                )
-            }
-            return lista
-        }
-    }
-
-    private fun haversineKm(lat1: Double, lon1: Double, lat2: Double, lon2: Double): Double {
-        val r = 6371.0
-        val dLat = Math.toRadians(lat2 - lat1)
-        val dLon = Math.toRadians(lon2 - lon1)
-        val a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-                Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2)) *
-                Math.sin(dLon / 2) * Math.sin(dLon / 2)
-        val c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
-        return r * c
-    }
-
-    private fun traducirLugarUsgs(place: String): String {
-        if (place.isEmpty()) return "Colombia"
-        var res = place
-        val traducciones = listOf(
-            "of " to "de ",
-            "km NNE" to "km al NNE",
-            "km NNW" to "km al NNO",
-            "km SSE" to "km al SSE",
-            "km SSW" to "km al SSO",
-            "km ENE" to "km al ENE",
-            "km ESE" to "km al ESE",
-            "km WNW" to "km al ONO",
-            "km WSW" to "km al OSO",
-            "km NE" to "km al NE",
-            "km NW" to "km al NO",
-            "km SE" to "km al SE",
-            "km SW" to "km al SO",
-            "km N " to "km al Norte de ",
-            "km S " to "km al Sur de ",
-            "km E " to "km al Este de ",
-            "km W " to "km al Oeste de "
-        )
-        for ((eng, esp) in traducciones) {
-            res = res.replace(eng, esp)
-        }
-        return res
-    }
-
-    fun consultarUsgsDirectoCatchingFallback(): List<Sismo> = try {
-        consultarUsgsDirecto()
-    } catch (_: Exception) {
-        obtenerSismosFallback()
-    }
-
-    fun obtenerSismosFallback(): List<Sismo> {
-        val ahora = System.currentTimeMillis()
-        return listOf(
-            Sismo(
-                id = "ref_1",
-                magnitud = 3.8,
-                lugar = "12 km al SO de Los Santos, Santander, Colombia",
-                tiempo = ahora - 3600000,
-                profundidadKm = 145.0,
-                lat = 6.78,
-                lng = -73.12,
-                distanciaBogotaKm = 240.5,
-                sentido = 12,
-                alerta = "green",
-                url = ""
-            ),
-            Sismo(
-                id = "ref_2",
-                magnitud = 4.2,
-                lugar = "25 km al NO de Villavicencio, Meta, Colombia",
-                tiempo = ahora - 14400000,
-                profundidadKm = 15.0,
-                lat = 4.31,
-                lng = -73.85,
-                distanciaBogotaKm = 52.1,
-                sentido = 45,
-                alerta = "yellow",
-                url = ""
-            )
-        )
-    }
-
     /** null si el punto no cae dentro de ninguna localidad de Bogotá (ej. fuera de la ciudad). */
     fun consultarRiesgoPorPunto(lat: Double, lng: Double): RiesgoPorPunto? =
         conAutodeteccion { consultarRiesgoPorPuntoUnaVez(lat, lng) }
@@ -494,23 +287,8 @@ object ApiClient {
      * Búsqueda directa de barrio -> localidad/riesgo, SIN pasar por el chat
      * conversacional (determinístico, mismo tool_buscar_barrio del backend).
      */
-    fun buscarBarrio(nombre: String, localidad: String? = null): BusquedaBarrio = try {
+    fun buscarBarrio(nombre: String, localidad: String? = null): BusquedaBarrio =
         conAutodeteccion { buscarBarrioUnaVez(nombre, localidad) }
-    } catch (_: Exception) {
-        val ranking = obtenerRankingFallbackOficial()
-        val loc = ranking.firstOrNull { it.nombre.equals(localidad, ignoreCase = true) }
-            ?: ranking.firstOrNull { it.nombre.contains(nombre, ignoreCase = true) }
-            ?: ranking.first()
-        BusquedaBarrio.Encontrado(
-            ResultadoBarrio(
-                barrio = nombre,
-                localidad = loc.nombre,
-                nivelRiesgo = loc.nivelRiesgo,
-                scoreMixto = loc.scorePonderado100k,
-                upz = RiesgoUpz("UPZ Central", loc.nivelRiesgo, loc.tasaDelitos100k)
-            )
-        )
-    }
 
     private fun buscarBarrioUnaVez(nombre: String, localidad: String? = null): BusquedaBarrio {
         val url = buildString {
@@ -556,41 +334,8 @@ object ApiClient {
     }
 
     /** Ficha completa de una localidad (/zonas/{nombre}). */
-    fun obtenerDetalleLocalidad(nombre: String): DetalleLocalidad = try {
+    fun obtenerDetalleLocalidad(nombre: String): DetalleLocalidad =
         conAutodeteccion { obtenerDetalleLocalidadUnaVez(nombre) }
-    } catch (_: Exception) {
-        obtenerDetalleLocalidadFallback(nombre)
-    }
-
-    fun obtenerDetalleLocalidadFallback(nombre: String): DetalleLocalidad {
-        val ranking = obtenerRankingFallbackOficial()
-        val loc = ranking.firstOrNull { it.nombre.equals(nombre, ignoreCase = true) }
-            ?: ranking.first { it.nombre.equals("Santa Fe", ignoreCase = true) }
-
-        val delitos = listOf(
-            "Hurtos a personas" to 1420,
-            "Hurtos a celulares" to 980,
-            "Hurtos a residencias" to 310,
-            "Lesiones personales" to 280,
-            "Hurtos a comercio" to 190
-        )
-
-        return DetalleLocalidad(
-            localidad = loc.nombre,
-            nivelRiesgo = loc.nivelRiesgo,
-            poblacion = 110000,
-            delitosTotal = 3180,
-            tasaDelitos100k = loc.tasaDelitos100k,
-            scoreMixto = loc.scorePonderado100k,
-            detalleDelitos = delitos,
-            estratoPromedio = if (loc.nivelRiesgo == "alto") 2.5 else (if (loc.nivelRiesgo == "medio") 3.8 else 4.5),
-            luminarias = 8500,
-            luminariasPorKm2 = 420.5,
-            longitudViasKm = 145.2,
-            areaKm2 = 20.2,
-            incidentesNuse = 4500
-        )
-    }
 
     private fun obtenerDetalleLocalidadUnaVez(nombre: String): DetalleLocalidad {
         // URLEncoder es para formularios: codifica el espacio como "+", que en
@@ -778,7 +523,7 @@ object ApiClient {
                     aliasAnonimo = alias,
                     avatarColor = o.optString("avatar_color", "#00E5FF"),
                     texto = o.getString("texto"),
-                    imagenBase64 = if (o.isNull("imagen_base64")) null else o.optString("imagen_base64"),
+                    imagenBase64 = if (o.isNull("imagen_base64")) null else o.optString("imagen_base64", null),
                     localidad = o.optString("localidad", "Bogotá"),
                     timestamp = o.optLong("timestamp", System.currentTimeMillis()),
                     esAlerta = o.optBoolean("es_alerta", false),
@@ -845,7 +590,7 @@ object ApiClient {
                 aliasAnonimo = o.getString("alias_anonimo"),
                 avatarColor = o.optString("avatar_color", "#00E5FF"),
                 texto = o.getString("texto"),
-                imagenBase64 = if (o.isNull("imagen_base64")) null else o.optString("imagen_base64"),
+                imagenBase64 = if (o.isNull("imagen_base64")) null else o.optString("imagen_base64", null),
                 localidad = o.optString("localidad", "Bogotá"),
                 timestamp = o.optLong("timestamp", System.currentTimeMillis()),
                 esAlerta = o.optBoolean("es_alerta", false),

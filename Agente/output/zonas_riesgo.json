@@ -51,10 +51,10 @@
       "Violencia intrafamiliar": 5447
     },
     "contexto": {
-      "estrato_promedio": null,
+      "estrato_promedio": 3.05,
       "luminarias_estimadas": null,
       "luminarias_por_km2": null,
-      "longitud_vias_km": null,
+      "longitud_vias_km": 1204.0,
       "area_km2": 33.25,
       "incidentes_nuse_recientes_total": 338583,
       "detalle_incidentes_seguridad": {
@@ -86,7 +86,7 @@
       "violencia_intrafamiliar_salud_recientes_total": 5546,
       "reportes_comunitarios_inseguridad_recientes_total": 49,
       "organizaciones_comunitarias_registradas": 40,
-      "personas_atendidas_sdis_recientes_total": 60355
+      "personas_atendidas_sdis_recientes_total": 88859
     }
   },
   "19": {
@@ -112,10 +112,10 @@
       "Violencia intrafamiliar": 13925
     },
     "contexto": {
-      "estrato_promedio": null,
+      "estrato_promedio": 1.27,
       "luminarias_estimadas": null,
       "luminarias_por_km2": null,
-      "longitud_vias_km": null,
+      "longitud_vias_km": 1273.8,
       "area_km2": 129.9,
       "incidentes_nuse_recientes_total": 492361,
       "detalle_incidentes_seguridad": {
@@ -147,7 +147,7 @@
       "violencia_intrafamiliar_salud_recientes_total": 20112,
       "reportes_comunitarios_inseguridad_recientes_total": 10,
       "organizaciones_comunitarias_registradas": 59,
-      "personas_atendidas_sdis_recientes_total": 469819
+      "personas_atendidas_sdis_recientes_total": 488769
     }
   },
   "14": {
@@ -173,10 +173,10 @@
       "Violencia intrafamiliar": 5747
     },
     "contexto": {
-      "estrato_promedio": null,
-      "luminarias_estimadas": null,
-      "luminarias_por_km2": null,
-      "longitud_vias_km": null,
+      "estrato_promedio": 2.92,
+      "luminarias_estimadas": 14,
+      "luminarias_por_km2": 2.2,
+      "longitud_vias_km": 391.1,
       "area_km2": 6.51,
       "incidentes_nuse_recientes_total": 190850,
       "detalle_incidentes_seguridad": {
@@ -208,7 +208,7 @@
       "violencia_intrafamiliar_salud_recientes_total": 1808,
       "reportes_comunitarios_inseguridad_recientes_total": 15,
       "organizaciones_comunitarias_registradas": 20,
-      "personas_atendidas_sdis_recientes_total": 53244
+      "personas_atendidas_sdis_recientes_total": 78054
     }
   },
   "15": {
@@ -234,10 +234,10 @@
       "Violencia intrafamiliar": 1133
     },
     "contexto": {
-      "estrato_promedio": null,
+      "estrato_promedio": 2.95,
       "luminarias_estimadas": null,
       "luminarias_por_km2": null,
-      "longitud_vias_km": null,
+      "longitud_vias_km": 304.0,
       "area_km2": 4.88,
       "incidentes_nuse_recientes_total": 137959,
       "detalle_incidentes_seguridad": {
@@ -269,7 +269,7 @@
       "violencia_intrafamiliar_salud_recientes_total": 1224,
       "reportes_comunitarios_inseguridad_recientes_total": 21,
       "organizaciones_comunitarias_registradas": 21,
-      "personas_atendidas_sdis_recientes_total": 20378
+      "personas_atendidas_sdis_recientes_total": 30692
     }
   },
   "2": {
@@ -295,10 +295,10 @@
       "Violencia intrafamiliar": 2328
     },
     "contexto": {
-      "estrato_promedio": null,
-      "luminarias_estimadas": null,
-      "luminarias_por_km2": null,
-      "longitud_vias_km": null,
+      "estrato_promedio": 4.05,
+      "luminarias_estimadas": 89,
+      "luminarias_por_km2": 2.3,
+      "longitud_vias_km": 954.5,
       "area_km2": 37.98,
       "incidentes_nuse_recientes_total": 261868,
       "detalle_incidentes_seguridad": {
@@ -330,7 +330,7 @@
       "violencia_intrafamiliar_salud_recientes_total": 1832,
       "reportes_comunitarios_inseguridad_recientes_total": 13,
       "organizaciones_comunitarias_registradas": 25,
-      "personas_atendidas_sdis_recientes_total": 21481
+      "personas_atendidas_sdis_recientes_total": 31642
     }
   },
   "20": {
@@ -391,7 +391,7 @@
       "violencia_intrafamiliar_salud_recientes_total": 173,
       "reportes_comunitarios_inseguridad_recientes_total": 5,
       "organizaciones_comunitarias_registradas": 27,
-      "personas_atendidas_sdis_recientes_total": 4033
+      "personas_atendidas_sdis_recientes_total": 6057
     }
   },
   "18": {
@@ -417,10 +417,10 @@
       "Violencia intrafamiliar": 4630
     },
     "contexto": {
-      "estrato_promedio": null,
+      "estrato_promedio": 2.21,
       "luminarias_estimadas": null,
       "luminarias_por_km2": null,
-      "longitud_vias_km": null,
+      "longitud_vias_km": 633.2,
       "area_km2": 13.82,
       "incidentes_nuse_recientes_total": 346456,
       "detalle_incidentes_seguridad": {
@@ -452,7 +452,7 @@
       "violencia_intrafamiliar_salud_recientes_total": 6726,
       "reportes_comunitarios_inseguridad_recientes_total": 13,
       "organizaciones_comunitarias_registradas": 30,
-      "personas_atendidas_sdis_recientes_total": 163428
+      "personas_atendidas_sdis_recientes_total": 233458
     }
   },
   "17": {
@@ -478,10 +478,10 @@
       "Violencia intrafamiliar": 583
     },
     "contexto": {
-      "estrato_promedio": null,
-      "luminarias_estimadas": null,
-      "luminarias_por_km2": null,
-      "longitud_vias_km": null,
+      "estrato_promedio": 2.36,
+      "luminarias_estimadas": 1,
+      "luminarias_por_km2": 0.5,
+      "longitud_vias_km": 129.2,
       "area_km2": 2.06,
       "incidentes_nuse_recientes_total": 39779,
       "detalle_incidentes_seguridad": {
@@ -513,7 +513,7 @@
       "violencia_intrafamiliar_salud_recientes_total": 381,
       "reportes_comunitarios_inseguridad_recientes_total": 9,
       "organizaciones_comunitarias_registradas": 15,
-      "personas_atendidas_sdis_recientes_total": 11034
+      "personas_atendidas_sdis_recientes_total": 26098
     }
   },
   "12": {
@@ -539,10 +539,10 @@
       "Violencia intrafamiliar": 2257
     },
     "contexto": {
-      "estrato_promedio": null,
+      "estrato_promedio": 3.29,
       "luminarias_estimadas": null,
       "luminarias_por_km2": null,
-      "longitud_vias_km": null,
+      "longitud_vias_km": 689.0,
       "area_km2": 11.89,
       "incidentes_nuse_recientes_total": 229451,
       "detalle_incidentes_seguridad": {
@@ -574,7 +574,7 @@
       "violencia_intrafamiliar_salud_recientes_total": 2187,
       "reportes_comunitarios_inseguridad_recientes_total": 9,
       "organizaciones_comunitarias_registradas": 23,
-      "personas_atendidas_sdis_recientes_total": 24310
+      "personas_atendidas_sdis_recientes_total": 34882
     }
   },
   "13": {
@@ -600,10 +600,10 @@
       "Violencia intrafamiliar": 1931
     },
     "contexto": {
-      "estrato_promedio": null,
-      "luminarias_estimadas": null,
-      "luminarias_por_km2": null,
-      "longitud_vias_km": null,
+      "estrato_promedio": 3.9,
+      "luminarias_estimadas": 87,
+      "luminarias_por_km2": 6.1,
+      "longitud_vias_km": 810.8,
       "area_km2": 14.18,
       "incidentes_nuse_recientes_total": 238264,
       "detalle_incidentes_seguridad": {
@@ -635,7 +635,7 @@
       "violencia_intrafamiliar_salud_recientes_total": 2040,
       "reportes_comunitarios_inseguridad_recientes_total": 15,
       "organizaciones_comunitarias_registradas": 20,
-      "personas_atendidas_sdis_recientes_total": 7408
+      "personas_atendidas_sdis_recientes_total": 11388
     }
   },
   "16": {
@@ -661,10 +661,10 @@
       "Violencia intrafamiliar": 3618
     },
     "contexto": {
-      "estrato_promedio": null,
+      "estrato_promedio": 3.0,
       "luminarias_estimadas": null,
       "luminarias_por_km2": null,
-      "longitud_vias_km": null,
+      "longitud_vias_km": 894.4,
       "area_km2": 17.3,
       "incidentes_nuse_recientes_total": 326489,
       "detalle_incidentes_seguridad": {
@@ -696,7 +696,7 @@
       "violencia_intrafamiliar_salud_recientes_total": 4484,
       "reportes_comunitarios_inseguridad_recientes_total": 20,
       "organizaciones_comunitarias_registradas": 41,
-      "personas_atendidas_sdis_recientes_total": 49647
+      "personas_atendidas_sdis_recientes_total": 68733
     }
   },
   "1": {
@@ -722,10 +722,10 @@
       "Violencia intrafamiliar": 4785
     },
     "contexto": {
-      "estrato_promedio": null,
-      "luminarias_estimadas": null,
-      "luminarias_por_km2": null,
-      "longitud_vias_km": null,
+      "estrato_promedio": 3.68,
+      "luminarias_estimadas": 177,
+      "luminarias_por_km2": 2.7,
+      "longitud_vias_km": 1615.7,
       "area_km2": 65.15,
       "incidentes_nuse_recientes_total": 460449,
       "detalle_incidentes_seguridad": {
@@ -757,7 +757,7 @@
       "violencia_intrafamiliar_salud_recientes_total": 6496,
       "reportes_comunitarios_inseguridad_recientes_total": 18,
       "organizaciones_comunitarias_registradas": 28,
-      "personas_atendidas_sdis_recientes_total": 76829
+      "personas_atendidas_sdis_recientes_total": 113416
     }
   },
   "4": {
@@ -783,10 +783,10 @@
       "Violencia intrafamiliar": 6074
     },
     "contexto": {
-      "estrato_promedio": null,
+      "estrato_promedio": 1.99,
       "luminarias_estimadas": null,
       "luminarias_por_km2": null,
-      "longitud_vias_km": null,
+      "longitud_vias_km": 1136.7,
       "area_km2": 49.06,
       "incidentes_nuse_recientes_total": 347154,
       "detalle_incidentes_seguridad": {
@@ -818,7 +818,7 @@
       "violencia_intrafamiliar_salud_recientes_total": 7339,
       "reportes_comunitarios_inseguridad_recientes_total": 11,
       "organizaciones_comunitarias_registradas": 31,
-      "personas_atendidas_sdis_recientes_total": 185137
+      "personas_atendidas_sdis_recientes_total": 264126
     }
   },
   "5": {
@@ -844,10 +844,10 @@
       "Violencia intrafamiliar": 5019
     },
     "contexto": {
-      "estrato_promedio": null,
+      "estrato_promedio": 1.38,
       "luminarias_estimadas": null,
       "luminarias_por_km2": null,
-      "longitud_vias_km": null,
+      "longitud_vias_km": 370.2,
       "area_km2": 214.9,
       "incidentes_nuse_recientes_total": 304237,
       "detalle_incidentes_seguridad": {
@@ -879,7 +879,7 @@
       "violencia_intrafamiliar_salud_recientes_total": 11403,
       "reportes_comunitarios_inseguridad_recientes_total": 30,
       "organizaciones_comunitarias_registradas": 63,
-      "personas_atendidas_sdis_recientes_total": 223147
+      "personas_atendidas_sdis_recientes_total": 316726
     }
   },
   "7": {
@@ -905,10 +905,10 @@
       "Violencia intrafamiliar": 9569
     },
     "contexto": {
-      "estrato_promedio": null,
+      "estrato_promedio": 1.91,
       "luminarias_estimadas": null,
       "luminarias_por_km2": null,
-      "longitud_vias_km": null,
+      "longitud_vias_km": 1102.4,
       "area_km2": 23.91,
       "incidentes_nuse_recientes_total": 537191,
       "detalle_incidentes_seguridad": {
@@ -940,7 +940,7 @@
       "violencia_intrafamiliar_salud_recientes_total": 18541,
       "reportes_comunitarios_inseguridad_recientes_total": 59,
       "organizaciones_comunitarias_registradas": 43,
-      "personas_atendidas_sdis_recientes_total": 285968
+      "personas_atendidas_sdis_recientes_total": 419641
     }
   },
   "8": {
@@ -966,10 +966,10 @@
       "Violencia intrafamiliar": 11734
     },
     "contexto": {
-      "estrato_promedio": null,
+      "estrato_promedio": 2.44,
       "luminarias_estimadas": null,
       "luminarias_por_km2": null,
-      "longitud_vias_km": null,
+      "longitud_vias_km": 1782.8,
       "area_km2": 38.56,
       "incidentes_nuse_recientes_total": 892958,
       "detalle_incidentes_seguridad": {
@@ -1001,7 +1001,7 @@
       "violencia_intrafamiliar_salud_recientes_total": 20883,
       "reportes_comunitarios_inseguridad_recientes_total": 63,
       "organizaciones_comunitarias_registradas": 43,
-      "personas_atendidas_sdis_recientes_total": 265899
+      "personas_atendidas_sdis_recientes_total": 386974
     }
   },
   "10": {
@@ -1027,10 +1027,10 @@
       "Violencia intrafamiliar": 9769
     },
     "contexto": {
-      "estrato_promedio": null,
-      "luminarias_estimadas": null,
-      "luminarias_por_km2": null,
-      "longitud_vias_km": null,
+      "estrato_promedio": 2.73,
+      "luminarias_estimadas": 11,
+      "luminarias_por_km2": 0.3,
+      "longitud_vias_km": 1487.3,
       "area_km2": 35.85,
       "incidentes_nuse_recientes_total": 755301,
       "detalle_incidentes_seguridad": {
@@ -1062,7 +1062,7 @@
       "violencia_intrafamiliar_salud_recientes_total": 13183,
       "reportes_comunitarios_inseguridad_recientes_total": 5,
       "organizaciones_comunitarias_registradas": 45,
-      "personas_atendidas_sdis_recientes_total": 159834
+      "personas_atendidas_sdis_recientes_total": 231996
     }
   },
   "11": {
@@ -1088,10 +1088,10 @@
       "Violencia intrafamiliar": 12595
     },
     "contexto": {
-      "estrato_promedio": null,
-      "luminarias_estimadas": null,
-      "luminarias_por_km2": null,
-      "longitud_vias_km": null,
+      "estrato_promedio": 2.93,
+      "luminarias_estimadas": 219,
+      "luminarias_por_km2": 2.2,
+      "longitud_vias_km": 2060.9,
       "area_km2": 100.48,
       "incidentes_nuse_recientes_total": 919696,
       "detalle_incidentes_seguridad": {
@@ -1123,7 +1123,7 @@
       "violencia_intrafamiliar_salud_recientes_total": 19215,
       "reportes_comunitarios_inseguridad_recientes_total": 6,
       "organizaciones_comunitarias_registradas": 47,
-      "personas_atendidas_sdis_recientes_total": 218700
+      "personas_atendidas_sdis_recientes_total": 319611
     }
   },
   "6": {
@@ -1149,10 +1149,10 @@
       "Violencia intrafamiliar": 2336
     },
     "contexto": {
-      "estrato_promedio": null,
+      "estrato_promedio": 2.29,
       "luminarias_estimadas": null,
       "luminarias_por_km2": null,
-      "longitud_vias_km": null,
+      "longitud_vias_km": 480.4,
       "area_km2": 9.9,
       "incidentes_nuse_recientes_total": 175247,
       "detalle_incidentes_seguridad": {
@@ -1184,7 +1184,7 @@
       "violencia_intrafamiliar_salud_recientes_total": 3508,
       "reportes_comunitarios_inseguridad_recientes_total": 17,
       "organizaciones_comunitarias_registradas": 20,
-      "personas_atendidas_sdis_recientes_total": 65801
+      "personas_atendidas_sdis_recientes_total": 95079
     }
   },
   "3": {
@@ -1210,10 +1210,10 @@
       "Violencia intrafamiliar": 3866
     },
     "contexto": {
-      "estrato_promedio": null,
-      "luminarias_estimadas": null,
-      "luminarias_por_km2": null,
-      "longitud_vias_km": null,
+      "estrato_promedio": 2.25,
+      "luminarias_estimadas": 2,
+      "luminarias_por_km2": 0.0,
+      "longitud_vias_km": 854.1,
       "area_km2": 45.13,
       "incidentes_nuse_recientes_total": 193915,
       "detalle_incidentes_seguridad": {
@@ -1245,7 +1245,7 @@
       "violencia_intrafamiliar_salud_recientes_total": 2315,
       "reportes_comunitarios_inseguridad_recientes_total": 31,
       "organizaciones_comunitarias_registradas": 31,
-      "personas_atendidas_sdis_recientes_total": 54093
+      "personas_atendidas_sdis_recientes_total": 80173
     }
   }
 }

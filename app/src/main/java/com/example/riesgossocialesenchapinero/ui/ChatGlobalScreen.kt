@@ -123,29 +123,47 @@ fun ChatGlobalScreen(modifier: Modifier = Modifier) {
         }
     }
 
-    // Carga y sondeo periódico de mensajes
-    suspend fun cargarMensajesSilencioso() {
-        try {
-            val lista = withContext(Dispatchers.IO) {
-                ApiClient.obtenerMensajesComunidad()
+    // Carga y escucha en tiempo real con Firebase Firestore
+    DisposableEffect(aliasAnonimo) {
+        val listenerRegistration = com.example.riesgossocialesenchapinero.data.FirebaseComunidadManager.escucharMensajes(
+            miAlias = aliasAnonimo,
+            onMensajesActualizados = { listaActualizada ->
+                if (listaActualizada.isNotEmpty()) {
+                    mensajes = listaActualizada
+                    cargando = false
+                }
+            },
+            onError = {
+                // Si falla Firestore, cargar vía ApiClient
+                coroutineScope.launch(Dispatchers.IO) {
+                    try {
+                        val fallbackLista = ApiClient.obtenerMensajesComunidad(aliasAnonimo)
+                        withContext(Dispatchers.Main) {
+                            mensajes = fallbackLista
+                            cargando = false
+                        }
+                    } catch (_: Exception) {}
+                }
             }
-            mensajes = lista
-        } catch (_: Exception) {}
-    }
+        )
 
-    LaunchedEffect(Unit) {
-        cargando = true
-        withContext(Dispatchers.IO) {
+        // Carga inicial
+        coroutineScope.launch(Dispatchers.IO) {
             try {
-                mensajes = ApiClient.obtenerMensajesComunidad()
-            } catch (_: Exception) {}
+                val inicial = ApiClient.obtenerMensajesComunidad(aliasAnonimo)
+                withContext(Dispatchers.Main) {
+                    if (mensajes.isEmpty()) {
+                        mensajes = inicial
+                    }
+                    cargando = false
+                }
+            } catch (_: Exception) {
+                withContext(Dispatchers.Main) { cargando = false }
+            }
         }
-        cargando = false
 
-        // Sondeo cada 5 segundos
-        while (true) {
-            delay(5000)
-            cargarMensajesSilencioso()
+        onDispose {
+            listenerRegistration?.remove()
         }
     }
 
@@ -484,7 +502,7 @@ fun ChatGlobalScreen(modifier: Modifier = Modifier) {
 
                                 coroutineScope.launch {
                                     val enviado = withContext(Dispatchers.IO) {
-                                        ApiClient.enviarMensajeComunidad(
+                                        com.example.riesgossocialesenchapinero.data.FirebaseComunidadManager.enviarMensaje(
                                             texto = textoAEnviar,
                                             imagenBase64 = img,
                                             aliasAnonimo = aliasAnonimo,
@@ -492,7 +510,9 @@ fun ChatGlobalScreen(modifier: Modifier = Modifier) {
                                             esAlerta = alerta
                                         )
                                     }
-                                    mensajes = mensajes + enviado
+                                    if (mensajes.none { it.id == enviado.id }) {
+                                        mensajes = mensajes + enviado
+                                    }
                                     enviando = false
                                 }
                             }

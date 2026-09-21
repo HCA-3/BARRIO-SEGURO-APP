@@ -802,48 +802,62 @@ fun MapaCalorBogota(
             }
         }
 
-        // 2. CANVAS DEL MAPA INTERACTIVO CON CALLES Y CALOR
+        // 2. CANVAS DEL MAPA INTERACTIVO ESTILO GOOGLE MAPS CON CALLES Y CALOR
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .aspectRatio(0.95f)
                 .padding(horizontal = 8.dp, vertical = 4.dp)
-                .clip(RoundedCornerShape(18.dp))
+                .clip(RoundedCornerShape(20.dp))
                 .background(
-                    Brush.radialGradient(
-                        colors = listOf(Color(0xFF141E28), Color(0xFF0C131A), Color(0xFF060A0E)),
-                        radius = 1100f
-                    )
+                    if (androidx.compose.foundation.isSystemInDarkTheme()) {
+                        Brush.verticalGradient(listOf(Color(0xFF242F3E), Color(0xFF1E2733), Color(0xFF161E28)))
+                    } else {
+                        Brush.verticalGradient(listOf(Color(0xFFF3F1EC), Color(0xFFEBE7DF), Color(0xFFE5E0D6)))
+                    }
                 )
-                .border(1.5.dp, Color(0xFF37474F), RoundedCornerShape(18.dp))
-                .shadow(12.dp, RoundedCornerShape(18.dp))
+                .border(
+                    1.dp,
+                    if (androidx.compose.foundation.isSystemInDarkTheme()) Color(0xFF37474F) else Color(0xFFCFD8DC),
+                    RoundedCornerShape(20.dp)
+                )
+                .shadow(8.dp, RoundedCornerShape(20.dp))
         ) {
+            val isDark = androidx.compose.foundation.isSystemInDarkTheme()
             val cacheRutas = remember { CacheRutasMapa() }
 
-            val paintTexto = remember {
+            val paintTexto = remember(isDark) {
                 Paint().apply {
-                    color = android.graphics.Color.WHITE
-                    textSize = 26f
+                    color = if (isDark) android.graphics.Color.WHITE else android.graphics.Color.rgb(33, 33, 33)
+                    textSize = 25f
                     isAntiAlias = true
                     isSubpixelText = true
                     textAlign = Paint.Align.CENTER
                     typeface = Typeface.create(Typeface.SANS_SERIF, Typeface.BOLD)
                 }
             }
-            val paintCalle = remember {
+            val paintCalle = remember(isDark) {
                 Paint().apply {
-                    color = android.graphics.Color.argb(180, 176, 190, 197)
-                    textSize = 19f
+                    color = if (isDark) android.graphics.Color.rgb(207, 216, 220) else android.graphics.Color.rgb(55, 71, 79)
+                    textSize = 18f
                     isAntiAlias = true
                     textAlign = Paint.Align.LEFT
-                    typeface = Typeface.create(Typeface.SANS_SERIF, Typeface.NORMAL)
+                    typeface = Typeface.create(Typeface.SANS_SERIF, Typeface.BOLD)
                 }
             }
-            val paintBadgeFondo = remember {
+            val paintBadgeFondo = remember(isDark) {
                 Paint().apply {
-                    color = android.graphics.Color.argb(220, 12, 18, 26)
+                    color = if (isDark) android.graphics.Color.argb(230, 24, 33, 44) else android.graphics.Color.argb(235, 255, 255, 255)
                     isAntiAlias = true
                     style = Paint.Style.FILL
+                }
+            }
+            val paintBadgeBorde = remember(isDark) {
+                Paint().apply {
+                    color = if (isDark) android.graphics.Color.argb(120, 84, 110, 122) else android.graphics.Color.argb(150, 189, 189, 189)
+                    isAntiAlias = true
+                    style = Paint.Style.STROKE
+                    strokeWidth = 2f
                 }
             }
 
@@ -926,14 +940,6 @@ fun MapaCalorBogota(
                     return Offset(xFinal, yFinal)
                 }
 
-                // 1 y 2. POLÍGONOS DE LOCALIDADES + RED DE CALLES.
-                // Los Path ya vienen proyectados a coordenadas locales (cache
-                // en CacheRutasMapa, solo se reconstruyen si cambian los
-                // datos o el tamaño del Canvas). Pan/zoom se aplican acá como
-                // una transformación del canvas (traslada + escala), en vez
-                // de recalcular cada vértice de cada polígono en cada frame
-                // de un gesto -- esto es lo que hacía el mapa lento al
-                // arrastrar/hacer zoom con polígonos de cientos de puntos.
                 cacheRutas.actualizarSiHaceFalta(
                     localidadesVisibles, callesPrincipales, minLng, maxLat, rangoLng, rangoLat, anchoMapa, altoMapa
                 )
@@ -941,63 +947,83 @@ fun MapaCalorBogota(
                     translate(offsetXBase, offsetYBase)
                     scale(escalaZoom, escalaZoom, pivot = Offset.Zero)
                 }) {
+                    // A. POLÍGONOS DE LOCALIDADES CON ESTILO GOOGLE MAPS
                     for (loc in localidadesVisibles) {
                         val path = cacheRutas.poligonos[loc.codigo] ?: continue
 
                         val colorRelleno = ColoresDatos.relleno(loc.nivelRiesgo)
-                            .copy(alpha = if (modoVista == ModoVistaMapa.LOCALIDADES) 0.65f else 0.20f)
+                            .copy(alpha = if (modoVista == ModoVistaMapa.LOCALIDADES) (if (isDark) 0.50f else 0.40f) else (if (isDark) 0.18f else 0.14f))
                         drawPath(path, color = colorRelleno, style = Fill)
 
                         val seleccionada = localidadSeleccionada?.codigo == loc.codigo
-                        val colorBorde = if (seleccionada) Color(0xFF00E5FF) else Color(0xFF263238).copy(alpha = 0.60f)
-                        // Los anchos de trazo están en píxeles de pantalla ya
-                        // deseados; como este bloque va dentro de un scale(),
-                        // hay que dividir por escalaZoom para que el grosor
-                        // final en pantalla no cambie con el zoom (igual que
-                        // antes, cuando se calculaba ya en espacio de pantalla).
+                        val colorBorde = if (seleccionada) Color(0xFF1A73E8) else (if (isDark) Color(0xFF455A64).copy(alpha = 0.75f) else Color(0xFFB0BEC5).copy(alpha = 0.85f))
                         val anchoBorde = (if (seleccionada) 3.5.dp.toPx() else 1.2.dp.toPx()) / escalaZoom
                         drawPath(path, color = colorBorde, style = Stroke(width = anchoBorde, cap = StrokeCap.Round, join = StrokeJoin.Round))
                     }
 
+                    // B. RED VIAL ESTILO GOOGLE MAPS (CARRETERAS BLANCAS Y TRONCALES AMARILLAS/DORADAS)
                     for (calle in callesPrincipales) {
                         val pathCalle = cacheRutas.calles[calle.nombre] ?: continue
                         val esTroncal = calle.tipo == "troncal"
-                        val colorVia = when {
-                            esTroncal -> Color(0xFFFF5252).copy(alpha = 0.85f)
-                            calle.tipo == "avenida" -> Color(0xFFECEFF1).copy(alpha = 0.65f)
-                            else -> Color(0xFF90A4AE).copy(alpha = 0.45f)
+
+                        // Sombra / Borde exterior de la vía (Casing)
+                        val colorCasing = if (isDark) Color(0xFF1E2733) else Color(0xFFCFD8DC)
+                        val anchoCasingPantalla = if (esTroncal) (5.0f * escalaZoom.coerceIn(0.9f, 2.5f)) else (3.5f * escalaZoom.coerceIn(0.9f, 2.0f))
+                        drawPath(pathCalle, color = colorCasing, style = Stroke(width = anchoCasingPantalla / escalaZoom, cap = StrokeCap.Round, join = StrokeJoin.Round))
+
+                        // Superficie interior de la vía estilo Google Maps
+                        val colorSuperficie = when {
+                            esTroncal -> if (isDark) Color(0xFFFFA000) else Color(0xFFFFB300) // Autopista/Troncal dorada Google Maps
+                            calle.tipo == "avenida" -> if (isDark) Color(0xFFECEFF1) else Color(0xFFFFFFFF) // Avenida principal blanca nítida
+                            else -> if (isDark) Color(0xFF90A4AE) else Color(0xFFFAFAFA)
                         }
-                        val anchoViaPantalla = if (esTroncal) (3.5f * escalaZoom.coerceIn(0.9f, 2.5f)) else (2.0f * escalaZoom.coerceIn(0.9f, 2.0f))
-                        drawPath(pathCalle, color = colorVia, style = Stroke(width = anchoViaPantalla / escalaZoom, cap = StrokeCap.Round, join = StrokeJoin.Round))
+                        val anchoViaPantalla = if (esTroncal) (3.2f * escalaZoom.coerceIn(0.9f, 2.5f)) else (2.0f * escalaZoom.coerceIn(0.9f, 2.0f))
+                        drawPath(pathCalle, color = colorSuperficie, style = Stroke(width = anchoViaPantalla / escalaZoom, cap = StrokeCap.Round, join = StrokeJoin.Round))
                     }
                 }
 
-                // Etiquetas de texto de las calles: fuera de la transformación
-                // de arriba (el texto no debe escalarse con el zoom del mapa,
-                // su tamaño ya se controla a mano más abajo), así que siguen
-                // usando proyectar() en espacio de pantalla como antes. Es un
-                // bucle de ~12 calles, no el cuello de botella.
+                // C. ETIQUETAS DE CALLES ESTILO GOOGLE MAPS
                 for (calle in callesPrincipales) {
-                    if (calle.tramos.isEmpty() || escalaZoom < 1.5f) continue
+                    if (calle.tramos.isEmpty() || escalaZoom < 1.4f) continue
                     val puntoMedio = proyectar(calle.tramos[calle.tramos.size / 2])
                     if (puntoMedio.x in 0f..size.width && puntoMedio.y in 0f..size.height) {
+                        val texto = calle.nombre
+                        val ancho = paintCalle.measureText(texto)
+
+                        drawContext.canvas.nativeCanvas.drawRoundRect(
+                            puntoMedio.x + 4f,
+                            puntoMedio.y - 20f,
+                            puntoMedio.x + ancho + 14f,
+                            puntoMedio.y + 4f,
+                            8f,
+                            8f,
+                            paintBadgeFondo
+                        )
+                        drawContext.canvas.nativeCanvas.drawRoundRect(
+                            puntoMedio.x + 4f,
+                            puntoMedio.y - 20f,
+                            puntoMedio.x + ancho + 14f,
+                            puntoMedio.y + 4f,
+                            8f,
+                            8f,
+                            paintBadgeBorde
+                        )
                         drawContext.canvas.nativeCanvas.drawText(
-                            calle.nombre,
-                            puntoMedio.x + 8f,
-                            puntoMedio.y - 6f,
+                            texto,
+                            puntoMedio.x + 9f,
+                            puntoMedio.y - 4f,
                             paintCalle
                         )
                     }
                 }
 
-                // 3. MAPA DE CALOR POR CUADRA (NÚCLEOS TÉRMICOS GAUSSIANOS)
+                // D. MAPA DE CALOR POR CUADRA
                 if (modoVista == ModoVistaMapa.CALOR_CUADRAS || modoVista == ModoVistaMapa.CALLES) {
                     for (cuadra in cuadrasCalor) {
                         val centro = proyectar(PuntoGeo(cuadra.lng, cuadra.lat))
                         if (centro.x < -50 || centro.x > size.width + 50 || centro.y < -50 || centro.y > size.height + 50) continue
 
                         val colorCalor = ColoresDatos.relleno(cuadra.nivelRiesgo)
-
                         val radioCuadra = (16f * escalaZoom.coerceIn(1.0f, 3.0f)) * cuadra.score.toFloat()
 
                         drawCircle(
@@ -1018,146 +1044,166 @@ fun MapaCalorBogota(
                     }
                 }
 
-                // 4. INDICADOR GPS EN TIEMPO REAL ("TÚ ESTÁS AQUÍ")
+                // E. INDICADOR GPS ESTILO GOOGLE MAPS (PUNTO AZUL CON HALO BLANCO Y PULSO)
                 ubicacionGps?.let { gps ->
                     val posGps = proyectar(gps)
 
-                    val radioPrecision = (precisionGpsMts * escalaZoom * 0.4f).coerceIn(18f, 65f)
+                    // Anillo de precisión translúcido azul Google (#4285F4)
+                    val radioPrecision = (precisionGpsMts * escalaZoom * 0.4f).coerceIn(20f, 75f)
                     drawCircle(
-                        color = Color(0xFF00E5FF).copy(alpha = 0.18f),
+                        color = Color(0xFF4285F4).copy(alpha = 0.18f),
                         radius = radioPrecision,
                         center = posGps
                     )
                     drawCircle(
-                        color = Color(0xFF00E5FF).copy(alpha = 0.45f),
+                        color = Color(0xFF4285F4).copy(alpha = 0.45f),
                         radius = radioPrecision,
                         center = posGps,
-                        style = Stroke(1.5f)
+                        style = Stroke(1.5.dp.toPx())
                     )
 
+                    // Halo blanco exterior
                     drawCircle(
-                        color = Color(0xFF00E5FF).copy(alpha = 0.60f),
-                        radius = (precisionGpsMts * escalaZoom * 0.4f).coerceIn(18f, 65f) * 1.15f,
-                        center = posGps,
-                        style = Stroke(2.dp.toPx())
-                    )
-
-                    drawCircle(
-                        color = Color(0xFFFFFFFF),
-                        radius = 8.dp.toPx(),
+                        color = Color.White,
+                        radius = 10.dp.toPx(),
                         center = posGps
                     )
+                    // Punto azul Google Maps
                     drawCircle(
-                        color = Color(0xFF00B0FF),
-                        radius = 6.5.dp.toPx(),
+                        color = Color(0xFF1A73E8),
+                        radius = 7.5.dp.toPx(),
                         center = posGps
                     )
 
-                    val textoGps = "📍 Tú estás aquí"
-                    paintTexto.textSize = 24f
+                    // Etiqueta flotante
+                    val textoGps = "📍 Mi ubicación"
+                    paintTexto.textSize = 22f
                     val anchoTag = paintTexto.measureText(textoGps)
                     drawContext.canvas.nativeCanvas.drawRoundRect(
                         posGps.x - (anchoTag / 2f) - 10f,
                         posGps.y - 38f,
                         posGps.x + (anchoTag / 2f) + 10f,
-                        posGps.y - 12f,
+                        posGps.y - 14f,
                         10f,
                         10f,
                         paintBadgeFondo
                     )
+                    drawContext.canvas.nativeCanvas.drawRoundRect(
+                        posGps.x - (anchoTag / 2f) - 10f,
+                        posGps.y - 38f,
+                        posGps.x + (anchoTag / 2f) + 10f,
+                        posGps.y - 14f,
+                        10f,
+                        10f,
+                        paintBadgeBorde
+                    )
                     drawContext.canvas.nativeCanvas.drawText(
                         textoGps,
                         posGps.x,
-                        posGps.y - 20f,
+                        posGps.y - 21f,
                         paintTexto
                     )
                 }
 
-                // 5. ETIQUETAS DE TEXTO DE LOCALIDADES
+                // F. ETIQUETAS DE TEXTO DE LOCALIDADES
                 if (modoVista == ModoVistaMapa.LOCALIDADES || escalaZoom < 2.0f) {
                     for (loc in localidadesVisibles) {
                         val centro = proyectar(loc.centroide)
                         if (centro.x < 0 || centro.x > size.width || centro.y < 0 || centro.y > size.height) continue
 
-                        paintTexto.textSize = (22f * escalaZoom.coerceIn(0.9f, 2.0f)).coerceIn(20f, 40f)
+                        paintTexto.textSize = (22f * escalaZoom.coerceIn(0.9f, 2.0f)).coerceIn(20f, 38f)
                         val texto = loc.nombreCorto
                         val anchoTexto = paintTexto.measureText(texto)
 
                         drawContext.canvas.nativeCanvas.drawRoundRect(
                             centro.x - (anchoTexto / 2f) - 12f,
-                            centro.y - 16f,
+                            centro.y - 18f,
                             centro.x + (anchoTexto / 2f) + 12f,
                             centro.y + 10f,
                             12f,
                             12f,
                             paintBadgeFondo
                         )
+                        drawContext.canvas.nativeCanvas.drawRoundRect(
+                            centro.x - (anchoTexto / 2f) - 12f,
+                            centro.y - 18f,
+                            centro.x + (anchoTexto / 2f) + 12f,
+                            centro.y + 10f,
+                            12f,
+                            12f,
+                            paintBadgeBorde
+                        )
                         drawContext.canvas.nativeCanvas.drawText(
                             texto,
                             centro.x,
-                            centro.y + 2f,
+                            centro.y + 1f,
                             paintTexto
                         )
                     }
                 }
             }
 
-            // BOTONES FLOTANTES DE CONTROL (ZOOM, CENTRAR EN MI UBICACIÓN)
+            // BOTONES FLOTANTES ESTILO GOOGLE MAPS (RECENTRAR GPS Y CONTROLES DE ZOOM)
             Column(
                 modifier = Modifier
                     .align(Alignment.TopEnd)
-                    .padding(10.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                    .padding(12.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
+                // Botón Recentrar en Mi Ubicación (Estilo Google Maps)
                 Surface(
                     shape = CircleShape,
-                    color = Color(0xFF00E5FF),
-                    shadowElevation = 8.dp,
-                    modifier = Modifier.size(44.dp)
+                    color = if (isDark) Color(0xFF242F3E) else Color.White,
+                    border = BorderStroke(1.dp, if (isDark) Color(0xFF37474F) else Color(0xFFE0E0E0)),
+                    shadowElevation = 6.dp,
+                    modifier = Modifier.size(46.dp)
                 ) {
                     IconButton(onClick = { centrarEnUbicacion() }) {
-                        Text("📍", fontSize = 20.sp)
+                        Text("🎯", fontSize = 22.sp)
                     }
                 }
 
-                // Abre la ubicación actual en la app real de Google Maps del
-                // celular (calles, POIs, navegación) -- sin API key ni SDK de
-                // mapas embebido, que es lo que pesaría más.
+                // Botón Abrir en Google Maps App
                 Surface(
                     shape = CircleShape,
-                    color = Color(0xFF1E2733).copy(alpha = 0.95f),
-                    border = BorderStroke(1.dp, Color(0xFF546E7A)),
+                    color = if (isDark) Color(0xFF242F3E) else Color.White,
+                    border = BorderStroke(1.dp, if (isDark) Color(0xFF37474F) else Color(0xFFE0E0E0)),
                     shadowElevation = 6.dp,
-                    modifier = Modifier.size(40.dp)
+                    modifier = Modifier.size(46.dp)
                 ) {
                     IconButton(onClick = {
                         val pt = ubicacionGps ?: PuntoGeo(-74.0621, 4.6534)
                         abrirEnGoogleMaps(context, pt.lat, pt.lng, nombreZonaActual)
                     }) {
-                        Text("🗺️", fontSize = 16.sp)
+                        Text("🗺️", fontSize = 20.sp)
                     }
                 }
 
+                // Botones de Zoom In y Zoom Out unidos estilo Google Maps
                 Surface(
-                    shape = CircleShape,
-                    color = Color(0xFF1E2733).copy(alpha = 0.95f),
-                    border = BorderStroke(1.dp, Color(0xFF546E7A)),
+                    shape = RoundedCornerShape(12.dp),
+                    color = if (isDark) Color(0xFF242F3E) else Color.White,
+                    border = BorderStroke(1.dp, if (isDark) Color(0xFF37474F) else Color(0xFFE0E0E0)),
                     shadowElevation = 6.dp,
-                    modifier = Modifier.size(40.dp)
+                    modifier = Modifier.width(46.dp)
                 ) {
-                    IconButton(onClick = { escalaZoom = (escalaZoom * 1.35f).coerceAtMost(6.0f) }) {
-                        Text("+", fontWeight = FontWeight.ExtraBold, color = Color.White, fontSize = 22.sp)
-                    }
-                }
-                Surface(
-                    shape = CircleShape,
-                    color = Color(0xFF1E2733).copy(alpha = 0.95f),
-                    border = BorderStroke(1.dp, Color(0xFF546E7A)),
-                    shadowElevation = 6.dp,
-                    modifier = Modifier.size(40.dp)
-                ) {
-                    IconButton(onClick = { escalaZoom = (escalaZoom / 1.35f).coerceAtLeast(0.8f) }) {
-                        Text("−", fontWeight = FontWeight.ExtraBold, color = Color.White, fontSize = 22.sp)
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        IconButton(
+                            onClick = { escalaZoom = (escalaZoom * 1.35f).coerceAtMost(6.0f) },
+                            modifier = Modifier.size(44.dp)
+                        ) {
+                            Text("+", fontWeight = FontWeight.Bold, color = if (isDark) Color.White else Color(0xFF37474F), fontSize = 24.sp)
+                        }
+                        Surface(
+                            modifier = Modifier.height(1.dp).fillMaxWidth().padding(horizontal = 6.dp),
+                            color = if (isDark) Color(0xFF37474F) else Color(0xFFEEEEEE)
+                        ) {}
+                        IconButton(
+                            onClick = { escalaZoom = (escalaZoom / 1.35f).coerceAtLeast(0.8f) },
+                            modifier = Modifier.size(44.dp)
+                        ) {
+                            Text("−", fontWeight = FontWeight.Bold, color = if (isDark) Color.White else Color(0xFF37474F), fontSize = 24.sp)
+                        }
                     }
                 }
             }
