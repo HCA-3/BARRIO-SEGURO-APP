@@ -14,7 +14,8 @@ data class AjustesUiState(
     val idioma: String = "", // "" para sistema
     val intervaloMinutos: Int = 2,
     val alertasHabilitadas: Boolean = true,
-    val terminosAceptados: Boolean = false
+    val terminosAceptados: Boolean = false,
+    val tutorialVisto: Boolean = false
 )
 
 /**
@@ -29,7 +30,8 @@ class AjustesViewModel(application: Application) : AndroidViewModel(application)
             idioma = ajustesManager.idioma,
             intervaloMinutos = ajustesManager.intervaloMinutos,
             alertasHabilitadas = ajustesManager.alertasHabilitadas,
-            terminosAceptados = ajustesManager.terminosAceptados
+            terminosAceptados = ajustesManager.terminosAceptados,
+            tutorialVisto = ajustesManager.tutorialVisto
         )
     )
     val estado: StateFlow<AjustesUiState> = _estado
@@ -47,6 +49,16 @@ class AjustesViewModel(application: Application) : AndroidViewModel(application)
     fun aceptarTerminos() {
         ajustesManager.terminosAceptados = true
         _estado.value = _estado.value.copy(terminosAceptados = true)
+    }
+
+    fun completarTutorial() {
+        ajustesManager.tutorialVisto = true
+        _estado.value = _estado.value.copy(tutorialVisto = true)
+    }
+
+    fun reiniciarTutorial() {
+        ajustesManager.tutorialVisto = false
+        _estado.value = _estado.value.copy(tutorialVisto = false)
     }
 
     fun cambiarTema(nuevoTema: TemaApp) {

@@ -170,10 +170,12 @@ fun EmergenciasScreen(
                         .fillMaxWidth()
                         .staggeredEntrance(index = index)
                         .bounceClick(scaleDown = 0.97f) {
-                            val intent = Intent(Intent.ACTION_DIAL, Uri.parse("tel:${linea.numero}")).apply {
-                                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                            }
-                            context.startActivity(intent)
+                            try {
+                                val intent = Intent(Intent.ACTION_DIAL, Uri.parse("tel:${linea.numero}")).apply {
+                                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                }
+                                context.startActivity(intent)
+                            } catch (_: Exception) {}
                         }
                         .animateContentSize(),
                     border = border,
@@ -210,10 +212,12 @@ fun EmergenciasScreen(
 
                         Button(
                             onClick = {
-                                val intent = Intent(Intent.ACTION_DIAL, Uri.parse("tel:${linea.numero}")).apply {
-                                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                                }
-                                context.startActivity(intent)
+                                try {
+                                    val intent = Intent(Intent.ACTION_DIAL, Uri.parse("tel:${linea.numero}")).apply {
+                                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                    }
+                                    context.startActivity(intent)
+                                } catch (_: Exception) {}
                             },
                             colors = ButtonDefaults.buttonColors(containerColor = linea.colorBoton),
                             shape = RoundedCornerShape(8.dp),

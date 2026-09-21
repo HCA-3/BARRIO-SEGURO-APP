@@ -1,6 +1,7 @@
 package com.example.riesgossocialesenchapinero.ui
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
@@ -8,6 +9,10 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.location.Location
 import android.net.Uri
+import android.webkit.WebChromeClient
+import android.webkit.WebSettings
+import android.webkit.WebView
+import android.webkit.WebViewClient
 import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
@@ -32,7 +37,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -41,9 +45,11 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
@@ -69,7 +75,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import androidx.core.content.ContextCompat
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority
@@ -102,7 +110,8 @@ fun DenunciasScreen(
 ) {
     val context = LocalContext.current
     var pestanaSeleccionada by remember { mutableStateOf(if (onAbrirTutorialInicial) TabDenuncias.TUTORIAL else TabDenuncias.PLATAFORMAS) }
-    var mostrarModalTutorial by remember { mutableStateOf(false) }
+    var urlVisorWeb by remember { mutableStateOf<Pair<String, String>?>(null) } // Pair(titulo, url)
+    var delitoPreseleccionado by remember { mutableStateOf<String?>(null) }
 
     val plataformas = remember {
         listOf(
@@ -145,6 +154,26 @@ fun DenunciasScreen(
                 urlOficial = "https://caivirtual.policia.gov.co/",
                 telefonoDirecto = "123",
                 colorBadge = Color(0xFF8E24AA)
+            ),
+            PlataformaOficial(
+                id = "spoa",
+                entidad = "Rama Judicial & Fiscalía",
+                nombreSistema = "Consulta de Radicado SPOA",
+                descripcion = "Verifica el estado de tu denuncia, fiscal asignado y avance procesal con tu código de 21 dígitos.",
+                tipoCasos = listOf("Seguimiento de denuncia", "Consulta de fiscal asignado", "Historial de procesos"),
+                urlOficial = "https://consultaprocesos.ramajudicial.gov.co/",
+                telefonoDirecto = "122",
+                colorBadge = Color(0xFF3949AB)
+            ),
+            PlataformaOficial(
+                id = "personeria",
+                entidad = "Personería de Bogotá",
+                nombreSistema = "Veeduría y Derechos Humanos",
+                descripcion = "Atención a víctimas, abuso de autoridad policial y protección de derechos humanos en Bogotá.",
+                tipoCasos = listOf("Abuso policial", "Vulneración de derechos", "Quejas contra servidores públicos"),
+                urlOficial = "https://www.personeriabogota.gov.co/",
+                telefonoDirecto = "143",
+                colorBadge = Color(0xFFE53935)
             )
         )
     }
@@ -169,7 +198,7 @@ fun DenunciasScreen(
                         color = MaterialTheme.colorScheme.onPrimaryContainer
                     )
                     Text(
-                        text = "Canales gubernamentales de Bogotá y Colombia",
+                        text = "Canales gubernamentales y distritales de Bogotá",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
                     )
@@ -215,14 +244,33 @@ fun DenunciasScreen(
                 )
                 TabDenuncias.PLATAFORMAS -> SeccionPlataformasOficiales(
                     plataformas = plataformas,
-                    onRedactarHechoClick = { pestanaSeleccionada = TabDenuncias.ASISTENTE }
+                    onAbrirEnApp = { titulo, url ->
+                        urlVisorWeb = Pair(titulo, url)
+                    },
+                    onRedactarHechoClick = { delito ->
+                        delitoPreseleccionado = delito
+                        pestanaSeleccionada = TabDenuncias.ASISTENTE
+                    }
                 )
                 TabDenuncias.ASISTENTE -> SeccionAsistenteRedaccion(
+                    delitoInicial = delitoPreseleccionado,
+                    onAbrirEnApp = { titulo, url ->
+                        urlVisorWeb = Pair(titulo, url)
+                    },
                     onIrAFormularios = { pestanaSeleccionada = TabDenuncias.PLATAFORMAS }
                 )
                 TabDenuncias.LINEAS -> SeccionLineasAtencion()
             }
         }
+    }
+
+    // Modal Visor Web Integrado en la App
+    if (urlVisorWeb != null) {
+        DialogoVisorWeb(
+            titulo = urlVisorWeb!!.first,
+            url = urlVisorWeb!!.second,
+            onDismiss = { urlVisorWeb = null }
+        )
     }
 }
 
@@ -402,7 +450,8 @@ data class TutorialPaso(
 @Composable
 fun SeccionPlataformasOficiales(
     plataformas: List<PlataformaOficial>,
-    onRedactarHechoClick: () -> Unit
+    onAbrirEnApp: (String, String) -> Unit,
+    onRedactarHechoClick: (String?) -> Unit
 ) {
     val context = LocalContext.current
 
@@ -421,14 +470,14 @@ fun SeccionPlataformasOficiales(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    Text("ℹ️", fontSize = 24.sp)
+                    Text("🛡️", fontSize = 24.sp)
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = "Portal Seguro Oficial",
+                            text = "Portales Oficiales del Estado",
                             style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold)
                         )
                         Text(
-                            text = "Los enlaces abren los portales web oficiales del Estado (.gov.co). Puedes redactar tu caso antes con nuestro asistente para copiarlo y pegarlo fácilmente.",
+                            text = "Puedes abrir los portales en tu navegador, verlos dentro de la app o copiar el enlace directo.",
                             style = MaterialTheme.typography.bodySmall
                         )
                     }
@@ -470,8 +519,7 @@ fun SeccionPlataformasOficiales(
                                 color = MaterialTheme.colorScheme.primaryContainer,
                                 shape = RoundedCornerShape(12.dp),
                                 modifier = Modifier.clickable {
-                                    val intent = Intent(Intent.ACTION_DIAL, Uri.parse("tel:${plat.telefonoDirecto}"))
-                                    context.startActivity(intent)
+                                    marcarTelefonoSeguro(context, plat.telefonoDirecto)
                                 }
                             ) {
                                 Text(
@@ -525,12 +573,13 @@ fun SeccionPlataformasOficiales(
 
                     Spacer(modifier = Modifier.height(12.dp))
 
+                    // Botones de acción
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         OutlinedButton(
-                            onClick = onRedactarHechoClick,
+                            onClick = { onRedactarHechoClick(plat.tipoCasos.firstOrNull()) },
                             shape = RoundedCornerShape(12.dp),
                             modifier = Modifier.weight(1f)
                         ) {
@@ -538,15 +587,35 @@ fun SeccionPlataformasOficiales(
                         }
 
                         Button(
-                            onClick = {
-                                val intent = Intent(Intent.ACTION_VIEW, Uri.parse(plat.urlOficial))
-                                context.startActivity(intent)
-                            },
+                            onClick = { onAbrirEnApp(plat.nombreSistema, plat.urlOficial) },
+                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary),
+                            shape = RoundedCornerShape(12.dp),
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Text("📱 En App", fontWeight = FontWeight.Bold, fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        }
+
+                        Button(
+                            onClick = { abrirEnlaceSeguro(context, plat.urlOficial) },
                             colors = ButtonDefaults.buttonColors(containerColor = plat.colorBadge),
                             shape = RoundedCornerShape(12.dp),
-                            modifier = Modifier.weight(1.3f)
+                            modifier = Modifier.weight(1.2f)
                         ) {
-                            Text("🌐 Abrir Formulario", fontWeight = FontWeight.Bold, fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            Text("🌐 Navegador", fontWeight = FontWeight.Bold, fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        }
+                    }
+
+                    // Botón secundario para copiar URL
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 4.dp),
+                        horizontalArrangement = Arrangement.End
+                    ) {
+                        TextButton(
+                            onClick = { copiarAlPortapapeles(context, plat.nombreSistema, plat.urlOficial) }
+                        ) {
+                            Text("📋 Copiar enlace directo", fontSize = 11.sp, color = MaterialTheme.colorScheme.primary)
                         }
                     }
                 }
@@ -560,12 +629,14 @@ fun SeccionPlataformasOficiales(
  */
 @Composable
 fun SeccionAsistenteRedaccion(
+    delitoInicial: String? = null,
+    onAbrirEnApp: (String, String) -> Unit,
     onIrAFormularios: () -> Unit
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
 
-    var tipoDelito by remember { mutableStateOf("Hurto a personas (Celular / Pertenencias)") }
+    var tipoDelito by remember { mutableStateOf(delitoInicial ?: "Hurto a personas (Celular / Pertenencias)") }
     var fechaHora by remember {
         val sdf = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault())
         mutableStateOf(sdf.format(Date()))
@@ -761,10 +832,7 @@ fun SeccionAsistenteRedaccion(
                             Text("📄 Texto Formal Generado", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold))
                             Button(
                                 onClick = {
-                                    val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                                    val clip = ClipData.newPlainText("Denuncia Formal", relatoGenerado)
-                                    clipboard.setPrimaryClip(clip)
-                                    Toast.makeText(context, "¡Texto copiado al portapapeles!", Toast.LENGTH_LONG).show()
+                                    copiarAlPortapapeles(context, "Denuncia Formal", relatoGenerado)
                                 },
                                 shape = RoundedCornerShape(12.dp)
                             ) {
@@ -783,19 +851,33 @@ fun SeccionAsistenteRedaccion(
 
                         Spacer(modifier = Modifier.height(12.dp))
 
-                        Button(
-                            onClick = {
-                                val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                                clipboard.setPrimaryClip(ClipData.newPlainText("Denuncia Formal", relatoGenerado))
-                                Toast.makeText(context, "Texto copiado. Abriendo ¡A Denunciar!...", Toast.LENGTH_SHORT).show()
-                                val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://adenunciar.policia.gov.co/adenunciar/"))
-                                context.startActivity(intent)
-                            },
-                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1E88E5)),
-                            shape = RoundedCornerShape(12.dp),
-                            modifier = Modifier.fillMaxWidth().height(48.dp)
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
-                            Text("🌐 Copiar e ir a ¡A Denunciar! (Policía)", fontWeight = FontWeight.Bold)
+                            Button(
+                                onClick = {
+                                    copiarAlPortapapeles(context, "Denuncia Formal", relatoGenerado)
+                                    onAbrirEnApp("Sistema ¡A Denunciar!", "https://adenunciar.policia.gov.co/adenunciar/")
+                                },
+                                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary),
+                                shape = RoundedCornerShape(12.dp),
+                                modifier = Modifier.weight(1f).height(48.dp)
+                            ) {
+                                Text("📱 Abrir en la App", fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                            }
+
+                            Button(
+                                onClick = {
+                                    copiarAlPortapapeles(context, "Denuncia Formal", relatoGenerado)
+                                    abrirEnlaceSeguro(context, "https://adenunciar.policia.gov.co/adenunciar/")
+                                },
+                                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1E88E5)),
+                                shape = RoundedCornerShape(12.dp),
+                                modifier = Modifier.weight(1.3f).height(48.dp)
+                            ) {
+                                Text("🌐 Copiar e ir a Web", fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                            }
                         }
                     }
                 }
@@ -816,7 +898,8 @@ fun SeccionLineasAtencion() {
         LineaEmergencia("155", "Línea Púrpura Mujeres", "Orientación y atención a mujeres víctimas de violencia y acoso 24/7.", Color(0xFF7B1FA2)),
         LineaEmergencia("165", "Gaula Policía Nacional", "Atención inmediata contra Secuestro y Extorsión 'Yo no pago, yo denuncio'.", Color(0xFF1565C0)),
         LineaEmergencia("141", "ICBF Protección Infantil", "Protección inmediata de niños, niñas y adolescentes.", Color(0xFFE65100)),
-        LineaEmergencia("195", "Línea 195 Alcaldía de Bogotá", "Información distrital, quejas, convivencia y servicios de la ciudad.", Color(0xFF388E3C))
+        LineaEmergencia("195", "Línea 195 Alcaldía de Bogotá", "Información distrital, quejas, convivencia y servicios de la ciudad.", Color(0xFF388E3C)),
+        LineaEmergencia("143", "Personería de Bogotá", "Atención de derechos humanos y veeduría ciudadana.", Color(0xFFE53935))
     )
 
     LazyColumn(
@@ -861,15 +944,21 @@ fun SeccionLineasAtencion() {
 
                     Spacer(modifier = Modifier.width(10.dp))
 
-                    Button(
-                        onClick = {
-                            val intent = Intent(Intent.ACTION_DIAL, Uri.parse("tel:${lin.numero}"))
-                            context.startActivity(intent)
-                        },
-                        colors = ButtonDefaults.buttonColors(containerColor = lin.color),
-                        shape = RoundedCornerShape(12.dp)
-                    ) {
-                        Text("📞 Llamar", fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        IconButton(
+                            onClick = { copiarAlPortapapeles(context, lin.nombre, lin.numero) },
+                            modifier = Modifier.size(38.dp)
+                        ) {
+                            Text("📋", fontSize = 16.sp)
+                        }
+
+                        Button(
+                            onClick = { marcarTelefonoSeguro(context, lin.numero) },
+                            colors = ButtonDefaults.buttonColors(containerColor = lin.color),
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Text("📞 Llamar", fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                        }
                     }
                 }
             }
@@ -883,3 +972,180 @@ data class LineaEmergencia(
     val descripcion: String,
     val color: Color
 )
+
+/**
+ * Diálogo modal con WebView integrado para visualizar y radicar denuncias dentro de la aplicación
+ */
+@SuppressLint("SetJavaScriptEnabled")
+@Composable
+fun DialogoVisorWeb(
+    titulo: String,
+    url: String,
+    onDismiss: () -> Unit
+) {
+    val context = LocalContext.current
+    var progresoCarga by remember { mutableIntStateOf(0) }
+    var cargando by remember { mutableStateOf(true) }
+    var webViewRef by remember { mutableStateOf<WebView?>(null) }
+
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(usePlatformDefaultWidth = false)
+    ) {
+        Surface(
+            modifier = Modifier.fillMaxSize(),
+            color = MaterialTheme.colorScheme.background
+        ) {
+            Column(modifier = Modifier.fillMaxSize()) {
+                // Barra superior de navegación del Visor Web
+                Surface(
+                    color = MaterialTheme.colorScheme.surface,
+                    shadowElevation = 4.dp,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 12.dp, vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            IconButton(onClick = onDismiss) {
+                                Text("✕", fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                            }
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Column {
+                                Text(
+                                    text = titulo,
+                                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                                Text(
+                                    text = url,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                            }
+                        }
+
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            IconButton(onClick = { webViewRef?.reload() }) {
+                                Text("🔄", fontSize = 16.sp)
+                            }
+                            IconButton(onClick = { copiarAlPortapapeles(context, titulo, url) }) {
+                                Text("📋", fontSize = 16.sp)
+                            }
+                            IconButton(onClick = { abrirEnlaceSeguro(context, url) }) {
+                                Text("🌐", fontSize = 16.sp)
+                            }
+                        }
+                    }
+                }
+
+                // Barra de progreso de carga
+                if (cargando) {
+                    LinearProgressIndicator(
+                        progress = { progresoCarga / 100f },
+                        modifier = Modifier.fillMaxWidth(),
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                }
+
+                // Vista Web
+                AndroidView(
+                    factory = { ctx ->
+                        WebView(ctx).apply {
+                            settings.apply {
+                                javaScriptEnabled = true
+                                domStorageEnabled = true
+                                loadWithOverviewMode = true
+                                useWideViewPort = true
+                                builtInZoomControls = true
+                                displayZoomControls = false
+                                mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
+                            }
+                            webChromeClient = object : WebChromeClient() {
+                                override fun onProgressChanged(view: WebView?, newProgress: Int) {
+                                    progresoCarga = newProgress
+                                    cargando = newProgress < 100
+                                }
+                            }
+                            webViewClient = object : WebViewClient() {
+                                override fun shouldOverrideUrlLoading(view: WebView?, url: String?): Boolean {
+                                    if (url != null) {
+                                        if (url.startsWith("http://") || url.startsWith("https://")) {
+                                            view?.loadUrl(url)
+                                            return true
+                                        } else if (url.startsWith("tel:")) {
+                                            marcarTelefonoSeguro(ctx, url.removePrefix("tel:"))
+                                            return true
+                                        }
+                                    }
+                                    return false
+                                }
+                            }
+                            loadUrl(url)
+                            webViewRef = this
+                        }
+                    },
+                    modifier = Modifier.weight(1f).fillMaxWidth()
+                )
+            }
+        }
+    }
+}
+
+/**
+ * Función robusta para abrir enlaces web externos de manera segura.
+ * Añade flags necesarios, maneja esquemas y provee fallback al portapapeles.
+ */
+fun abrirEnlaceSeguro(context: Context, url: String) {
+    try {
+        var urlFinal = url.trim()
+        if (!urlFinal.startsWith("http://") && !urlFinal.startsWith("https://")) {
+            urlFinal = "https://$urlFinal"
+        }
+        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(urlFinal)).apply {
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
+        context.startActivity(intent)
+    } catch (e: Exception) {
+        copiarAlPortapapeles(context, "Enlace de Denuncia", url)
+        Toast.makeText(context, "No se pudo abrir el navegador. Enlace copiado al portapapeles.", Toast.LENGTH_LONG).show()
+    }
+}
+
+/**
+ * Función robusta para marcar números de emergencia o denuncias.
+ */
+fun marcarTelefonoSeguro(context: Context, numero: String) {
+    try {
+        val numeroLimpio = numero.filter { it.isDigit() || it == '+' }
+        val intent = Intent(Intent.ACTION_DIAL, Uri.parse("tel:$numeroLimpio")).apply {
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
+        context.startActivity(intent)
+    } catch (e: Exception) {
+        copiarAlPortapapeles(context, "Línea de Atención", numero)
+        Toast.makeText(context, "Número $numero copiado al portapapeles", Toast.LENGTH_SHORT).show()
+    }
+}
+
+/**
+ * Copia un texto al portapapeles del dispositivo con confirmación visual.
+ */
+fun copiarAlPortapapeles(context: Context, etiqueta: String, texto: String) {
+    try {
+        val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager
+        val clip = ClipData.newPlainText(etiqueta, texto)
+        clipboard?.setPrimaryClip(clip)
+        Toast.makeText(context, "¡Enlace copiado al portapapeles!", Toast.LENGTH_SHORT).show()
+    } catch (_: Exception) {}
+}

@@ -429,7 +429,7 @@ fun ContenidoPoliticaPrivacidad() {
         )
     }
 }
-
+  
 @Composable
 fun ContenidoCreditosDesarrolladores() {
     Column(modifier = Modifier.padding(vertical = 10.dp)) {
