@@ -142,4 +142,85 @@ object FirebaseComunidadManager {
             esAlerta = esAlerta
         )
     }
+
+    private const val COLECCION_CUADRAS = "calificaciones_cuadras"
+
+    /**
+     * Escucha las calificaciones y justificaciones de cuadras en tiempo real.
+     */
+    fun escucharCalificacionesCuadras(
+        onActualizado: (List<ReporteCuadra>) -> Unit,
+        onError: (Exception) -> Unit = {}
+    ): ListenerRegistration? {
+        val firestore = obtenerDb() ?: return null
+
+        return try {
+            firestore.collection(COLECCION_CUADRAS)
+                .orderBy("timestamp", Query.Direction.DESCENDING)
+                .limit(200)
+                .addSnapshotListener { snapshot, error ->
+                    if (error != null) {
+                        Log.e(TAG, "Error escuchando calificaciones de cuadras", error)
+                        onError(error)
+                        return@addSnapshotListener
+                    }
+
+                    if (snapshot != null) {
+                        val reportes = snapshot.documents.mapNotNull { doc ->
+                            try {
+                                val data = doc.data ?: return@mapNotNull null
+                                ReporteCuadra.fromMap(doc.id, data)
+                            } catch (e: Exception) {
+                                null
+                            }
+                        }
+                        onActualizado(reportes)
+                    }
+                }
+        } catch (e: Exception) {
+            Log.e(TAG, "No se pudo registrar listener de cuadras: ${e.message}")
+            onError(e)
+            null
+        }
+    }
+
+    /**
+     * Publica una nueva calificación de riesgo y justificación para una cuadra.
+     */
+    suspend fun guardarCalificacionCuadra(reporte: ReporteCuadra): Boolean {
+        val firestore = obtenerDb() ?: return false
+        return try {
+            val justificacionLimpia = FiltroGroserias.censurar(reporte.justificacion.trim())
+            val aliasLimpio = FiltroGroserias.censurar(reporte.usuarioAlias.trim()).ifBlank { "Vecino anónimo" }
+            val reporteAGuardar = reporte.copy(
+                justificacion = justificacionLimpia,
+                usuarioAlias = aliasLimpio
+            )
+            firestore.collection(COLECCION_CUADRAS)
+                .add(reporteAGuardar.toMap())
+                .await()
+            true
+        } catch (e: Exception) {
+            Log.e(TAG, "Error guardando calificacion de cuadra en Firestore", e)
+            false
+        }
+    }
+
+    /**
+     * Incrementa el voto de apoyo o confirmación comunitaria de una cuadra.
+     */
+    suspend fun apoyarCalificacionCuadra(reporteId: String) {
+        val firestore = obtenerDb() ?: return
+        try {
+            val docRef = firestore.collection(COLECCION_CUADRAS).document(reporteId)
+            firestore.runTransaction { transaction ->
+                val snapshot = transaction.get(docRef)
+                val votos = snapshot.getLong("votosApoyo") ?: 0
+                transaction.update(docRef, "votosApoyo", votos + 1)
+            }.await()
+        } catch (e: Exception) {
+            Log.e(TAG, "Error apoyando reporte: ${e.message}")
+        }
+    }
 }
+
