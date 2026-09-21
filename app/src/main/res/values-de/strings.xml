@@ -11,7 +11,6 @@
     <string name="lineas_desc_banner">Offizielles Verzeichnis von Bogotá. Tippen Sie auf einen Dienst, um sofort anzurufen.</string>
 
     <!-- Notfall-Tabs -->
-    <string name="tab_sismos">Erdbeben</string>
     <string name="tab_guias">Leitfäden</string>
     <string name="tab_mochila">72h-Rucksack</string>
     <string name="tab_lineas">Notrufe</string>
@@ -23,17 +22,6 @@
     <string name="btn_ver_detalle">Details ansehen</string>
     <string name="pestana_mapa">Heatmap</string>
     <string name="pestana_ranking">Rangliste</string>
-
-    <!-- Live-Erdbeben -->
-    <string name="sismos_recientes_titulo">Aktuelle Erdbeben in der Region</string>
-    <string name="sismos_actualizar">Aktualisieren</string>
-    <string name="sismos_magnitud">Mag. %1$.1f</string>
-    <string name="sismos_profundidad">Tiefe: %1$.1f km</string>
-    <string name="sismos_distancia">%1$.1f km von Bogotá</string>
-    <string name="sismos_sin_datos">Keine aktuellen Erdbeben in der Region registriert.</string>
-    <string name="sismos_cargando">Live-Erdbeben werden abgerufen...</string>
-    <string name="sismo_hace_minutos">Vor %1$d Min.</string>
-    <string name="sismo_hace_horas">Vor %1$d Std.</string>
 
     <!-- Leitfaden-Phasen -->
     <string name="guia_fase_antes">Davor</string>

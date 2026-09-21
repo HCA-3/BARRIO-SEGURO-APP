@@ -123,6 +123,7 @@ class MainActivity : AppCompatActivity() {
         android.util.Log.d("BarrioSeguro", "MainActivity iniciada. Backend: ${ApiClient.baseUrl}")
         setContent {
             val ajustesViewModel: AjustesViewModel = viewModel()
+            val chatViewModel: com.example.riesgossocialesenchapinero.ui.ChatViewModel = viewModel()
             val ajustesEstado by ajustesViewModel.estado.collectAsState()
 
             val locale = remember(ajustesEstado.idioma) {
@@ -303,7 +304,10 @@ class MainActivity : AppCompatActivity() {
                                 },
                             )
                             Pantalla.EMERGENCIAS -> EmergenciasScreen(modifier = Modifier.fillMaxSize())
-                            Pantalla.CHAT -> PantallaChat(modifier = Modifier.fillMaxSize())
+                            Pantalla.CHAT -> PantallaChat(
+                                modifier = Modifier.fillMaxSize(),
+                                viewModel = chatViewModel
+                            )
                             Pantalla.COMUNIDAD -> ChatGlobalScreen(modifier = Modifier.fillMaxSize())
                             Pantalla.AJUSTES -> AjustesScreen(
                                 modifier = Modifier.fillMaxSize(),

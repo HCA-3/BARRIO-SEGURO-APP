@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "752256264277",
+    "project_id": "barrio-seguro-22c30",
+    "storage_bucket": "barrio-seguro-22c30.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:752256264277:android:39e7c5e7320e41609d8cdc",
+        "android_client_info": {
+          "package_name": "com.example.riesgossocialesenchapinero"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBmyzRTAZ2wGKDBTKvg3s5oKvW99dSuO1U"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -24,11 +24,6 @@ Agente/actualizacion.log
 # pipeline (ProcesarRiesgo.py) los busca dentro de esta carpeta si estan
 # presentes localmente; si no estan, cada fuente opcional se omite sola.
 Agente/datos bogota.gov/
-Agente/output/*.csv
-Agente/output/*.xlsx
-Agente/output/*.url
-!Agente/output/zonas_riesgo.json
-!Agente/output/localidades.geojson
 
 # Entornos virtuales y basura de Python
 /venv/

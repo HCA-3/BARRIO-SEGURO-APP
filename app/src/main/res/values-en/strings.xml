@@ -11,7 +11,6 @@
     <string name="lineas_desc_banner">Official directory of Bogotá. Tap any service to call immediately.</string>
 
     <!-- Emergency Tabs -->
-    <string name="tab_sismos">Earthquakes</string>
     <string name="tab_guias">Guides</string>
     <string name="tab_mochila">72h Kit</string>
     <string name="tab_lineas">Hotlines</string>
@@ -23,17 +22,6 @@
     <string name="btn_ver_detalle">View data</string>
     <string name="pestana_mapa">Heatmap</string>
     <string name="pestana_ranking">Ranking</string>
-
-    <!-- Live Earthquakes -->
-    <string name="sismos_recientes_titulo">Recent earthquakes in the region</string>
-    <string name="sismos_actualizar">Refresh</string>
-    <string name="sismos_magnitud">Mag. %1$.1f</string>
-    <string name="sismos_profundidad">Depth: %1$.1f km</string>
-    <string name="sismos_distancia">%1$.1f km from Bogotá</string>
-    <string name="sismos_sin_datos">No recent earthquakes recorded in the region.</string>
-    <string name="sismos_cargando">Checking live earthquakes...</string>
-    <string name="sismo_hace_minutos">%1$d min ago</string>
-    <string name="sismo_hace_horas">%1$d h ago</string>
 
     <!-- Guide Phases -->
     <string name="guia_fase_antes">Before</string>

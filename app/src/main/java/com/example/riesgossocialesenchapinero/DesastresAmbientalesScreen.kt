@@ -66,7 +66,7 @@ import java.util.Date
 import java.util.Locale
 
 enum class SubPestanaDesastre {
-    SISMOS, GUIAS, MOCHILA
+    GUIAS, MOCHILA
 }
 
 @Composable
@@ -75,7 +75,7 @@ fun DesastresAmbientalesScreen(
     viewModel: EmergenciasViewModel = viewModel()
 ) {
     val estado by viewModel.estado.collectAsState()
-    var subPestana by remember { mutableStateOf(SubPestanaDesastre.SISMOS) }
+    var subPestana by remember { mutableStateOf(SubPestanaDesastre.GUIAS) }
 
     Column(modifier = modifier.fillMaxSize()) {
         ScrollableTabRow(
@@ -83,11 +83,6 @@ fun DesastresAmbientalesScreen(
             edgePadding = 16.dp,
             modifier = Modifier.fillMaxWidth()
         ) {
-            Tab(
-                selected = subPestana == SubPestanaDesastre.SISMOS,
-                onClick = { subPestana = SubPestanaDesastre.SISMOS },
-                text = { Text("🔴 " + stringResource(R.string.tab_sismos)) }
-            )
             Tab(
                 selected = subPestana == SubPestanaDesastre.GUIAS,
                 onClick = { subPestana = SubPestanaDesastre.GUIAS },
@@ -101,265 +96,11 @@ fun DesastresAmbientalesScreen(
         }
 
         when (subPestana) {
-            SubPestanaDesastre.SISMOS -> VistaSismos(
-                sismos = estado.sismos,
-                cargando = estado.cargandoSismos,
-                error = estado.errorSismos,
-                onRefrescar = { viewModel.cargarSismos() }
-            )
             SubPestanaDesastre.GUIAS -> VistaGuiasDesastres()
             SubPestanaDesastre.MOCHILA -> VistaMochila72h(
                 itemsMarcados = estado.mochilaChecklist,
                 onToggle = { viewModel.toggleItemMochila(it) }
             )
-        }
-    }
-}
-
-// -------------------------------------------------------------------------------------------------
-// 1. VISTA SISMOS EN TIEMPO REAL
-// -------------------------------------------------------------------------------------------------
-
-enum class FiltroSismo {
-    TODOS, MAG_4, CERCANOS
-}
-
-@Composable
-fun VistaSismos(
-    sismos: List<ApiClient.Sismo>,
-    cargando: Boolean,
-    error: String?,
-    onRefrescar: () -> Unit
-) {
-    val context = androidx.compose.ui.platform.LocalContext.current
-    var filtro by remember { mutableStateOf(FiltroSismo.TODOS) }
-
-    val sismosFiltrados = remember(sismos, filtro) {
-        when (filtro) {
-            FiltroSismo.TODOS -> sismos
-            FiltroSismo.MAG_4 -> sismos.filter { it.magnitud >= 4.0 }
-            FiltroSismo.CERCANOS -> sismos.filter { it.distanciaBogotaKm <= 350.0 }
-        }
-    }
-
-    Column(modifier = Modifier.fillMaxSize().padding(12.dp)) {
-        // BANNER INFORMATIVO
-        Card(
-            modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth().padding(12.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = "📡 " + stringResource(R.string.sismos_recientes_titulo),
-                        style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer
-                    )
-                    Text(
-                        text = "Monitoreo en vivo de eventos telúricos en Colombia y la región",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.85f)
-                    )
-                }
-                Button(
-                    onClick = onRefrescar,
-                    enabled = !cargando,
-                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
-                ) {
-                    Text(stringResource(R.string.sismos_actualizar))
-                }
-            }
-        }
-
-        // CHIPS DE FILTRO RÁPIDO
-        if (sismos.isNotEmpty()) {
-            Row(
-                modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
-            ) {
-                FilterChip(
-                    selected = filtro == FiltroSismo.TODOS,
-                    onClick = { filtro = FiltroSismo.TODOS },
-                    label = { Text("Todos (${sismos.size})", style = MaterialTheme.typography.labelSmall) }
-                )
-                val countMag4 = sismos.count { it.magnitud >= 4.0 }
-                FilterChip(
-                    selected = filtro == FiltroSismo.MAG_4,
-                    onClick = { filtro = FiltroSismo.MAG_4 },
-                    label = { Text("🔴 Mag ≥ 4.0 ($countMag4)", style = MaterialTheme.typography.labelSmall) }
-                )
-                val countCercanos = sismos.count { it.distanciaBogotaKm <= 350.0 }
-                FilterChip(
-                    selected = filtro == FiltroSismo.CERCANOS,
-                    onClick = { filtro = FiltroSismo.CERCANOS },
-                    label = { Text("📍 < 350 km ($countCercanos)", style = MaterialTheme.typography.labelSmall) }
-                )
-            }
-        }
-
-        if (cargando) {
-            Box(modifier = Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    CircularProgressIndicator()
-                    Spacer(modifier = Modifier.height(12.dp))
-                    Text(stringResource(R.string.sismos_cargando), style = MaterialTheme.typography.bodyMedium)
-                }
-            }
-        } else if (error != null) {
-            Box(modifier = Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(24.dp)) {
-                    Text(error, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodyMedium)
-                    Spacer(modifier = Modifier.height(12.dp))
-                    Button(onClick = onRefrescar) {
-                        Text(stringResource(R.string.btn_reintentar))
-                    }
-                }
-            }
-        } else if (sismosFiltrados.isEmpty()) {
-            Box(modifier = Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
-                Text(stringResource(R.string.sismos_sin_datos), style = MaterialTheme.typography.bodyMedium)
-            }
-        } else {
-            LazyColumn(
-                modifier = Modifier.weight(1f).fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                itemsIndexed(sismosFiltrados, key = { _, it -> it.id }) { index, sismo ->
-                    TarjetaSismo(
-                        sismo = sismo,
-                        index = index,
-                        onAbrirUrl = { url ->
-                            if (url.isNotEmpty()) {
-                                val intent = android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(url)).apply {
-                                    addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
-                                }
-                                context.startActivity(intent)
-                            }
-                        }
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun TarjetaSismo(
-    sismo: ApiClient.Sismo,
-    index: Int = 0,
-    onAbrirUrl: (String) -> Unit = {}
-) {
-    val colorSeveridad = when {
-        sismo.magnitud >= 6.0 -> Color(0xFFD32F2F)
-        sismo.magnitud >= 5.0 -> Color(0xFFF57C00)
-        sismo.magnitud >= 3.5 -> Color(0xFFFBC02D)
-        else -> Color(0xFF388E3C)
-    }
-    val esFuerte = sismo.magnitud >= 4.5
-    val pulsingBorder = if (esFuerte) rememberPulsingBorder(colorSeveridad, minAlpha = 0.35f, maxAlpha = 0.9f) else null
-
-    val formatoHora = remember { SimpleDateFormat("dd MMM, hh:mm a", Locale.getDefault()) }
-    val fechaStr = remember(sismo.tiempo) { formatoHora.format(Date(sismo.tiempo)) }
-    val minutosAtras = remember(sismo.tiempo) {
-        val dif = (System.currentTimeMillis() - sismo.tiempo) / (1000 * 60)
-        dif.coerceAtLeast(0)
-    }
-
-    val tipoProfundidad = when {
-        sismo.profundidadKm < 30.0 -> "Superficial"
-        sismo.profundidadKm <= 120.0 -> "Intermedia"
-        else -> "Profunda"
-    }
-
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .staggeredEntrance(index = index)
-            .bounceClick(scaleDown = 0.96f) {
-                if (sismo.url.isNotEmpty()) onAbrirUrl(sismo.url)
-            }
-            .animateContentSize(),
-        border = pulsingBorder,
-        elevation = CardDefaults.cardElevation(defaultElevation = if (esFuerte) 4.dp else 2.dp)
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(14.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Surface(
-                color = colorSeveridad,
-                shape = RoundedCornerShape(10.dp),
-                modifier = Modifier.size(54.dp)
-            ) {
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center
-                ) {
-                    Text(
-                        text = "%.1f".format(sismo.magnitud),
-                        color = Color.White,
-                        fontWeight = FontWeight.ExtraBold,
-                        style = MaterialTheme.typography.titleLarge
-                    )
-                    Text(
-                        text = "Mag",
-                        color = Color.White.copy(alpha = 0.9f),
-                        style = MaterialTheme.typography.labelSmall
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.width(14.dp))
-
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = sismo.lugar,
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.Bold
-                )
-                Spacer(modifier = Modifier.height(2.dp))
-                Text(
-                    text = "$fechaStr • " + if (minutosAtras < 60) {
-                        stringResource(R.string.sismo_hace_minutos, minutosAtras)
-                    } else {
-                        stringResource(R.string.sismo_hace_horas, minutosAtras / 60)
-                    },
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Spacer(modifier = Modifier.height(4.dp))
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = "Prof. ${sismo.profundidadKm} km ($tipoProfundidad)",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Text(
-                        text = stringResource(R.string.sismos_distancia, sismo.distanciaBogotaKm),
-                        style = MaterialTheme.typography.labelSmall,
-                        fontWeight = FontWeight.SemiBold,
-                        color = if (sismo.distanciaBogotaKm < 150) Color(0xFFD32F2F) else MaterialTheme.colorScheme.primary
-                    )
-                }
-                if (sismo.sentido > 0) {
-                    Spacer(modifier = Modifier.height(2.dp))
-                    Text(
-                        text = "👥 Sentido por ${sismo.sentido} personas",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = Color(0xFFE65100),
-                        fontWeight = FontWeight.Medium
-                    )
-                }
-            }
         }
     }
 }
