@@ -223,29 +223,42 @@ fun MapaCalorBogotaScreen(
         }
     }
 
+    DisposableEffect(Unit) {
+        onDispose {
+            try {
+                mapaRef?.onPause()
+                mapaRef?.onDetach()
+            } catch (_: Exception) {}
+        }
+    }
+
     Box(modifier = modifier.fillMaxSize()) {
         // Mapa Nativo OSMDroid ultra-rápido a 60 FPS
         AndroidView(
             factory = { ctx ->
-                Configuration.getInstance().apply {
-                    userAgentValue = ctx.packageName
-                    osmdroidTileCache = File(ctx.cacheDir, "osmdroid")
-                }
+                try {
+                    Configuration.getInstance().load(ctx, ctx.getSharedPreferences("osmdroid_prefs", Context.MODE_PRIVATE))
+                    Configuration.getInstance().userAgentValue = "BarrioSeguroApp/${ctx.packageName}"
+                    Configuration.getInstance().osmdroidTileCache = File(ctx.cacheDir, "osmdroid")
+                } catch (_: Exception) {}
 
                 MapView(ctx).apply {
                     setTileSource(TileSourceFactory.MAPNIK)
                     setMultiTouchControls(true)
                     isTilesScaledToDpi = true
                     zoomController.setVisibility(org.osmdroid.views.CustomZoomButtonsController.Visibility.NEVER)
-                    controller.setZoom(14.2)
+                    controller.setZoom(14.5)
                     // Centrar en Chapinero / Bogotá
                     val centroBogota = GeoPoint(4.6534, -74.0620)
                     controller.setCenter(centroBogota)
 
                     // Capa de ubicación en vivo
-                    val locationOverlay = MyLocationNewOverlay(GpsMyLocationProvider(ctx), this)
-                    locationOverlay.enableMyLocation()
-                    overlays.add(locationOverlay)
+                    try {
+                        val locationOverlay = MyLocationNewOverlay(GpsMyLocationProvider(ctx), this).apply {
+                            enableMyLocation()
+                        }
+                        overlays.add(locationOverlay)
+                    } catch (_: Exception) {}
 
                     // Eventos de toque en el mapa (para seleccionar y calificar cuadras)
                     val receiver = object : MapEventsReceiver {
@@ -255,7 +268,6 @@ fun MapaCalorBogotaScreen(
                                     puntoParaCalificar = p
                                     modoSeleccionarPunto = false
                                 } else {
-                                    // Si no hay reporte seleccionado, tocar un espacio libre deselecciona
                                     reporteSeleccionado = null
                                 }
                             }
@@ -271,11 +283,12 @@ fun MapaCalorBogotaScreen(
                     }
                     overlays.add(MapEventsOverlay(receiver))
 
+                    onResume()
                     mapaRef = this
                 }
             },
             update = { mapView ->
-                // Actualizar marcadores de cuadras y polígonos
+                mapView.onResume()
                 actualizarCapasMapa(
                     context = context,
                     mapView = mapView,
