@@ -258,7 +258,7 @@ fun ChatGlobalScreen(modifier: Modifier = Modifier) {
                     horizontalArrangement = Arrangement.spacedBy(6.dp),
                     contentPadding = PaddingValues(horizontal = 2.dp)
                 ) {
-                    items(LOCALIDADES_BOGOTA_OPCIONES.take(8)) { loc ->
+                    items(LOCALIDADES_BOGOTA_OPCIONES) { loc ->
                         FilterChip(
                             selected = filtroLocalidad == loc,
                             onClick = { filtroLocalidad = loc },
