@@ -1,6 +1,7 @@
 package com.example.riesgossocialesenchapinero
 
 import android.Manifest
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
@@ -104,6 +105,10 @@ fun PantallaChat(modifier: Modifier = Modifier, viewModel: ChatViewModel = viewM
         }
     }
 
+    BackHandler(enabled = drawerState.isOpen) {
+        scope.launch { drawerState.close() }
+    }
+
     if (mostrarMemoria) {
         DialogoMemoria(
             hechos = estado.hechosRecordados,
@@ -116,7 +121,7 @@ fun PantallaChat(modifier: Modifier = Modifier, viewModel: ChatViewModel = viewM
     ModalNavigationDrawer(
         modifier = modifier,
         drawerState = drawerState,
-        gesturesEnabled = false,
+        gesturesEnabled = true,
         drawerContent = {
             ModalDrawerSheet {
                 PanelConversaciones(
@@ -131,6 +136,9 @@ fun PantallaChat(modifier: Modifier = Modifier, viewModel: ChatViewModel = viewM
                         scope.launch { drawerState.close() }
                     },
                     onBorrar = { id -> viewModel.borrarConversacion(id) },
+                    onCerrar = {
+                        scope.launch { drawerState.close() }
+                    },
                 )
             }
         },
@@ -266,10 +274,20 @@ fun PanelConversaciones(
     onNuevaConversacion: () -> Unit,
     onSeleccionar: (Long) -> Unit,
     onBorrar: (Long) -> Unit,
+    onCerrar: () -> Unit,
 ) {
-    Column(modifier = Modifier.fillMaxHeight().width(280.dp).padding(16.dp)) {
-        Text(stringResource(R.string.chat_conversaciones), style = MaterialTheme.typography.titleMedium)
-        Spacer(modifier = Modifier.height(12.dp))
+    Column(modifier = Modifier.fillMaxHeight().width(290.dp).padding(16.dp)) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(stringResource(R.string.chat_conversaciones), style = MaterialTheme.typography.titleMedium)
+            IconButton(onClick = onCerrar, modifier = Modifier.size(32.dp)) {
+                Text("✕", style = MaterialTheme.typography.titleMedium)
+            }
+        }
+        Spacer(modifier = Modifier.height(10.dp))
         TextButton(onClick = onNuevaConversacion, modifier = Modifier.fillMaxWidth()) {
             Text(stringResource(R.string.chat_nueva_conversacion))
         }
