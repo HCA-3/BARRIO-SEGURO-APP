@@ -94,9 +94,10 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import com.example.riesgossocialesenchapinero.ui.ChatGlobalScreen
+import com.example.riesgossocialesenchapinero.ui.DenunciasScreen
 
 private enum class Pantalla {
-    RIESGO, EMERGENCIAS, CHAT, COMUNIDAD, AJUSTES
+    RIESGO, DENUNCIAS, EMERGENCIAS, CHAT, COMUNIDAD, AJUSTES
 }
 
 class MainActivity : AppCompatActivity() {
@@ -230,6 +231,7 @@ class MainActivity : AppCompatActivity() {
                                 Text(
                                     when (pantallaActual) {
                                         Pantalla.RIESGO -> stringResource(R.string.pantalla_riesgo)
+                                        Pantalla.DENUNCIAS -> stringResource(R.string.pantalla_denuncias)
                                         Pantalla.EMERGENCIAS -> stringResource(R.string.pantalla_emergencias)
                                         Pantalla.CHAT -> stringResource(R.string.pantalla_agente)
                                         Pantalla.COMUNIDAD -> stringResource(R.string.pantalla_comunidad)
@@ -245,31 +247,37 @@ class MainActivity : AppCompatActivity() {
                                 selected = pantallaActual == Pantalla.RIESGO,
                                 onClick = { pantallaActual = Pantalla.RIESGO },
                                 icon = { Text("⚠") },
-                                label = { Text(stringResource(R.string.pantalla_riesgo)) },
+                                label = { Text(stringResource(R.string.pantalla_riesgo), maxLines = 1) },
+                            )
+                            NavigationBarItem(
+                                selected = pantallaActual == Pantalla.DENUNCIAS,
+                                onClick = { pantallaActual = Pantalla.DENUNCIAS },
+                                icon = { Text("⚖️") },
+                                label = { Text(stringResource(R.string.pantalla_denuncias), maxLines = 1) },
                             )
                             NavigationBarItem(
                                 selected = pantallaActual == Pantalla.EMERGENCIAS,
                                 onClick = { pantallaActual = Pantalla.EMERGENCIAS },
                                 icon = { Text("📞") },
-                                label = { Text(stringResource(R.string.pantalla_emergencias)) },
+                                label = { Text(stringResource(R.string.pantalla_emergencias), maxLines = 1) },
                             )
                             NavigationBarItem(
                                 selected = pantallaActual == Pantalla.CHAT,
                                 onClick = { pantallaActual = Pantalla.CHAT },
                                 icon = { Text("💬") },
-                                label = { Text(stringResource(R.string.pantalla_agente)) },
+                                label = { Text(stringResource(R.string.pantalla_agente), maxLines = 1) },
                             )
                             NavigationBarItem(
                                 selected = pantallaActual == Pantalla.COMUNIDAD,
                                 onClick = { pantallaActual = Pantalla.COMUNIDAD },
                                 icon = { Text("🌐") },
-                                label = { Text(stringResource(R.string.pantalla_comunidad)) },
+                                label = { Text(stringResource(R.string.pantalla_comunidad), maxLines = 1) },
                             )
                             NavigationBarItem(
                                 selected = pantallaActual == Pantalla.AJUSTES,
                                 onClick = { pantallaActual = Pantalla.AJUSTES },
                                 icon = { Text("⚙") },
-                                label = { Text(stringResource(R.string.pantalla_ajustes)) },
+                                label = { Text(stringResource(R.string.pantalla_ajustes), maxLines = 1) },
                             )
                         }
                     },
@@ -303,6 +311,7 @@ class MainActivity : AppCompatActivity() {
                                     }
                                 },
                             )
+                            Pantalla.DENUNCIAS -> DenunciasScreen(modifier = Modifier.fillMaxSize())
                             Pantalla.EMERGENCIAS -> EmergenciasScreen(modifier = Modifier.fillMaxSize())
                             Pantalla.CHAT -> PantallaChat(
                                 modifier = Modifier.fillMaxSize(),
