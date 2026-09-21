@@ -39,6 +39,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -246,38 +248,44 @@ class MainActivity : AppCompatActivity() {
                             NavigationBarItem(
                                 selected = pantallaActual == Pantalla.RIESGO,
                                 onClick = { pantallaActual = Pantalla.RIESGO },
-                                icon = { Text("⚠") },
-                                label = { Text(stringResource(R.string.pantalla_riesgo), maxLines = 1) },
+                                icon = { Text("⚠", fontSize = 18.sp) },
+                                label = { Text(stringResource(R.string.pantalla_riesgo), fontSize = 10.sp, maxLines = 1, overflow = TextOverflow.Ellipsis) },
+                                alwaysShowLabel = false
                             )
                             NavigationBarItem(
                                 selected = pantallaActual == Pantalla.DENUNCIAS,
                                 onClick = { pantallaActual = Pantalla.DENUNCIAS },
-                                icon = { Text("⚖️") },
-                                label = { Text(stringResource(R.string.pantalla_denuncias), maxLines = 1) },
+                                icon = { Text("⚖️", fontSize = 18.sp) },
+                                label = { Text(stringResource(R.string.pantalla_denuncias), fontSize = 10.sp, maxLines = 1, overflow = TextOverflow.Ellipsis) },
+                                alwaysShowLabel = false
                             )
                             NavigationBarItem(
                                 selected = pantallaActual == Pantalla.EMERGENCIAS,
                                 onClick = { pantallaActual = Pantalla.EMERGENCIAS },
-                                icon = { Text("📞") },
-                                label = { Text(stringResource(R.string.pantalla_emergencias), maxLines = 1) },
+                                icon = { Text("📞", fontSize = 18.sp) },
+                                label = { Text(stringResource(R.string.pantalla_emergencias), fontSize = 10.sp, maxLines = 1, overflow = TextOverflow.Ellipsis) },
+                                alwaysShowLabel = false
                             )
                             NavigationBarItem(
                                 selected = pantallaActual == Pantalla.CHAT,
                                 onClick = { pantallaActual = Pantalla.CHAT },
-                                icon = { Text("💬") },
-                                label = { Text(stringResource(R.string.pantalla_agente), maxLines = 1) },
+                                icon = { Text("💬", fontSize = 18.sp) },
+                                label = { Text(stringResource(R.string.pantalla_agente), fontSize = 10.sp, maxLines = 1, overflow = TextOverflow.Ellipsis) },
+                                alwaysShowLabel = false
                             )
                             NavigationBarItem(
                                 selected = pantallaActual == Pantalla.COMUNIDAD,
                                 onClick = { pantallaActual = Pantalla.COMUNIDAD },
-                                icon = { Text("🌐") },
-                                label = { Text(stringResource(R.string.pantalla_comunidad), maxLines = 1) },
+                                icon = { Text("🌐", fontSize = 18.sp) },
+                                label = { Text(stringResource(R.string.pantalla_comunidad), fontSize = 10.sp, maxLines = 1, overflow = TextOverflow.Ellipsis) },
+                                alwaysShowLabel = false
                             )
                             NavigationBarItem(
                                 selected = pantallaActual == Pantalla.AJUSTES,
                                 onClick = { pantallaActual = Pantalla.AJUSTES },
-                                icon = { Text("⚙") },
-                                label = { Text(stringResource(R.string.pantalla_ajustes), maxLines = 1) },
+                                icon = { Text("⚙", fontSize = 18.sp) },
+                                label = { Text(stringResource(R.string.pantalla_ajustes), fontSize = 10.sp, maxLines = 1, overflow = TextOverflow.Ellipsis) },
+                                alwaysShowLabel = false
                             )
                         }
                     },

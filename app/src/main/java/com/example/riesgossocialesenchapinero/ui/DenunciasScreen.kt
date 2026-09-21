@@ -66,6 +66,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
@@ -450,17 +451,21 @@ fun SeccionPlataformasOficiales(
                     ) {
                         Surface(
                             color = plat.colorBadge.copy(alpha = 0.15f),
-                            shape = RoundedCornerShape(8.dp)
+                            shape = RoundedCornerShape(8.dp),
+                            modifier = Modifier.weight(1f, fill = false)
                         ) {
                             Text(
                                 text = plat.entidad,
                                 color = plat.colorBadge,
                                 style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
                                 modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
                             )
                         }
 
                         if (plat.telefonoDirecto != null) {
+                            Spacer(modifier = Modifier.width(8.dp))
                             Surface(
                                 color = MaterialTheme.colorScheme.primaryContainer,
                                 shape = RoundedCornerShape(12.dp),
@@ -529,7 +534,7 @@ fun SeccionPlataformasOficiales(
                             shape = RoundedCornerShape(12.dp),
                             modifier = Modifier.weight(1f)
                         ) {
-                            Text("✍️ Redactar", fontSize = 13.sp)
+                            Text("✍️ Redactar", fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
                         }
 
                         Button(
@@ -541,7 +546,7 @@ fun SeccionPlataformasOficiales(
                             shape = RoundedCornerShape(12.dp),
                             modifier = Modifier.weight(1.3f)
                         ) {
-                            Text("🌐 Abrir Formulario", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                            Text("🌐 Abrir Formulario", fontWeight = FontWeight.Bold, fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
                         }
                     }
                 }
