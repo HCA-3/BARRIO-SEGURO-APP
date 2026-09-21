@@ -210,6 +210,8 @@ class MainActivity : AppCompatActivity() {
                     }
                 }
 
+                var mostrarTutorialManual by remember { mutableStateOf(false) }
+
                 // Modal obligatorio de Términos y Condiciones y Privacidad (Ley 1581 de 2012)
                 if (!ajustesEstado.terminosAceptados) {
                     com.example.riesgossocialesenchapinero.ui.ModalBienvenidaTerminos(
@@ -221,6 +223,16 @@ class MainActivity : AppCompatActivity() {
                         },
                         onRechazar = {
                             actividad.finish()
+                        }
+                    )
+                }
+
+                // Modal interactivo de Tutorial de Bienvenida y Tour de la App (primera vez o por solicitud)
+                if (ajustesEstado.terminosAceptados && (!ajustesEstado.tutorialVisto || mostrarTutorialManual)) {
+                    com.example.riesgossocialesenchapinero.ui.ModalTutorialBienvenida(
+                        onFinalizarTutorial = {
+                            ajustesViewModel.completarTutorial()
+                            mostrarTutorialManual = false
                         }
                     )
                 }
@@ -240,6 +252,11 @@ class MainActivity : AppCompatActivity() {
                                         Pantalla.AJUSTES -> stringResource(R.string.pantalla_ajustes)
                                     }
                                 )
+                            },
+                            actions = {
+                                IconButton(onClick = { mostrarTutorialManual = true }) {
+                                    Text("🎓", fontSize = 19.sp)
+                                }
                             }
                         )
                     },
@@ -328,7 +345,8 @@ class MainActivity : AppCompatActivity() {
                             Pantalla.COMUNIDAD -> ChatGlobalScreen(modifier = Modifier.fillMaxSize())
                             Pantalla.AJUSTES -> AjustesScreen(
                                 modifier = Modifier.fillMaxSize(),
-                                viewModel = ajustesViewModel
+                                viewModel = ajustesViewModel,
+                                onVerTutorialClick = { mostrarTutorialManual = true }
                             )
                         }
                     }

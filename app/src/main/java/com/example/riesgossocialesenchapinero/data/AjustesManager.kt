@@ -22,7 +22,14 @@ class AjustesManager(context: Context) {
         private const val CLAVE_INTERVALO = "ajustes_intervalo_minutos"
         private const val CLAVE_ALERTAS = "ajustes_alertas_habilitadas"
         private const val CLAVE_TERMINOS = "ajustes_terminos_aceptados"
+        private const val CLAVE_TUTORIAL_VISTO = "ajustes_tutorial_inicial_visto"
     }
+
+    var tutorialVisto: Boolean
+        get() = prefs.getBoolean(CLAVE_TUTORIAL_VISTO, false)
+        set(value) {
+            prefs.edit().putBoolean(CLAVE_TUTORIAL_VISTO, value).apply()
+        }
 
     var terminosAceptados: Boolean
         get() = prefs.getBoolean(CLAVE_TERMINOS, false)

@@ -43,7 +43,8 @@ import com.example.riesgossocialesenchapinero.ui.AjustesViewModel
 @Composable
 fun AjustesScreen(
     modifier: Modifier = Modifier,
-    viewModel: AjustesViewModel
+    viewModel: AjustesViewModel,
+    onVerTutorialClick: () -> Unit = {}
 ) {
     val estado by viewModel.estado.collectAsState()
 
@@ -237,6 +238,47 @@ fun AjustesScreen(
                     Spacer(modifier = Modifier.height(2.dp))
                     Text(
                         text = "Ley 1581 de 2012, Decreto 1074 de 2015 y Habeas Data",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                Text("➔", style = MaterialTheme.typography.titleMedium)
+            }
+        }
+
+        Spacer(modifier = Modifier.height(14.dp))
+
+        // SECCIÓN TUTORIAL Y RECORRIDO DE LA APP
+        Text(
+            text = "🎓 Guía y Recorrido de la App",
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.primary
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .bounceClick(scaleDown = 0.97f) {
+                    onVerTutorialClick()
+                }
+                .animateContentSize(),
+            shape = RoundedCornerShape(12.dp)
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "🎓 Ver Tour Interactivo de Bienvenida",
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = "Repite el recorrido guiado que explica todas las secciones y herramientas de Barrio Seguro.",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
