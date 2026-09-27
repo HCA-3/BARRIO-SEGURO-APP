@@ -99,6 +99,7 @@ import org.osmdroid.tileprovider.tilesource.TileSourceFactory
 import org.osmdroid.util.BoundingBox
 import org.osmdroid.util.GeoPoint
 import org.osmdroid.views.MapView
+import org.osmdroid.views.overlay.CopyrightOverlay
 import org.osmdroid.views.overlay.MapEventsOverlay
 import org.osmdroid.views.overlay.Marker
 import org.osmdroid.views.overlay.Polygon
@@ -108,6 +109,21 @@ import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+
+// tile.openstreetmap.org (TileSourceFactory.MAPNIK) empezó a devolver el
+// tile de "403 Access blocked": el servidor de demo de OSM prohíbe
+// explícitamente en su política de uso el consumo desde apps distribuidas/en
+// pruebas repetidas (no es un tema de User-Agent, que ya estaba bien puesto,
+// sino de volumen/tipo de uso). Se probó CARTO (basemaps.cartocdn.com) como
+// reemplazo, pero ahora exige API key ("API KEY REQUIRED" en el tile) para
+// ese endpoint gratuito. OpenTopoMap sí sigue siendo gratuito y sin API key
+// para este tipo de uso, y ya viene incluido en osmdroid como
+// TileSourceFactory.OpenTopo -- estilo topográfico (curvas de nivel, relieve)
+// en vez de un mapa de calles plano, pero es el que de verdad no se bloquea.
+// Requiere atribución visible (ver CopyrightOverlay abajo). Si más adelante
+// se quiere un estilo de calles limpio, la opción correcta es un proveedor
+// con API key propia (MapTiler/Thunderforest) o tiles propios, no otro
+// servidor gratuito sin registrar -- ese ciclo se repite.
 
 data class PuntoGeo(val lng: Double, val lat: Double)
 
@@ -300,7 +316,7 @@ fun MapaCalorBogotaScreen(
                 } catch (_: Exception) {}
 
                 MapView(ctx).apply {
-                    setTileSource(TileSourceFactory.MAPNIK)
+                    setTileSource(TileSourceFactory.OpenTopo)
                     setMultiTouchControls(true)
                     isTilesScaledToDpi = true
                     minZoomLevel = 11.0
@@ -324,6 +340,13 @@ fun MapaCalorBogotaScreen(
                         }
                         overlays.add(locationOverlay)
                     } catch (_: Exception) {}
+
+                    // Atribución obligatoria de los datos/tiles (licencia ODbL de
+                    // OSM + términos de CARTO): no es decorativo, es requisito legal
+                    // de ambos para poder usar sus datos/mapas.
+                    overlays.add(CopyrightOverlay(ctx).apply {
+                        setCopyrightNotice("© OpenStreetMap contributors, SRTM | © OpenTopoMap (CC-BY-SA)")
+                    })
 
                     // Eventos táctiles en el mapa
                     val receiver = object : MapEventsReceiver {
