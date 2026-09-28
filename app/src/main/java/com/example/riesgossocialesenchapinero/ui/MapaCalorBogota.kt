@@ -656,15 +656,29 @@ fun MapaCalorBogotaScreen(
                 mapaRef?.controller?.zoomOut()
             },
             onGoogleMapsClick = {
+                // FLAG_ACTIVITY_NEW_TASK es obligatorio aqui: LocalContext.current en
+                // este arbol de Compose no siempre resuelve al Context de la Activity
+                // (osmdroid/AndroidView de por medio), y sin el flag Android lanza
+                // "Calling startActivity() from outside of an Activity context" y
+                // tumba la app en seco -- crash reproducido y confirmado por logcat.
                 val centro = mapaRef?.mapCenter ?: miUbicacion ?: GeoPoint(4.6534, -74.0620)
                 val uri = Uri.parse("geo:${centro.latitude},${centro.longitude}?q=${centro.latitude},${centro.longitude}(Barrio Seguro)")
                 val intent = Intent(Intent.ACTION_VIEW, uri).apply {
                     setPackage("com.google.android.apps.maps")
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                 }
-                if (intent.resolveActivity(context.packageManager) != null) {
-                    context.startActivity(intent)
-                } else {
-                    context.startActivity(Intent(Intent.ACTION_VIEW, uri))
+                try {
+                    if (intent.resolveActivity(context.packageManager) != null) {
+                        context.startActivity(intent)
+                    } else {
+                        context.startActivity(
+                            Intent(Intent.ACTION_VIEW, uri).apply {
+                                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                            }
+                        )
+                    }
+                } catch (e: Exception) {
+                    Toast.makeText(context, "No pude abrir Google Maps", Toast.LENGTH_SHORT).show()
                 }
             }
         )
