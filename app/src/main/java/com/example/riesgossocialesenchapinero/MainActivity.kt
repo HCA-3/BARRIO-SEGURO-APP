@@ -53,7 +53,6 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
@@ -161,6 +160,12 @@ class MainActivity : AppCompatActivity() {
                 RIESGOSSOCIALESENCHAPINEROTheme(darkTheme = temaOscuro) {
                 val actividad = this
                 var pantallaActual by remember { mutableStateOf(Pantalla.RIESGO) }
+                // Se sube aquí (en vez de vivir dentro de PantallaRiesgo) para
+                // poder mostrar el selector Mapa/Ranking en el TopAppBar en
+                // vez de como una fila aparte en el cuerpo, que dejaba la
+                // pantalla de Riesgo con demasiadas barras apiladas antes de
+                // llegar al mapa.
+                var vistaMapa by remember { mutableStateOf(true) }
 
                 // true cuando el diálogo lo pidió el usuario pulsando "Activar",
                 // no el arranque automático: solo en ese caso tiene sentido
@@ -254,6 +259,24 @@ class MainActivity : AppCompatActivity() {
                                 )
                             },
                             actions = {
+                                if (pantallaActual == Pantalla.RIESGO) {
+                                    IconButton(onClick = { vistaMapa = true }) {
+                                        Text(
+                                            "🗺️",
+                                            fontSize = 19.sp,
+                                            color = if (vistaMapa) MaterialTheme.colorScheme.primary
+                                                else MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
+                                    IconButton(onClick = { vistaMapa = false }) {
+                                        Text(
+                                            "📋",
+                                            fontSize = 19.sp,
+                                            color = if (!vistaMapa) MaterialTheme.colorScheme.primary
+                                                else MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
+                                }
                                 IconButton(onClick = { mostrarTutorialManual = true }) {
                                     Text("🎓", fontSize = 19.sp)
                                 }
@@ -319,6 +342,7 @@ class MainActivity : AppCompatActivity() {
                         when (pantalla) {
                             Pantalla.RIESGO -> PantallaRiesgo(
                                 modifier = Modifier.fillMaxSize(),
+                                vistaMapa = vistaMapa,
                                 monitoreoActivo = monitoreoActivo.value,
                                 onToggleMonitoreo = {
                                     if (monitoreoActivo.value) {
@@ -367,6 +391,7 @@ sealed interface EstadoBusquedaBarrio {
 @Composable
 fun PantallaRiesgo(
     modifier: Modifier = Modifier,
+    vistaMapa: Boolean,
     monitoreoActivo: Boolean,
     onToggleMonitoreo: () -> Unit,
     viewModel: RiesgoViewModel = viewModel(),
@@ -374,11 +399,11 @@ fun PantallaRiesgo(
     val estado by viewModel.estado.collectAsState()
     var textoBusqueda by remember { mutableStateOf("") }
     var estadoBusqueda by remember { mutableStateOf<EstadoBusquedaBarrio>(EstadoBusquedaBarrio.Inactivo) }
-    // Se usa tanto para el toggle Mapa/Ranking como para decidir si se muestra
-    // el buscador de barrios de esta pantalla: en vista Mapa, MapaCalorBogota
-    // ya trae su propio buscador integrado (busca Y centra el mapa ahí), así
-    // que mostrar también este lo duplicaba -- quedaban los dos apilados.
-    var vistaMapa by remember { mutableStateOf(true) }
+    // vistaMapa ahora llega por parámetro: el toggle Mapa/Ranking vive en el
+    // TopAppBar (ver BarrioSeguroApp), no aquí. Se sigue usando para decidir
+    // si se muestra el buscador de barrios de esta pantalla: en vista Mapa,
+    // MapaCalorBogota ya trae su propio buscador integrado (busca Y centra el
+    // mapa ahí), así que mostrar también este lo duplicaba.
     val scope = rememberCoroutineScope()
 
     fun buscarBarrio(nombre: String, localidad: String? = null) {
@@ -529,26 +554,10 @@ fun PantallaRiesgo(
                     }
                 }
 
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 4.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    FilterChip(
-                        selected = vistaMapa,
-                        onClick = { vistaMapa = true },
-                        label = { Text("🗺️ " + stringResource(R.string.pestana_mapa)) },
-                        modifier = Modifier.weight(1f)
-                    )
-                    FilterChip(
-                        selected = !vistaMapa,
-                        onClick = { vistaMapa = false },
-                        label = { Text("📋 " + stringResource(R.string.pestana_ranking)) },
-                        modifier = Modifier.weight(1f)
-                    )
-                }
-
+                // El toggle Mapa/Ranking se movió al TopAppBar (ver
+                // BarrioSeguroApp): esta fila de FilterChip ocupaba una barra
+                // completa aparte, sumándose a la tarjeta de monitoreo y al
+                // buscador y dejando muy poco espacio visible para el mapa.
                 if (vistaMapa) {
                     com.example.riesgossocialesenchapinero.ui.MapaCalorBogota(
                         modifier = Modifier.weight(1f).fillMaxWidth(),
