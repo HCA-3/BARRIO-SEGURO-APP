@@ -1206,7 +1206,13 @@ def preguntar(modelo: str, historial: list, datos: dict, lat: float = None, lng:
 
     # 2. Si Ollama no está activo, responder de inmediato con el motor determinístico experto
     if not ollama_disponible:
-        return responder_deterministico_inteligente(ultimo_mensaje_usr, historial, datos, lat, lng), hechos_nuevos
+        respuesta = responder_deterministico_inteligente(ultimo_mensaje_usr, historial, datos, lat, lng)
+        # Sin esto, "mensajes" (lo que la app usa para actualizar el historial
+        # del chat) vuelve igual a como llegó, sin la respuesta -- la app
+        # nunca la muestra ni la guarda, aunque el backend haya respondido 200
+        # OK con un texto valido en "respuesta" (bug real, reproducido).
+        historial.append({"role": "assistant", "content": respuesta})
+        return respuesta, hechos_nuevos
 
     # 3. Si Ollama está disponible, intentar inferencia con tool-calling
     try:
@@ -1258,7 +1264,9 @@ def preguntar(modelo: str, historial: list, datos: dict, lat: float = None, lng:
         print(f"Aviso: Ollama no completó la consulta ({e}). Usando motor determinístico de respaldo.")
 
     # 4. Respaldo determinístico garantizado si Ollama no devolvió respuesta
-    return responder_deterministico_inteligente(ultimo_mensaje_usr, historial, datos, lat, lng), hechos_nuevos
+    respuesta = responder_deterministico_inteligente(ultimo_mensaje_usr, historial, datos, lat, lng)
+    historial.append({"role": "assistant", "content": respuesta})
+    return respuesta, hechos_nuevos
 
 
 app = FastAPI(title="Barrio Seguro API", version="1.0")
