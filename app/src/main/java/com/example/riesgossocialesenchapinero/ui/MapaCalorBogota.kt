@@ -155,12 +155,14 @@ enum class FiltroCuadras(val label: String) {
 fun MapaCalorBogota(
     modifier: Modifier = Modifier,
     ranking: List<ApiClient.Localidad> = emptyList(),
-    onSeleccionarLocalidad: ((String) -> Unit)? = null
+    onSeleccionarLocalidad: ((String) -> Unit)? = null,
+    header: @Composable () -> Unit = {}
 ) {
     MapaCalorBogotaScreen(
         ranking = ranking,
         modifier = modifier,
-        onSeleccionarLocalidad = onSeleccionarLocalidad
+        onSeleccionarLocalidad = onSeleccionarLocalidad,
+        header = header
     )
 }
 
@@ -168,7 +170,8 @@ fun MapaCalorBogota(
 fun MapaCalorBogotaScreen(
     ranking: List<ApiClient.Localidad>,
     modifier: Modifier = Modifier,
-    onSeleccionarLocalidad: ((String) -> Unit)? = null
+    onSeleccionarLocalidad: ((String) -> Unit)? = null,
+    header: @Composable () -> Unit = {}
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -406,6 +409,15 @@ fun MapaCalorBogotaScreen(
                 .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.94f))
                 .padding(horizontal = 12.dp, vertical = 6.dp)
         ) {
+            // Contenido inyectado desde PantallaRiesgo (tarjeta de monitoreo de
+            // ubicación). Va aquí, flotando en la misma columna que el
+            // buscador, en vez de como hermano en un Column externo que
+            // empuja el mapa hacia abajo: el AndroidView del mapa no
+            // reajusta bien su tamaño cuando un hermano de altura dinámica
+            // (esta tarjeta cambia de 1 a 2 líneas al activar el monitoreo)
+            // cambia de alto en tiempo real, y quedaba superpuesto/cortado.
+            header()
+
             // Buscador de Barrios / Calles
             OutlinedTextField(
                 value = textoBusqueda,
