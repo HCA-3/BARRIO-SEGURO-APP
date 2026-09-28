@@ -1232,7 +1232,16 @@ def preguntar(modelo: str, historial: list, datos: dict, lat: float = None, lng:
                         "temperature": 0.15,
                     },
                 },
-                timeout=10,
+                # 10s (valor con el que quedo tras un cambio reciente) es muy
+                # poco para un modelo de 8B en CPU: casi cualquier respuesta
+                # real dispara el timeout y cae al motor deterministico de
+                # respaldo (mas limitado) en vez de usar el LLM. 100s por
+                # ronda, hasta MAX_RONDAS_TOOLS rondas: da tiempo real a
+                # Ollama, aceptando que a veces tarde varios segundos en
+                # contestar -- decision del equipo, ver conversacion con el
+                # usuario. El cliente Android ya tiene su propio timeout de
+                # 660s (ver ApiClient.kt), asi que no corta antes que esto.
+                timeout=100,
             )
             if resp.status_code != 200:
                 break
@@ -1261,7 +1270,7 @@ def preguntar(modelo: str, historial: list, datos: dict, lat: float = None, lng:
                 historial.append({"role": "tool", "content": json.dumps(resultado, ensure_ascii=False)})
 
     except Exception as e:
-        print(f"Aviso: Ollama no completó la consulta ({e}). Usando motor determinístico de respaldo.")
+        print(f"Aviso: Ollama no completó la consulta ({e}). Usando motor determinístico de respaldo.", flush=True)
 
     # 4. Respaldo determinístico garantizado si Ollama no devolvió respuesta
     respuesta = responder_deterministico_inteligente(ultimo_mensaje_usr, historial, datos, lat, lng)

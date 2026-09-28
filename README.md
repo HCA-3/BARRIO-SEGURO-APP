@@ -21,7 +21,11 @@ Este repositorio se divide en tres componentes principales:
 
 ### 1. Requisitos Previos
 - **Ollama:** Descargar e instalar desde [ollama.com](https://ollama.com/).
-- **Modelo:** Ejecutar `ollama pull llama3.1` para descargar el modelo de lenguaje.
+- **Modelo:** Ejecutar `ollama pull llama3.2:3b` para descargar el modelo de lenguaje
+  (modelo por defecto del backend, pensado para correr solo en CPU sin que
+  tarde varios minutos por respuesta; para usar el 8B en su lugar, fijar
+  `set BARRIO_SEGURO_MODELO=llama3.1` antes de arrancar el backend, con
+  `ollama pull llama3.1` ya hecho).
 - **Python 3.10+**
 
 ### 2. Preparación del Backend
