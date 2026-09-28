@@ -420,8 +420,23 @@ fun PantallaRiesgo(
         )
     }
 
-    Column(modifier = modifier.fillMaxSize()) {
+    // En vista Mapa esta tarjeta se pasa como "header" de MapaCalorBogota (ver
+    // más abajo) en vez de renderizarse aquí: como hermano de un Column con
+    // el mapa (que usa weight(1f)), un cambio de alto en tiempo real de esta
+    // tarjeta (1 línea inactiva -> 2 líneas activa) no reajustaba bien el
+    // AndroidView del mapa y quedaba superpuesto/cortado.
+    val controlMonitoreo: @Composable () -> Unit = {
         ControlMonitoreo(activo = monitoreoActivo, onToggle = onToggleMonitoreo)
+    }
+    // Solo se pasa como header del mapa cuando el mapa de verdad se va a
+    // renderizar (estado Listo + vista Mapa); en Cargando/Error/Ranking sigue
+    // mostrándose normal, como hermano en este Column.
+    val monitoreoVaComoHeaderDelMapa = vistaMapa && estado is RiesgoUiState.Listo
+
+    Column(modifier = modifier.fillMaxSize()) {
+        if (!monitoreoVaComoHeaderDelMapa) {
+            controlMonitoreo()
+        }
 
         if (!vistaMapa) {
             BarraBusquedaBarrio(
@@ -540,7 +555,8 @@ fun PantallaRiesgo(
                         ranking = actual.localidades,
                         onSeleccionarLocalidad = { nombre ->
                             seleccion = SeleccionDetalle(localidad = nombre)
-                        }
+                        },
+                        header = controlMonitoreo
                     )
                 } else {
                     LazyColumn(
