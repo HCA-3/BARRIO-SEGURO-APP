@@ -374,6 +374,11 @@ fun PantallaRiesgo(
     val estado by viewModel.estado.collectAsState()
     var textoBusqueda by remember { mutableStateOf("") }
     var estadoBusqueda by remember { mutableStateOf<EstadoBusquedaBarrio>(EstadoBusquedaBarrio.Inactivo) }
+    // Se usa tanto para el toggle Mapa/Ranking como para decidir si se muestra
+    // el buscador de barrios de esta pantalla: en vista Mapa, MapaCalorBogota
+    // ya trae su propio buscador integrado (busca Y centra el mapa ahí), así
+    // que mostrar también este lo duplicaba -- quedaban los dos apilados.
+    var vistaMapa by remember { mutableStateOf(true) }
     val scope = rememberCoroutineScope()
 
     fun buscarBarrio(nombre: String, localidad: String? = null) {
@@ -418,28 +423,30 @@ fun PantallaRiesgo(
     Column(modifier = modifier.fillMaxSize()) {
         ControlMonitoreo(activo = monitoreoActivo, onToggle = onToggleMonitoreo)
 
-        BarraBusquedaBarrio(
-            texto = textoBusqueda,
-            onTextoChange = { textoBusqueda = it },
-            onBuscar = { buscarBarrio(textoBusqueda) },
-            onLimpiar = {
-                textoBusqueda = ""
-                estadoBusqueda = EstadoBusquedaBarrio.Inactivo
-            },
-            mostrarLimpiar = estadoBusqueda != EstadoBusquedaBarrio.Inactivo,
-        )
-
-        val busquedaActual = estadoBusqueda
-        if (busquedaActual != EstadoBusquedaBarrio.Inactivo) {
-            ResultadoBusquedaBarrio(
-                estado = busquedaActual,
-                modifier = Modifier.weight(1f).fillMaxWidth(),
-                onElegirOpcion = { opcion -> buscarBarrio(textoBusqueda, opcion.localidad) },
-                onAbrirDetalle = { r ->
-                    seleccion = SeleccionDetalle(localidad = r.localidad, barrio = r.barrio, upz = r.upz)
+        if (!vistaMapa) {
+            BarraBusquedaBarrio(
+                texto = textoBusqueda,
+                onTextoChange = { textoBusqueda = it },
+                onBuscar = { buscarBarrio(textoBusqueda) },
+                onLimpiar = {
+                    textoBusqueda = ""
+                    estadoBusqueda = EstadoBusquedaBarrio.Inactivo
                 },
+                mostrarLimpiar = estadoBusqueda != EstadoBusquedaBarrio.Inactivo,
             )
-            return@Column
+
+            val busquedaActual = estadoBusqueda
+            if (busquedaActual != EstadoBusquedaBarrio.Inactivo) {
+                ResultadoBusquedaBarrio(
+                    estado = busquedaActual,
+                    modifier = Modifier.weight(1f).fillMaxWidth(),
+                    onElegirOpcion = { opcion -> buscarBarrio(textoBusqueda, opcion.localidad) },
+                    onAbrirDetalle = { r ->
+                        seleccion = SeleccionDetalle(localidad = r.localidad, barrio = r.barrio, upz = r.upz)
+                    },
+                )
+                return@Column
+            }
         }
 
         when (val actual = estado) {
@@ -506,8 +513,6 @@ fun PantallaRiesgo(
                         )
                     }
                 }
-
-                var vistaMapa by remember { mutableStateOf(true) }
 
                 Row(
                     modifier = Modifier
