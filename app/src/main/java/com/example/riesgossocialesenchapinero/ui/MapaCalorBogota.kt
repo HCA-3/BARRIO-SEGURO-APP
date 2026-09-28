@@ -813,17 +813,6 @@ fun FloatingActionButtonGroup(
         horizontalAlignment = Alignment.End,
         verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
-        // Botón destacado: + Calificar Cuadra
-        Button(
-            onClick = onCalificarClick,
-            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
-            shape = RoundedCornerShape(24.dp),
-            elevation = ButtonDefaults.buttonElevation(defaultElevation = 6.dp),
-            modifier = Modifier.height(48.dp)
-        ) {
-            Text("➕ Calificar Cuadra", fontWeight = FontWeight.Bold, fontSize = 13.5.sp)
-        }
-
         // Calificar mi ubicación actual
         Surface(
             shape = CircleShape,
@@ -876,6 +865,20 @@ fun FloatingActionButtonGroup(
                     Text("➖", fontSize = 16.sp, fontWeight = FontWeight.Bold)
                 }
             }
+        }
+
+        // "Calificar Cuadra": antes era el primer botón del grupo, así que
+        // quedaba flotando solo bien arriba en medio del mapa (muy invasivo,
+        // tapaba mucho mapa). Ahora es el último: queda pegado al resto de
+        // controles en la esquina, como uno más, no un botón aislado.
+        Button(
+            onClick = onCalificarClick,
+            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
+            shape = RoundedCornerShape(24.dp),
+            elevation = ButtonDefaults.buttonElevation(defaultElevation = 6.dp),
+            modifier = Modifier.height(44.dp)
+        ) {
+            Text("➕ Calificar Cuadra", fontWeight = FontWeight.Bold, fontSize = 13.sp)
         }
     }
 }
