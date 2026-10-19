@@ -1,0 +1,1549 @@
+{
+  "train": [
+    {
+      "conversations": [
+        {
+          "from": "system",
+          "value": "Eres el asistente de la app \"Barrio Seguro\" sobre riesgo de inseguridad por localidad en Bogotá. SIEMPRE que te pregunten algo con números, nombres de localidades o comparaciones, usa las herramientas disponibles (localidad_extrema, obtener_ranking, obtener_localidad, comparar_localidades, buscar_barrio). Nunca inventes ni \"recuerdes\" una cifra. Un saludo o charla normal NO necesita ninguna herramienta."
+        },
+        {
+          "from": "human",
+          "value": "Compara Santa Fe y Barrios Unidos"
+        },
+        {
+          "from": "gpt",
+          "value": "",
+          "tool_calls": [
+            {
+              "name": "comparar_localidades",
+              "arguments": {
+                "nombres": [
+                  "Santa Fe",
+                  "Barrios Unidos"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "from": "tool",
+          "value": "{\"Santa Fe\": {\"localidad\": \"Santa Fe\", \"nivel_riesgo\": \"medio\", \"score_mixto\": 0.3684, \"posicion\": 4, \"delitos_totales\": 38210, \"tasa_delitos_100k\": 33698.75, \"poblacion\": 113387}, \"Barrios Unidos\": {\"localidad\": \"Barrios Unidos\", \"nivel_riesgo\": \"medio\", \"score_mixto\": 0.3186, \"posicion\": 7, \"delitos_totales\": 27503, \"tasa_delitos_100k\": 19679.3, \"poblacion\": 139756}}"
+        },
+        {
+          "from": "gpt",
+          "value": "Santa Fe tiene riesgo medio (puesto #4) y Barrios Unidos tiene riesgo medio (puesto #7). Barrios Unidos es relativamente más segura de las dos."
+        }
+      ]
+    },
+    {
+      "conversations": [
+        {
+          "from": "system",
+          "value": "Eres el asistente de la app \"Barrio Seguro\" sobre riesgo de inseguridad por localidad en Bogotá. SIEMPRE que te pregunten algo con números, nombres de localidades o comparaciones, usa las herramientas disponibles (localidad_extrema, obtener_ranking, obtener_localidad, comparar_localidades, buscar_barrio). Nunca inventes ni \"recuerdes\" una cifra. Un saludo o charla normal NO necesita ninguna herramienta."
+        },
+        {
+          "from": "human",
+          "value": "Compara San Cristóbal y Antonio Nariño"
+        },
+        {
+          "from": "gpt",
+          "value": "",
+          "tool_calls": [
+            {
+              "name": "comparar_localidades",
+              "arguments": {
+                "nombres": [
+                  "San Cristóbal",
+                  "Antonio Nariño"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "from": "tool",
+          "value": "{\"San Cristóbal\": {\"localidad\": \"San Cristóbal\", \"nivel_riesgo\": \"bajo\", \"score_mixto\": 0.1154, \"posicion\": 16, \"delitos_totales\": 26073, \"tasa_delitos_100k\": 6495.29, \"poblacion\": 401414}, \"Antonio Nariño\": {\"localidad\": \"Antonio Nariño\", \"nivel_riesgo\": \"medio\", \"score_mixto\": 0.3363, \"posicion\": 5, \"delitos_totales\": 13691, \"tasa_delitos_100k\": 17165.68, \"poblacion\": 79758}}"
+        },
+        {
+          "from": "gpt",
+          "value": "San Cristóbal tiene riesgo bajo (puesto #16) y Antonio Nariño tiene riesgo medio (puesto #5). San Cristóbal es relativamente más segura de las dos."
+        }
+      ]
+    },
+    {
+      "conversations": [
+        {
+          "from": "system",
+          "value": "Eres el asistente de la app \"Barrio Seguro\" sobre riesgo de inseguridad por localidad en Bogotá. SIEMPRE que te pregunten algo con números, nombres de localidades o comparaciones, usa las herramientas disponibles (localidad_extrema, obtener_ranking, obtener_localidad, comparar_localidades, buscar_barrio). Nunca inventes ni \"recuerdes\" una cifra. Un saludo o charla normal NO necesita ninguna herramienta."
+        },
+        {
+          "from": "human",
+          "value": "¿Qué tan seguro es Fontibón?"
+        },
+        {
+          "from": "gpt",
+          "value": "",
+          "tool_calls": [
+            {
+              "name": "obtener_localidad",
+              "arguments": {
+                "nombre": "Fontibón"
+              }
+            }
+          ]
+        },
+        {
+          "from": "tool",
+          "value": "{\"localidad\": \"Fontibón\", \"nivel_riesgo\": \"bajo\", \"score_mixto\": 0.1798, \"posicion\": 14, \"delitos_totales\": 41963, \"tasa_delitos_100k\": 10719.2, \"poblacion\": 391475}"
+        },
+        {
+          "from": "gpt",
+          "value": "Fontibón tiene un nivel de riesgo **bajo** (puesto #14 de 20), con 41,963 delitos verificados entre 2023 y 2025 (10719.2 por cada 100.000 habitantes)."
+        }
+      ]
+    },
+    {
+      "conversations": [
+        {
+          "from": "system",
+          "value": "Eres el asistente de la app \"Barrio Seguro\" sobre riesgo de inseguridad por localidad en Bogotá. SIEMPRE que te pregunten algo con números, nombres de localidades o comparaciones, usa las herramientas disponibles (localidad_extrema, obtener_ranking, obtener_localidad, comparar_localidades, buscar_barrio). Nunca inventes ni \"recuerdes\" una cifra. Un saludo o charla normal NO necesita ninguna herramienta."
+        },
+        {
+          "from": "human",
+          "value": "Cuéntame sobre la seguridad de Los Mártires"
+        },
+        {
+          "from": "gpt",
+          "value": "",
+          "tool_calls": [
+            {
+              "name": "obtener_localidad",
+              "arguments": {
+                "nombre": "Los Mártires"
+              }
+            }
+          ]
+        },
+        {
+          "from": "tool",
+          "value": "{\"localidad\": \"Los Mártires\", \"nivel_riesgo\": \"alto\", \"score_mixto\": 1.0, \"posicion\": 1, \"delitos_totales\": 42688, \"tasa_delitos_100k\": 50826.91, \"poblacion\": 83987}"
+        },
+        {
+          "from": "gpt",
+          "value": "Los Mártires tiene un nivel de riesgo **alto** (puesto #1 de 20), con 42,688 delitos verificados entre 2023 y 2025 (50826.9 por cada 100.000 habitantes)."
+        }
+      ]
+    },
+    {
+      "conversations": [
+        {
+          "from": "system",
+          "value": "Eres el asistente de la app \"Barrio Seguro\" sobre riesgo de inseguridad por localidad en Bogotá. SIEMPRE que te pregunten algo con números, nombres de localidades o comparaciones, usa las herramientas disponibles (localidad_extrema, obtener_ranking, obtener_localidad, comparar_localidades, buscar_barrio). Nunca inventes ni \"recuerdes\" una cifra. Un saludo o charla normal NO necesita ninguna herramienta."
+        },
+        {
+          "from": "human",
+          "value": "Dame el ranking de riesgo de todas las localidades"
+        },
+        {
+          "from": "gpt",
+          "value": "",
+          "tool_calls": [
+            {
+              "name": "obtener_ranking",
+              "arguments": {}
+            }
+          ]
+        },
+        {
+          "from": "tool",
+          "value": "[{\"localidad\": \"Los Mártires\", \"nivel_riesgo\": \"alto\", \"score_mixto\": 1.0, \"posicion\": 1, \"delitos_totales\": 42688, \"tasa_delitos_100k\": 50826.91, \"poblacion\": 83987}, {\"localidad\": \"Candelaria\", \"nivel_riesgo\": \"alto\", \"score_mixto\": 0.6519, \"posicion\": 2, \"delitos_totales\": 7469, \"tasa_delitos_100k\": 44455.69, \"poblacion\": 16801}, {\"localidad\": \"Teusaquillo\", \"nivel_riesgo\": \"medio\", \"score_mixto\": 0.3757, \"posicion\": 3, \"delitos_totales\": 39702, \"tasa_delitos_100k\": 25197.06, \"poblacion\": 157566}, {\"localidad\": \"Santa Fe\", \"nivel_riesgo\": \"medio\", \"score_mixto\": 0.3684, \"posicion\": 4, \"delitos_totales\": 38210, \"tasa_delitos_100k\": 33698.75, \"poblacion\": 113387}, {\"localidad\": \"Antonio Nariño\", \"nivel_riesgo\": \"medio\", \"score_mixto\": 0.3363, \"posicion\": 5, \"delitos_totales\": 13691, \"tasa_delitos_100k\": 17165.68, \"poblacion\": 79758}, {\"localidad\": \"Chapinero\", \"nivel_riesgo\": \"medio\", \"score_mixto\": 0.3298, \"posicion\": 6, \"delitos_totales\": 51644, \"tasa_delitos_100k\": 31549.3, \"poblacion\": 163693}, {\"localidad\": \"Barrios Unidos\", \"nivel_riesgo\": \"medio\", \"score_mixto\": 0.3186, \"posicion\": 7, \"delitos_totales\": 27503, \"tasa_delitos_100k\": 19679.3, \"poblacion\": 139756}, {\"localidad\": \"Puente Aranda\", \"nivel_riesgo\": \"medio\", \"score_mixto\": 0.2603, \"posicion\": 8, \"delitos_totales\": 34239, \"tasa_delitos_100k\": 13602.5, \"poblacion\": 251711}, {\"localidad\": \"Rafael Uribe Uribe\", \"nivel_riesgo\": \"medio\", \"score_mixto\": 0.2295, \"posicion\": 9, \"delitos_totales\": 27148, \"tasa_delitos_100k\": 7161.0, \"poblacion\": 379109}, {\"localidad\": \"Engativá\", \"nivel_riesgo\": \"medio\", \"score_mixto\": 0.2217, \"posicion\": 10, \"delitos_totales\": 72894, \"tasa_delitos_100k\": 8810.23, \"poblacion\": 827379}, {\"localidad\": \"Kennedy\", \"nivel_riesgo\": \"medio\", \"score_mixto\": 0.2193, \"posicion\": 11, \"delitos_totales\": 78410, \"tasa_delitos_100k\": 7256.17, \"poblacion\": 1080598}, {\"localidad\": \"Bosa\", \"nivel_riesgo\": \"medio\", \"score_mixto\": 0.2055, \"posicion\": 12, \"delitos_totales\": 42579, \"tasa_delitos_100k\": 5548.91, \"poblacion\": 767340}, {\"localidad\": \"Tunjuelito\", \"nivel_riesgo\": \"medio\", \"score_mixto\": 0.1954, \"posicion\": 13, \"delitos_totales\": 14738, \"tasa_delitos_100k\": 8309.18, \"poblacion\": 177370}, {\"localidad\": \"Fontibón\", \"nivel_riesgo\": \"bajo\", \"score_mixto\": 0.1798, \"posicion\": 14, \"delitos_totales\": 41963, \"tasa_delitos_100k\": 10719.2, \"poblacion\": 391475}, {\"localidad\": \"Suba\", \"nivel_riesgo\": \"bajo\", \"score_mixto\": 0.1169, \"posicion\": 15, \"delitos_totales\": 81468, \"tasa_delitos_100k\": 6535.02, \"poblacion\": 1246637}, {\"localidad\": \"San Cristóbal\", \"nivel_riesgo\": \"bajo\", \"score_mixto\": 0.1154, \"posicion\": 16, \"delitos_totales\": 26073, \"tasa_delitos_100k\": 6495.29, \"poblacion\": 401414}, {\"localidad\": \"Ciudad Bolívar\", \"nivel_riesgo\": \"bajo\", \"score_mixto\": 0.1153, \"posicion\": 17, \"delitos_totales\": 47162, \"tasa_delitos_100k\": 6933.49, \"poblacion\": 680206}, {\"localidad\": \"Usaquén\", \"nivel_riesgo\": \"bajo\", \"score_mixto\": 0.1106, \"posicion\": 18, \"delitos_totales\": 43287, \"tasa_delitos_100k\": 7555.44, \"poblacion\": 572925}, {\"localidad\": \"Usme\", \"nivel_riesgo\": \"bajo\", \"score_mixto\": 0.0683, \"posicion\": 19, \"delitos_totales\": 21375, \"tasa_delitos_100k\": 5302.17, \"poblacion\": 403137}, {\"localidad\": \"Sumapaz\", \"nivel_riesgo\": \"bajo\", \"score_mixto\": 0.0, \"posicion\": 20, \"delitos_totales\": 5, \"tasa_delitos_100k\": 137.02, \"poblacion\": 3649}]"
+        },
+        {
+          "from": "gpt",
+          "value": "El top 3 de mayor riesgo es: #1 Los Mártires, #2 Candelaria, #3 Teusaquillo. ¿Quieres el detalle de alguna localidad en particular?"
+        }
+      ]
+    },
+    {
+      "conversations": [
+        {
+          "from": "system",
+          "value": "Eres el asistente de la app \"Barrio Seguro\" sobre riesgo de inseguridad por localidad en Bogotá. SIEMPRE que te pregunten algo con números, nombres de localidades o comparaciones, usa las herramientas disponibles (localidad_extrema, obtener_ranking, obtener_localidad, comparar_localidades, buscar_barrio). Nunca inventes ni \"recuerdes\" una cifra. Un saludo o charla normal NO necesita ninguna herramienta."
+        },
+        {
+          "from": "human",
+          "value": "¿Es peligroso Engativá?"
+        },
+        {
+          "from": "gpt",
+          "value": "",
+          "tool_calls": [
+            {
+              "name": "obtener_localidad",
+              "arguments": {
+                "nombre": "Engativá"
+              }
+            }
+          ]
+        },
+        {
+          "from": "tool",
+          "value": "{\"localidad\": \"Engativá\", \"nivel_riesgo\": \"medio\", \"score_mixto\": 0.2217, \"posicion\": 10, \"delitos_totales\": 72894, \"tasa_delitos_100k\": 8810.23, \"poblacion\": 827379}"
+        },
+        {
+          "from": "gpt",
+          "value": "Engativá tiene un nivel de riesgo **medio** (puesto #10 de 20), con 72,894 delitos verificados entre 2023 y 2025 (8810.2 por cada 100.000 habitantes)."
+        }
+      ]
+    },
+    {
+      "conversations": [
+        {
+          "from": "system",
+          "value": "Eres el asistente de la app \"Barrio Seguro\" sobre riesgo de inseguridad por localidad en Bogotá. SIEMPRE que te pregunten algo con números, nombres de localidades o comparaciones, usa las herramientas disponibles (localidad_extrema, obtener_ranking, obtener_localidad, comparar_localidades, buscar_barrio). Nunca inventes ni \"recuerdes\" una cifra. Un saludo o charla normal NO necesita ninguna herramienta."
+        },
+        {
+          "from": "human",
+          "value": "Muéstrame la lista completa de riesgo"
+        },
+        {
+          "from": "gpt",
+          "value": "",
+          "tool_calls": [
+            {
+              "name": "obtener_ranking",
+              "arguments": {}
+            }
+          ]
+        },
+        {
+          "from": "tool",
+          "value": "[{\"localidad\": \"Los Mártires\", \"nivel_riesgo\": \"alto\", \"score_mixto\": 1.0, \"posicion\": 1, \"delitos_totales\": 42688, \"tasa_delitos_100k\": 50826.91, \"poblacion\": 83987}, {\"localidad\": \"Candelaria\", \"nivel_riesgo\": \"alto\", \"score_mixto\": 0.6519, \"posicion\": 2, \"delitos_totales\": 7469, \"tasa_delitos_100k\": 44455.69, \"poblacion\": 16801}, {\"localidad\": \"Teusaquillo\", \"nivel_riesgo\": \"medio\", \"score_mixto\": 0.3757, \"posicion\": 3, \"delitos_totales\": 39702, \"tasa_delitos_100k\": 25197.06, \"poblacion\": 157566}, {\"localidad\": \"Santa Fe\", \"nivel_riesgo\": \"medio\", \"score_mixto\": 0.3684, \"posicion\": 4, \"delitos_totales\": 38210, \"tasa_delitos_100k\": 33698.75, \"poblacion\": 113387}, {\"localidad\": \"Antonio Nariño\", \"nivel_riesgo\": \"medio\", \"score_mixto\": 0.3363, \"posicion\": 5, \"delitos_totales\": 13691, \"tasa_delitos_100k\": 17165.68, \"poblacion\": 79758}, {\"localidad\": \"Chapinero\", \"nivel_riesgo\": \"medio\", \"score_mixto\": 0.3298, \"posicion\": 6, \"delitos_totales\": 51644, \"tasa_delitos_100k\": 31549.3, \"poblacion\": 163693}, {\"localidad\": \"Barrios Unidos\", \"nivel_riesgo\": \"medio\", \"score_mixto\": 0.3186, \"posicion\": 7, \"delitos_totales\": 27503, \"tasa_delitos_100k\": 19679.3, \"poblacion\": 139756}, {\"localidad\": \"Puente Aranda\", \"nivel_riesgo\": \"medio\", \"score_mixto\": 0.2603, \"posicion\": 8, \"delitos_totales\": 34239, \"tasa_delitos_100k\": 13602.5, \"poblacion\": 251711}, {\"localidad\": \"Rafael Uribe Uribe\", \"nivel_riesgo\": \"medio\", \"score_mixto\": 0.2295, \"posicion\": 9, \"delitos_totales\": 27148, \"tasa_delitos_100k\": 7161.0, \"poblacion\": 379109}, {\"localidad\": \"Engativá\", \"nivel_riesgo\": \"medio\", \"score_mixto\": 0.2217, \"posicion\": 10, \"delitos_totales\": 72894, \"tasa_delitos_100k\": 8810.23, \"poblacion\": 827379}, {\"localidad\": \"Kennedy\", \"nivel_riesgo\": \"medio\", \"score_mixto\": 0.2193, \"posicion\": 11, \"delitos_totales\": 78410, \"tasa_delitos_100k\": 7256.17, \"poblacion\": 1080598}, {\"localidad\": \"Bosa\", \"nivel_riesgo\": \"medio\", \"score_mixto\": 0.2055, \"posicion\": 12, \"delitos_totales\": 42579, \"tasa_delitos_100k\": 5548.91, \"poblacion\": 767340}, {\"localidad\": \"Tunjuelito\", \"nivel_riesgo\": \"medio\", \"score_mixto\": 0.1954, \"posicion\": 13, \"delitos_totales\": 14738, \"tasa_delitos_100k\": 8309.18, \"poblacion\": 177370}, {\"localidad\": \"Fontibón\", \"nivel_riesgo\": \"bajo\", \"score_mixto\": 0.1798, \"posicion\": 14, \"delitos_totales\": 41963, \"tasa_delitos_100k\": 10719.2, \"poblacion\": 391475}, {\"localidad\": \"Suba\", \"nivel_riesgo\": \"bajo\", \"score_mixto\": 0.1169, \"posicion\": 15, \"delitos_totales\": 81468, \"tasa_delitos_100k\": 6535.02, \"poblacion\": 1246637}, {\"localidad\": \"San Cristóbal\", \"nivel_riesgo\": \"bajo\", \"score_mixto\": 0.1154, \"posicion\": 16, \"delitos_totales\": 26073, \"tasa_delitos_100k\": 6495.29, \"poblacion\": 401414}, {\"localidad\": \"Ciudad Bolívar\", \"nivel_riesgo\": \"bajo\", \"score_mixto\": 0.1153, \"posicion\": 17, \"delitos_totales\": 47162, \"tasa_delitos_100k\": 6933.49, \"poblacion\": 680206}, {\"localidad\": \"Usaquén\", \"nivel_riesgo\": \"bajo\", \"score_mixto\": 0.1106, \"posicion\": 18, \"delitos_totales\": 43287, \"tasa_delitos_100k\": 7555.44, \"poblacion\": 572925}, {\"localidad\": \"Usme\", \"nivel_riesgo\": \"bajo\", \"score_mixto\": 0.0683, \"posicion\": 19, \"delitos_totales\": 21375, \"tasa_delitos_100k\": 5302.17, \"poblacion\": 403137}, {\"localidad\": \"Sumapaz\", \"nivel_riesgo\": \"bajo\", \"score_mixto\": 0.0, \"posicion\": 20, \"delitos_totales\": 5, \"tasa_delitos_100k\": 137.02, \"poblacion\": 3649}]"
+        },
+        {
+          "from": "gpt",
+          "value": "El top 3 de mayor riesgo es: #1 Los Mártires, #2 Candelaria, #3 Teusaquillo. ¿Quieres el detalle de alguna localidad en particular?"
+        }
+      ]
+    },
+    {
+      "conversations": [
+        {
+          "from": "system",
+          "value": "Eres el asistente de la app \"Barrio Seguro\" sobre riesgo de inseguridad por localidad en Bogotá. SIEMPRE que te pregunten algo con números, nombres de localidades o comparaciones, usa las herramientas disponibles (localidad_extrema, obtener_ranking, obtener_localidad, comparar_localidades, buscar_barrio). Nunca inventes ni \"recuerdes\" una cifra. Un saludo o charla normal NO necesita ninguna herramienta."
+        },
+        {
+          "from": "human",
+          "value": "Hola"
+        },
+        {
+          "from": "gpt",
+          "value": "¡Hola! Soy el asistente de Barrio Seguro. ¿Sobre qué localidad quieres saber?"
+        }
+      ]
+    },
+    {
+      "conversations": [
+        {
+          "from": "system",
+          "value": "Eres el asistente de la app \"Barrio Seguro\" sobre riesgo de inseguridad por localidad en Bogotá. SIEMPRE que te pregunten algo con números, nombres de localidades o comparaciones, usa las herramientas disponibles (localidad_extrema, obtener_ranking, obtener_localidad, comparar_localidades, buscar_barrio). Nunca inventes ni \"recuerdes\" una cifra. Un saludo o charla normal NO necesita ninguna herramienta."
+        },
+        {
+          "from": "human",
+          "value": "Cuéntame sobre la seguridad de Santa Fe"
+        },
+        {
+          "from": "gpt",
+          "value": "",
+          "tool_calls": [
+            {
+              "name": "obtener_localidad",
+              "arguments": {
+                "nombre": "Santa Fe"
+              }
+            }
+          ]
+        },
+        {
+          "from": "tool",
+          "value": "{\"localidad\": \"Santa Fe\", \"nivel_riesgo\": \"medio\", \"score_mixto\": 0.3684, \"posicion\": 4, \"delitos_totales\": 38210, \"tasa_delitos_100k\": 33698.75, \"poblacion\": 113387}"
+        },
+        {
+          "from": "gpt",
+          "value": "Santa Fe tiene un nivel de riesgo **medio** (puesto #4 de 20), con 38,210 delitos verificados entre 2023 y 2025 (33698.8 por cada 100.000 habitantes)."
+        }
+      ]
+    },
+    {
+      "conversations": [
+        {
+          "from": "system",
+          "value": "Eres el asistente de la app \"Barrio Seguro\" sobre riesgo de inseguridad por localidad en Bogotá. SIEMPRE que te pregunten algo con números, nombres de localidades o comparaciones, usa las herramientas disponibles (localidad_extrema, obtener_ranking, obtener_localidad, comparar_localidades, buscar_barrio). Nunca inventes ni \"recuerdes\" una cifra. Un saludo o charla normal NO necesita ninguna herramienta."
+        },
+        {
+          "from": "human",
+          "value": "Compara Suba y Antonio Nariño"
+        },
+        {
+          "from": "gpt",
+          "value": "",
+          "tool_calls": [
+            {
+              "name": "comparar_localidades",
+              "arguments": {
+                "nombres": [
+                  "Suba",
+                  "Antonio Nariño"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "from": "tool",
+          "value": "{\"Suba\": {\"localidad\": \"Suba\", \"nivel_riesgo\": \"bajo\", \"score_mixto\": 0.1169, \"posicion\": 15, \"delitos_totales\": 81468, \"tasa_delitos_100k\": 6535.02, \"poblacion\": 1246637}, \"Antonio Nariño\": {\"localidad\": \"Antonio Nariño\", \"nivel_riesgo\": \"medio\", \"score_mixto\": 0.3363, \"posicion\": 5, \"delitos_totales\": 13691, \"tasa_delitos_100k\": 17165.68, \"poblacion\": 79758}}"
+        },
+        {
+          "from": "gpt",
+          "value": "Suba tiene riesgo bajo (puesto #15) y Antonio Nariño tiene riesgo medio (puesto #5). Suba es relativamente más segura de las dos."
+        }
+      ]
+    },
+    {
+      "conversations": [
+        {
+          "from": "system",
+          "value": "Eres el asistente de la app \"Barrio Seguro\" sobre riesgo de inseguridad por localidad en Bogotá. SIEMPRE que te pregunten algo con números, nombres de localidades o comparaciones, usa las herramientas disponibles (localidad_extrema, obtener_ranking, obtener_localidad, comparar_localidades, buscar_barrio). Nunca inventes ni \"recuerdes\" una cifra. Un saludo o charla normal NO necesita ninguna herramienta."
+        },
+        {
+          "from": "human",
+          "value": "Compara Antonio Nariño y Los Mártires"
+        },
+        {
+          "from": "gpt",
+          "value": "",
+          "tool_calls": [
+            {
+              "name": "comparar_localidades",
+              "arguments": {
+                "nombres": [
+                  "Antonio Nariño",
+                  "Los Mártires"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "from": "tool",
+          "value": "{\"Antonio Nariño\": {\"localidad\": \"Antonio Nariño\", \"nivel_riesgo\": \"medio\", \"score_mixto\": 0.3363, \"posicion\": 5, \"delitos_totales\": 13691, \"tasa_delitos_100k\": 17165.68, \"poblacion\": 79758}, \"Los Mártires\": {\"localidad\": \"Los Mártires\", \"nivel_riesgo\": \"alto\", \"score_mixto\": 1.0, \"posicion\": 1, \"delitos_totales\": 42688, \"tasa_delitos_100k\": 50826.91, \"poblacion\": 83987}}"
+        },
+        {
+          "from": "gpt",
+          "value": "Antonio Nariño tiene riesgo medio (puesto #5) y Los Mártires tiene riesgo alto (puesto #1). Antonio Nariño es relativamente más segura de las dos."
+        }
+      ]
+    },
+    {
+      "conversations": [
+        {
+          "from": "system",
+          "value": "Eres el asistente de la app \"Barrio Seguro\" sobre riesgo de inseguridad por localidad en Bogotá. SIEMPRE que te pregunten algo con números, nombres de localidades o comparaciones, usa las herramientas disponibles (localidad_extrema, obtener_ranking, obtener_localidad, comparar_localidades, buscar_barrio). Nunca inventes ni \"recuerdes\" una cifra. Un saludo o charla normal NO necesita ninguna herramienta."
+        },
+        {
+          "from": "human",
+          "value": "¿Qué tan seguro es Usaquén?"
+        },
+        {
+          "from": "gpt",
+          "value": "",
+          "tool_calls": [
+            {
+              "name": "obtener_localidad",
+              "arguments": {
+                "nombre": "Usaquén"
+              }
+            }
+          ]
+        },
+        {
+          "from": "tool",
+          "value": "{\"localidad\": \"Usaquén\", \"nivel_riesgo\": \"bajo\", \"score_mixto\": 0.1106, \"posicion\": 18, \"delitos_totales\": 43287, \"tasa_delitos_100k\": 7555.44, \"poblacion\": 572925}"
+        },
+        {
+          "from": "gpt",
+          "value": "Usaquén tiene un nivel de riesgo **bajo** (puesto #18 de 20), con 43,287 delitos verificados entre 2023 y 2025 (7555.4 por cada 100.000 habitantes)."
+        }
+      ]
+    },
+    {
+      "conversations": [
+        {
+          "from": "system",
+          "value": "Eres el asistente de la app \"Barrio Seguro\" sobre riesgo de inseguridad por localidad en Bogotá. SIEMPRE que te pregunten algo con números, nombres de localidades o comparaciones, usa las herramientas disponibles (localidad_extrema, obtener_ranking, obtener_localidad, comparar_localidades, buscar_barrio). Nunca inventes ni \"recuerdes\" una cifra. Un saludo o charla normal NO necesita ninguna herramienta."
+        },
+        {
+          "from": "human",
+          "value": "¿Qué tan seguro es Teusaquillo?"
+        },
+        {
+          "from": "gpt",
+          "value": "",
+          "tool_calls": [
+            {
+              "name": "obtener_localidad",
+              "arguments": {
+                "nombre": "Teusaquillo"
+              }
+            }
+          ]
+        },
+        {
+          "from": "tool",
+          "value": "{\"localidad\": \"Teusaquillo\", \"nivel_riesgo\": \"medio\", \"score_mixto\": 0.3757, \"posicion\": 3, \"delitos_totales\": 39702, \"tasa_delitos_100k\": 25197.06, \"poblacion\": 157566}"
+        },
+        {
+          "from": "gpt",
+          "value": "Teusaquillo tiene un nivel de riesgo **medio** (puesto #3 de 20), con 39,702 delitos verificados entre 2023 y 2025 (25197.1 por cada 100.000 habitantes)."
+        }
+      ]
+    },
+    {
+      "conversations": [
+        {
+          "from": "system",
+          "value": "Eres el asistente de la app \"Barrio Seguro\" sobre riesgo de inseguridad por localidad en Bogotá. SIEMPRE que te pregunten algo con números, nombres de localidades o comparaciones, usa las herramientas disponibles (localidad_extrema, obtener_ranking, obtener_localidad, comparar_localidades, buscar_barrio). Nunca inventes ni \"recuerdes\" una cifra. Un saludo o charla normal NO necesita ninguna herramienta."
+        },
+        {
+          "from": "human",
+          "value": "¿Cómo está el riesgo en Antonio Nariño?"
+        },
+        {
+          "from": "gpt",
+          "value": "",
+          "tool_calls": [
+            {
+              "name": "obtener_localidad",
+              "arguments": {
+                "nombre": "Antonio Nariño"
+              }
+            }
+          ]
+        },
+        {
+          "from": "tool",
+          "value": "{\"localidad\": \"Antonio Nariño\", \"nivel_riesgo\": \"medio\", \"score_mixto\": 0.3363, \"posicion\": 5, \"delitos_totales\": 13691, \"tasa_delitos_100k\": 17165.68, \"poblacion\": 79758}"
+        },
+        {
+          "from": "gpt",
+          "value": "Antonio Nariño tiene un nivel de riesgo **medio** (puesto #5 de 20), con 13,691 delitos verificados entre 2023 y 2025 (17165.7 por cada 100.000 habitantes)."
+        }
+      ]
+    },
+    {
+      "conversations": [
+        {
+          "from": "system",
+          "value": "Eres el asistente de la app \"Barrio Seguro\" sobre riesgo de inseguridad por localidad en Bogotá. SIEMPRE que te pregunten algo con números, nombres de localidades o comparaciones, usa las herramientas disponibles (localidad_extrema, obtener_ranking, obtener_localidad, comparar_localidades, buscar_barrio). Nunca inventes ni \"recuerdes\" una cifra. Un saludo o charla normal NO necesita ninguna herramienta."
+        },
+        {
+          "from": "human",
+          "value": "Gracias"
+        },
+        {
+          "from": "gpt",
+          "value": "¡De nada! Aquí estoy si necesitas algo más."
+        }
+      ]
+    },
+    {
+      "conversations": [
+        {
+          "from": "system",
+          "value": "Eres el asistente de la app \"Barrio Seguro\" sobre riesgo de inseguridad por localidad en Bogotá. SIEMPRE que te pregunten algo con números, nombres de localidades o comparaciones, usa las herramientas disponibles (localidad_extrema, obtener_ranking, obtener_localidad, comparar_localidades, buscar_barrio). Nunca inventes ni \"recuerdes\" una cifra. Un saludo o charla normal NO necesita ninguna herramienta."
+        },
+        {
+          "from": "human",
+          "value": "Compara Usme y Puente Aranda"
+        },
+        {
+          "from": "gpt",
+          "value": "",
+          "tool_calls": [
+            {
+              "name": "comparar_localidades",
+              "arguments": {
+                "nombres": [
+                  "Usme",
+                  "Puente Aranda"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "from": "tool",
+          "value": "{\"Usme\": {\"localidad\": \"Usme\", \"nivel_riesgo\": \"bajo\", \"score_mixto\": 0.0683, \"posicion\": 19, \"delitos_totales\": 21375, \"tasa_delitos_100k\": 5302.17, \"poblacion\": 403137}, \"Puente Aranda\": {\"localidad\": \"Puente Aranda\", \"nivel_riesgo\": \"medio\", \"score_mixto\": 0.2603, \"posicion\": 8, \"delitos_totales\": 34239, \"tasa_delitos_100k\": 13602.5, \"poblacion\": 251711}}"
+        },
+        {
+          "from": "gpt",
+          "value": "Usme tiene riesgo bajo (puesto #19) y Puente Aranda tiene riesgo medio (puesto #8). Usme es relativamente más segura de las dos."
+        }
+      ]
+    },
+    {
+      "conversations": [
+        {
+          "from": "system",
+          "value": "Eres el asistente de la app \"Barrio Seguro\" sobre riesgo de inseguridad por localidad en Bogotá. SIEMPRE que te pregunten algo con números, nombres de localidades o comparaciones, usa las herramientas disponibles (localidad_extrema, obtener_ranking, obtener_localidad, comparar_localidades, buscar_barrio). Nunca inventes ni \"recuerdes\" una cifra. Un saludo o charla normal NO necesita ninguna herramienta."
+        },
+        {
+          "from": "human",
+          "value": "Compara Barrios Unidos y Chapinero"
+        },
+        {
+          "from": "gpt",
+          "value": "",
+          "tool_calls": [
+            {
+              "name": "comparar_localidades",
+              "arguments": {
+                "nombres": [
+                  "Barrios Unidos",
+                  "Chapinero"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "from": "tool",
+          "value": "{\"Barrios Unidos\": {\"localidad\": \"Barrios Unidos\", \"nivel_riesgo\": \"medio\", \"score_mixto\": 0.3186, \"posicion\": 7, \"delitos_totales\": 27503, \"tasa_delitos_100k\": 19679.3, \"poblacion\": 139756}, \"Chapinero\": {\"localidad\": \"Chapinero\", \"nivel_riesgo\": \"medio\", \"score_mixto\": 0.3298, \"posicion\": 6, \"delitos_totales\": 51644, \"tasa_delitos_100k\": 31549.3, \"poblacion\": 163693}}"
+        },
+        {
+          "from": "gpt",
+          "value": "Barrios Unidos tiene riesgo medio (puesto #7) y Chapinero tiene riesgo medio (puesto #6). Barrios Unidos es relativamente más segura de las dos."
+        }
+      ]
+    },
+    {
+      "conversations": [
+        {
+          "from": "system",
+          "value": "Eres el asistente de la app \"Barrio Seguro\" sobre riesgo de inseguridad por localidad en Bogotá. SIEMPRE que te pregunten algo con números, nombres de localidades o comparaciones, usa las herramientas disponibles (localidad_extrema, obtener_ranking, obtener_localidad, comparar_localidades, buscar_barrio). Nunca inventes ni \"recuerdes\" una cifra. Un saludo o charla normal NO necesita ninguna herramienta."
+        },
+        {
+          "from": "human",
+          "value": "¿Cuál es la zona más tranquila?"
+        },
+        {
+          "from": "gpt",
+          "value": "",
+          "tool_calls": [
+            {
+              "name": "localidad_extrema",
+              "arguments": {
+                "cual": "menor"
+              }
+            }
+          ]
+        },
+        {
+          "from": "tool",
+          "value": "{\"localidad\": \"Sumapaz\", \"nivel_riesgo\": \"bajo\", \"score_mixto\": 0.0, \"posicion\": 20, \"delitos_totales\": 5, \"tasa_delitos_100k\": 137.02, \"poblacion\": 3649}"
+        },
+        {
+          "from": "gpt",
+          "value": "La localidad más segura es **Sumapaz**, con riesgo **bajo** y 5 delitos verificados entre 2023 y 2025."
+        }
+      ]
+    },
+    {
+      "conversations": [
+        {
+          "from": "system",
+          "value": "Eres el asistente de la app \"Barrio Seguro\" sobre riesgo de inseguridad por localidad en Bogotá. SIEMPRE que te pregunten algo con números, nombres de localidades o comparaciones, usa las herramientas disponibles (localidad_extrema, obtener_ranking, obtener_localidad, comparar_localidades, buscar_barrio). Nunca inventes ni \"recuerdes\" una cifra. Un saludo o charla normal NO necesita ninguna herramienta."
+        },
+        {
+          "from": "human",
+          "value": "Compara Fontibón y Sumapaz"
+        },
+        {
+          "from": "gpt",
+          "value": "",
+          "tool_calls": [
+            {
+              "name": "comparar_localidades",
+              "arguments": {
+                "nombres": [
+                  "Fontibón",
+                  "Sumapaz"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "from": "tool",
+          "value": "{\"Fontibón\": {\"localidad\": \"Fontibón\", \"nivel_riesgo\": \"bajo\", \"score_mixto\": 0.1798, \"posicion\": 14, \"delitos_totales\": 41963, \"tasa_delitos_100k\": 10719.2, \"poblacion\": 391475}, \"Sumapaz\": {\"localidad\": \"Sumapaz\", \"nivel_riesgo\": \"bajo\", \"score_mixto\": 0.0, \"posicion\": 20, \"delitos_totales\": 5, \"tasa_delitos_100k\": 137.02, \"poblacion\": 3649}}"
+        },
+        {
+          "from": "gpt",
+          "value": "Fontibón tiene riesgo bajo (puesto #14) y Sumapaz tiene riesgo bajo (puesto #20). Sumapaz es relativamente más segura de las dos."
+        }
+      ]
+    },
+    {
+      "conversations": [
+        {
+          "from": "system",
+          "value": "Eres el asistente de la app \"Barrio Seguro\" sobre riesgo de inseguridad por localidad en Bogotá. SIEMPRE que te pregunten algo con números, nombres de localidades o comparaciones, usa las herramientas disponibles (localidad_extrema, obtener_ranking, obtener_localidad, comparar_localidades, buscar_barrio). Nunca inventes ni \"recuerdes\" una cifra. Un saludo o charla normal NO necesita ninguna herramienta."
+        },
+        {
+          "from": "human",
+          "value": "Compara Suba y Teusaquillo"
+        },
+        {
+          "from": "gpt",
+          "value": "",
+          "tool_calls": [
+            {
+              "name": "comparar_localidades",
+              "arguments": {
+                "nombres": [
+                  "Suba",
+                  "Teusaquillo"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "from": "tool",
+          "value": "{\"Suba\": {\"localidad\": \"Suba\", \"nivel_riesgo\": \"bajo\", \"score_mixto\": 0.1169, \"posicion\": 15, \"delitos_totales\": 81468, \"tasa_delitos_100k\": 6535.02, \"poblacion\": 1246637}, \"Teusaquillo\": {\"localidad\": \"Teusaquillo\", \"nivel_riesgo\": \"medio\", \"score_mixto\": 0.3757, \"posicion\": 3, \"delitos_totales\": 39702, \"tasa_delitos_100k\": 25197.06, \"poblacion\": 157566}}"
+        },
+        {
+          "from": "gpt",
+          "value": "Suba tiene riesgo bajo (puesto #15) y Teusaquillo tiene riesgo medio (puesto #3). Suba es relativamente más segura de las dos."
+        }
+      ]
+    },
+    {
+      "conversations": [
+        {
+          "from": "system",
+          "value": "Eres el asistente de la app \"Barrio Seguro\" sobre riesgo de inseguridad por localidad en Bogotá. SIEMPRE que te pregunten algo con números, nombres de localidades o comparaciones, usa las herramientas disponibles (localidad_extrema, obtener_ranking, obtener_localidad, comparar_localidades, buscar_barrio). Nunca inventes ni \"recuerdes\" una cifra. Un saludo o charla normal NO necesita ninguna herramienta."
+        },
+        {
+          "from": "human",
+          "value": "¿Qué tan seguro es Ciudad Bolívar?"
+        },
+        {
+          "from": "gpt",
+          "value": "",
+          "tool_calls": [
+            {
+              "name": "obtener_localidad",
+              "arguments": {
+                "nombre": "Ciudad Bolívar"
+              }
+            }
+          ]
+        },
+        {
+          "from": "tool",
+          "value": "{\"localidad\": \"Ciudad Bolívar\", \"nivel_riesgo\": \"bajo\", \"score_mixto\": 0.1153, \"posicion\": 17, \"delitos_totales\": 47162, \"tasa_delitos_100k\": 6933.49, \"poblacion\": 680206}"
+        },
+        {
+          "from": "gpt",
+          "value": "Ciudad Bolívar tiene un nivel de riesgo **bajo** (puesto #17 de 20), con 47,162 delitos verificados entre 2023 y 2025 (6933.5 por cada 100.000 habitantes)."
+        }
+      ]
+    },
+    {
+      "conversations": [
+        {
+          "from": "system",
+          "value": "Eres el asistente de la app \"Barrio Seguro\" sobre riesgo de inseguridad por localidad en Bogotá. SIEMPRE que te pregunten algo con números, nombres de localidades o comparaciones, usa las herramientas disponibles (localidad_extrema, obtener_ranking, obtener_localidad, comparar_localidades, buscar_barrio). Nunca inventes ni \"recuerdes\" una cifra. Un saludo o charla normal NO necesita ninguna herramienta."
+        },
+        {
+          "from": "human",
+          "value": "Compara Usaquén y Santa Fe"
+        },
+        {
+          "from": "gpt",
+          "value": "",
+          "tool_calls": [
+            {
+              "name": "comparar_localidades",
+              "arguments": {
+                "nombres": [
+                  "Usaquén",
+                  "Santa Fe"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "from": "tool",
+          "value": "{\"Usaquén\": {\"localidad\": \"Usaquén\", \"nivel_riesgo\": \"bajo\", \"score_mixto\": 0.1106, \"posicion\": 18, \"delitos_totales\": 43287, \"tasa_delitos_100k\": 7555.44, \"poblacion\": 572925}, \"Santa Fe\": {\"localidad\": \"Santa Fe\", \"nivel_riesgo\": \"medio\", \"score_mixto\": 0.3684, \"posicion\": 4, \"delitos_totales\": 38210, \"tasa_delitos_100k\": 33698.75, \"poblacion\": 113387}}"
+        },
+        {
+          "from": "gpt",
+          "value": "Usaquén tiene riesgo bajo (puesto #18) y Santa Fe tiene riesgo medio (puesto #4). Usaquén es relativamente más segura de las dos."
+        }
+      ]
+    },
+    {
+      "conversations": [
+        {
+          "from": "system",
+          "value": "Eres el asistente de la app \"Barrio Seguro\" sobre riesgo de inseguridad por localidad en Bogotá. SIEMPRE que te pregunten algo con números, nombres de localidades o comparaciones, usa las herramientas disponibles (localidad_extrema, obtener_ranking, obtener_localidad, comparar_localidades, buscar_barrio). Nunca inventes ni \"recuerdes\" una cifra. Un saludo o charla normal NO necesita ninguna herramienta."
+        },
+        {
+          "from": "human",
+          "value": "¿Cuál es la zona con mayor riesgo?"
+        },
+        {
+          "from": "gpt",
+          "value": "",
+          "tool_calls": [
+            {
+              "name": "localidad_extrema",
+              "arguments": {
+                "cual": "mayor"
+              }
+            }
+          ]
+        },
+        {
+          "from": "tool",
+          "value": "{\"localidad\": \"Los Mártires\", \"nivel_riesgo\": \"alto\", \"score_mixto\": 1.0, \"posicion\": 1, \"delitos_totales\": 42688, \"tasa_delitos_100k\": 50826.91, \"poblacion\": 83987}"
+        },
+        {
+          "from": "gpt",
+          "value": "La localidad con mayor riesgo es **Los Mártires**, clasificada como riesgo **alto**, con 42,688 delitos verificados entre 2023 y 2025."
+        }
+      ]
+    },
+    {
+      "conversations": [
+        {
+          "from": "system",
+          "value": "Eres el asistente de la app \"Barrio Seguro\" sobre riesgo de inseguridad por localidad en Bogotá. SIEMPRE que te pregunten algo con números, nombres de localidades o comparaciones, usa las herramientas disponibles (localidad_extrema, obtener_ranking, obtener_localidad, comparar_localidades, buscar_barrio). Nunca inventes ni \"recuerdes\" una cifra. Un saludo o charla normal NO necesita ninguna herramienta."
+        },
+        {
+          "from": "human",
+          "value": "¿Qué tan seguro es Candelaria?"
+        },
+        {
+          "from": "gpt",
+          "value": "",
+          "tool_calls": [
+            {
+              "name": "obtener_localidad",
+              "arguments": {
+                "nombre": "Candelaria"
+              }
+            }
+          ]
+        },
+        {
+          "from": "tool",
+          "value": "{\"localidad\": \"Candelaria\", \"nivel_riesgo\": \"alto\", \"score_mixto\": 0.6519, \"posicion\": 2, \"delitos_totales\": 7469, \"tasa_delitos_100k\": 44455.69, \"poblacion\": 16801}"
+        },
+        {
+          "from": "gpt",
+          "value": "Candelaria tiene un nivel de riesgo **alto** (puesto #2 de 20), con 7,469 delitos verificados entre 2023 y 2025 (44455.7 por cada 100.000 habitantes)."
+        }
+      ]
+    },
+    {
+      "conversations": [
+        {
+          "from": "system",
+          "value": "Eres el asistente de la app \"Barrio Seguro\" sobre riesgo de inseguridad por localidad en Bogotá. SIEMPRE que te pregunten algo con números, nombres de localidades o comparaciones, usa las herramientas disponibles (localidad_extrema, obtener_ranking, obtener_localidad, comparar_localidades, buscar_barrio). Nunca inventes ni \"recuerdes\" una cifra. Un saludo o charla normal NO necesita ninguna herramienta."
+        },
+        {
+          "from": "human",
+          "value": "Compara Ciudad Bolívar y Bosa"
+        },
+        {
+          "from": "gpt",
+          "value": "",
+          "tool_calls": [
+            {
+              "name": "comparar_localidades",
+              "arguments": {
+                "nombres": [
+                  "Ciudad Bolívar",
+                  "Bosa"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "from": "tool",
+          "value": "{\"Ciudad Bolívar\": {\"localidad\": \"Ciudad Bolívar\", \"nivel_riesgo\": \"bajo\", \"score_mixto\": 0.1153, \"posicion\": 17, \"delitos_totales\": 47162, \"tasa_delitos_100k\": 6933.49, \"poblacion\": 680206}, \"Bosa\": {\"localidad\": \"Bosa\", \"nivel_riesgo\": \"medio\", \"score_mixto\": 0.2055, \"posicion\": 12, \"delitos_totales\": 42579, \"tasa_delitos_100k\": 5548.91, \"poblacion\": 767340}}"
+        },
+        {
+          "from": "gpt",
+          "value": "Ciudad Bolívar tiene riesgo bajo (puesto #17) y Bosa tiene riesgo medio (puesto #12). Ciudad Bolívar es relativamente más segura de las dos."
+        }
+      ]
+    },
+    {
+      "conversations": [
+        {
+          "from": "system",
+          "value": "Eres el asistente de la app \"Barrio Seguro\" sobre riesgo de inseguridad por localidad en Bogotá. SIEMPRE que te pregunten algo con números, nombres de localidades o comparaciones, usa las herramientas disponibles (localidad_extrema, obtener_ranking, obtener_localidad, comparar_localidades, buscar_barrio). Nunca inventes ni \"recuerdes\" una cifra. Un saludo o charla normal NO necesita ninguna herramienta."
+        },
+        {
+          "from": "human",
+          "value": "Compara San Cristóbal y Los Mártires"
+        },
+        {
+          "from": "gpt",
+          "value": "",
+          "tool_calls": [
+            {
+              "name": "comparar_localidades",
+              "arguments": {
+                "nombres": [
+                  "San Cristóbal",
+                  "Los Mártires"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "from": "tool",
+          "value": "{\"San Cristóbal\": {\"localidad\": \"San Cristóbal\", \"nivel_riesgo\": \"bajo\", \"score_mixto\": 0.1154, \"posicion\": 16, \"delitos_totales\": 26073, \"tasa_delitos_100k\": 6495.29, \"poblacion\": 401414}, \"Los Mártires\": {\"localidad\": \"Los Mártires\", \"nivel_riesgo\": \"alto\", \"score_mixto\": 1.0, \"posicion\": 1, \"delitos_totales\": 42688, \"tasa_delitos_100k\": 50826.91, \"poblacion\": 83987}}"
+        },
+        {
+          "from": "gpt",
+          "value": "San Cristóbal tiene riesgo bajo (puesto #16) y Los Mártires tiene riesgo alto (puesto #1). San Cristóbal es relativamente más segura de las dos."
+        }
+      ]
+    },
+    {
+      "conversations": [
+        {
+          "from": "system",
+          "value": "Eres el asistente de la app \"Barrio Seguro\" sobre riesgo de inseguridad por localidad en Bogotá. SIEMPRE que te pregunten algo con números, nombres de localidades o comparaciones, usa las herramientas disponibles (localidad_extrema, obtener_ranking, obtener_localidad, comparar_localidades, buscar_barrio). Nunca inventes ni \"recuerdes\" una cifra. Un saludo o charla normal NO necesita ninguna herramienta."
+        },
+        {
+          "from": "human",
+          "value": "¿Cuál es la localidad más peligrosa de Bogotá?"
+        },
+        {
+          "from": "gpt",
+          "value": "",
+          "tool_calls": [
+            {
+              "name": "localidad_extrema",
+              "arguments": {
+                "cual": "mayor"
+              }
+            }
+          ]
+        },
+        {
+          "from": "tool",
+          "value": "{\"localidad\": \"Los Mártires\", \"nivel_riesgo\": \"alto\", \"score_mixto\": 1.0, \"posicion\": 1, \"delitos_totales\": 42688, \"tasa_delitos_100k\": 50826.91, \"poblacion\": 83987}"
+        },
+        {
+          "from": "gpt",
+          "value": "La localidad con mayor riesgo es **Los Mártires**, clasificada como riesgo **alto**, con 42,688 delitos verificados entre 2023 y 2025."
+        }
+      ]
+    },
+    {
+      "conversations": [
+        {
+          "from": "system",
+          "value": "Eres el asistente de la app \"Barrio Seguro\" sobre riesgo de inseguridad por localidad en Bogotá. SIEMPRE que te pregunten algo con números, nombres de localidades o comparaciones, usa las herramientas disponibles (localidad_extrema, obtener_ranking, obtener_localidad, comparar_localidades, buscar_barrio). Nunca inventes ni \"recuerdes\" una cifra. Un saludo o charla normal NO necesita ninguna herramienta."
+        },
+        {
+          "from": "human",
+          "value": "¿Es peligroso Barrios Unidos?"
+        },
+        {
+          "from": "gpt",
+          "value": "",
+          "tool_calls": [
+            {
+              "name": "obtener_localidad",
+              "arguments": {
+                "nombre": "Barrios Unidos"
+              }
+            }
+          ]
+        },
+        {
+          "from": "tool",
+          "value": "{\"localidad\": \"Barrios Unidos\", \"nivel_riesgo\": \"medio\", \"score_mixto\": 0.3186, \"posicion\": 7, \"delitos_totales\": 27503, \"tasa_delitos_100k\": 19679.3, \"poblacion\": 139756}"
+        },
+        {
+          "from": "gpt",
+          "value": "Barrios Unidos tiene un nivel de riesgo **medio** (puesto #7 de 20), con 27,503 delitos verificados entre 2023 y 2025 (19679.3 por cada 100.000 habitantes)."
+        }
+      ]
+    },
+    {
+      "conversations": [
+        {
+          "from": "system",
+          "value": "Eres el asistente de la app \"Barrio Seguro\" sobre riesgo de inseguridad por localidad en Bogotá. SIEMPRE que te pregunten algo con números, nombres de localidades o comparaciones, usa las herramientas disponibles (localidad_extrema, obtener_ranking, obtener_localidad, comparar_localidades, buscar_barrio). Nunca inventes ni \"recuerdes\" una cifra. Un saludo o charla normal NO necesita ninguna herramienta."
+        },
+        {
+          "from": "human",
+          "value": "¿Cómo está el riesgo en San Cristóbal?"
+        },
+        {
+          "from": "gpt",
+          "value": "",
+          "tool_calls": [
+            {
+              "name": "obtener_localidad",
+              "arguments": {
+                "nombre": "San Cristóbal"
+              }
+            }
+          ]
+        },
+        {
+          "from": "tool",
+          "value": "{\"localidad\": \"San Cristóbal\", \"nivel_riesgo\": \"bajo\", \"score_mixto\": 0.1154, \"posicion\": 16, \"delitos_totales\": 26073, \"tasa_delitos_100k\": 6495.29, \"poblacion\": 401414}"
+        },
+        {
+          "from": "gpt",
+          "value": "San Cristóbal tiene un nivel de riesgo **bajo** (puesto #16 de 20), con 26,073 delitos verificados entre 2023 y 2025 (6495.3 por cada 100.000 habitantes)."
+        }
+      ]
+    },
+    {
+      "conversations": [
+        {
+          "from": "system",
+          "value": "Eres el asistente de la app \"Barrio Seguro\" sobre riesgo de inseguridad por localidad en Bogotá. SIEMPRE que te pregunten algo con números, nombres de localidades o comparaciones, usa las herramientas disponibles (localidad_extrema, obtener_ranking, obtener_localidad, comparar_localidades, buscar_barrio). Nunca inventes ni \"recuerdes\" una cifra. Un saludo o charla normal NO necesita ninguna herramienta."
+        },
+        {
+          "from": "human",
+          "value": "Buenas"
+        },
+        {
+          "from": "gpt",
+          "value": "¡Buenas! Pregúntame por el riesgo de cualquier localidad de Bogotá."
+        }
+      ]
+    },
+    {
+      "conversations": [
+        {
+          "from": "system",
+          "value": "Eres el asistente de la app \"Barrio Seguro\" sobre riesgo de inseguridad por localidad en Bogotá. SIEMPRE que te pregunten algo con números, nombres de localidades o comparaciones, usa las herramientas disponibles (localidad_extrema, obtener_ranking, obtener_localidad, comparar_localidades, buscar_barrio). Nunca inventes ni \"recuerdes\" una cifra. Un saludo o charla normal NO necesita ninguna herramienta."
+        },
+        {
+          "from": "human",
+          "value": "¿Cómo estás?"
+        },
+        {
+          "from": "gpt",
+          "value": "Todo bien, listo para ayudarte con información de seguridad de Bogotá."
+        }
+      ]
+    },
+    {
+      "conversations": [
+        {
+          "from": "system",
+          "value": "Eres el asistente de la app \"Barrio Seguro\" sobre riesgo de inseguridad por localidad en Bogotá. SIEMPRE que te pregunten algo con números, nombres de localidades o comparaciones, usa las herramientas disponibles (localidad_extrema, obtener_ranking, obtener_localidad, comparar_localidades, buscar_barrio). Nunca inventes ni \"recuerdes\" una cifra. Un saludo o charla normal NO necesita ninguna herramienta."
+        },
+        {
+          "from": "human",
+          "value": "¿Cómo está el riesgo en Kennedy?"
+        },
+        {
+          "from": "gpt",
+          "value": "",
+          "tool_calls": [
+            {
+              "name": "obtener_localidad",
+              "arguments": {
+                "nombre": "Kennedy"
+              }
+            }
+          ]
+        },
+        {
+          "from": "tool",
+          "value": "{\"localidad\": \"Kennedy\", \"nivel_riesgo\": \"medio\", \"score_mixto\": 0.2193, \"posicion\": 11, \"delitos_totales\": 78410, \"tasa_delitos_100k\": 7256.17, \"poblacion\": 1080598}"
+        },
+        {
+          "from": "gpt",
+          "value": "Kennedy tiene un nivel de riesgo **medio** (puesto #11 de 20), con 78,410 delitos verificados entre 2023 y 2025 (7256.2 por cada 100.000 habitantes)."
+        }
+      ]
+    },
+    {
+      "conversations": [
+        {
+          "from": "system",
+          "value": "Eres el asistente de la app \"Barrio Seguro\" sobre riesgo de inseguridad por localidad en Bogotá. SIEMPRE que te pregunten algo con números, nombres de localidades o comparaciones, usa las herramientas disponibles (localidad_extrema, obtener_ranking, obtener_localidad, comparar_localidades, buscar_barrio). Nunca inventes ni \"recuerdes\" una cifra. Un saludo o charla normal NO necesita ninguna herramienta."
+        },
+        {
+          "from": "human",
+          "value": "Compara Santa Fe y Usaquén"
+        },
+        {
+          "from": "gpt",
+          "value": "",
+          "tool_calls": [
+            {
+              "name": "comparar_localidades",
+              "arguments": {
+                "nombres": [
+                  "Santa Fe",
+                  "Usaquén"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "from": "tool",
+          "value": "{\"Santa Fe\": {\"localidad\": \"Santa Fe\", \"nivel_riesgo\": \"medio\", \"score_mixto\": 0.3684, \"posicion\": 4, \"delitos_totales\": 38210, \"tasa_delitos_100k\": 33698.75, \"poblacion\": 113387}, \"Usaquén\": {\"localidad\": \"Usaquén\", \"nivel_riesgo\": \"bajo\", \"score_mixto\": 0.1106, \"posicion\": 18, \"delitos_totales\": 43287, \"tasa_delitos_100k\": 7555.44, \"poblacion\": 572925}}"
+        },
+        {
+          "from": "gpt",
+          "value": "Santa Fe tiene riesgo medio (puesto #4) y Usaquén tiene riesgo bajo (puesto #18). Usaquén es relativamente más segura de las dos."
+        }
+      ]
+    },
+    {
+      "conversations": [
+        {
+          "from": "system",
+          "value": "Eres el asistente de la app \"Barrio Seguro\" sobre riesgo de inseguridad por localidad en Bogotá. SIEMPRE que te pregunten algo con números, nombres de localidades o comparaciones, usa las herramientas disponibles (localidad_extrema, obtener_ranking, obtener_localidad, comparar_localidades, buscar_barrio). Nunca inventes ni \"recuerdes\" una cifra. Un saludo o charla normal NO necesita ninguna herramienta."
+        },
+        {
+          "from": "human",
+          "value": "¿Cómo está el riesgo en Chapinero?"
+        },
+        {
+          "from": "gpt",
+          "value": "",
+          "tool_calls": [
+            {
+              "name": "obtener_localidad",
+              "arguments": {
+                "nombre": "Chapinero"
+              }
+            }
+          ]
+        },
+        {
+          "from": "tool",
+          "value": "{\"localidad\": \"Chapinero\", \"nivel_riesgo\": \"medio\", \"score_mixto\": 0.3298, \"posicion\": 6, \"delitos_totales\": 51644, \"tasa_delitos_100k\": 31549.3, \"poblacion\": 163693}"
+        },
+        {
+          "from": "gpt",
+          "value": "Chapinero tiene un nivel de riesgo **medio** (puesto #6 de 20), con 51,644 delitos verificados entre 2023 y 2025 (31549.3 por cada 100.000 habitantes)."
+        }
+      ]
+    },
+    {
+      "conversations": [
+        {
+          "from": "system",
+          "value": "Eres el asistente de la app \"Barrio Seguro\" sobre riesgo de inseguridad por localidad en Bogotá. SIEMPRE que te pregunten algo con números, nombres de localidades o comparaciones, usa las herramientas disponibles (localidad_extrema, obtener_ranking, obtener_localidad, comparar_localidades, buscar_barrio). Nunca inventes ni \"recuerdes\" una cifra. Un saludo o charla normal NO necesita ninguna herramienta."
+        },
+        {
+          "from": "human",
+          "value": "Buenos días"
+        },
+        {
+          "from": "gpt",
+          "value": "¡Buenos días! ¿Qué localidad te interesa?"
+        }
+      ]
+    },
+    {
+      "conversations": [
+        {
+          "from": "system",
+          "value": "Eres el asistente de la app \"Barrio Seguro\" sobre riesgo de inseguridad por localidad en Bogotá. SIEMPRE que te pregunten algo con números, nombres de localidades o comparaciones, usa las herramientas disponibles (localidad_extrema, obtener_ranking, obtener_localidad, comparar_localidades, buscar_barrio). Nunca inventes ni \"recuerdes\" una cifra. Un saludo o charla normal NO necesita ninguna herramienta."
+        },
+        {
+          "from": "human",
+          "value": "¿Cómo está el riesgo en Usme?"
+        },
+        {
+          "from": "gpt",
+          "value": "",
+          "tool_calls": [
+            {
+              "name": "obtener_localidad",
+              "arguments": {
+                "nombre": "Usme"
+              }
+            }
+          ]
+        },
+        {
+          "from": "tool",
+          "value": "{\"localidad\": \"Usme\", \"nivel_riesgo\": \"bajo\", \"score_mixto\": 0.0683, \"posicion\": 19, \"delitos_totales\": 21375, \"tasa_delitos_100k\": 5302.17, \"poblacion\": 403137}"
+        },
+        {
+          "from": "gpt",
+          "value": "Usme tiene un nivel de riesgo **bajo** (puesto #19 de 20), con 21,375 delitos verificados entre 2023 y 2025 (5302.2 por cada 100.000 habitantes)."
+        }
+      ]
+    },
+    {
+      "conversations": [
+        {
+          "from": "system",
+          "value": "Eres el asistente de la app \"Barrio Seguro\" sobre riesgo de inseguridad por localidad en Bogotá. SIEMPRE que te pregunten algo con números, nombres de localidades o comparaciones, usa las herramientas disponibles (localidad_extrema, obtener_ranking, obtener_localidad, comparar_localidades, buscar_barrio). Nunca inventes ni \"recuerdes\" una cifra. Un saludo o charla normal NO necesita ninguna herramienta."
+        },
+        {
+          "from": "human",
+          "value": "¿Dónde hay más inseguridad en Bogotá?"
+        },
+        {
+          "from": "gpt",
+          "value": "",
+          "tool_calls": [
+            {
+              "name": "localidad_extrema",
+              "arguments": {
+                "cual": "mayor"
+              }
+            }
+          ]
+        },
+        {
+          "from": "tool",
+          "value": "{\"localidad\": \"Los Mártires\", \"nivel_riesgo\": \"alto\", \"score_mixto\": 1.0, \"posicion\": 1, \"delitos_totales\": 42688, \"tasa_delitos_100k\": 50826.91, \"poblacion\": 83987}"
+        },
+        {
+          "from": "gpt",
+          "value": "La localidad con mayor riesgo es **Los Mártires**, clasificada como riesgo **alto**, con 42,688 delitos verificados entre 2023 y 2025."
+        }
+      ]
+    },
+    {
+      "conversations": [
+        {
+          "from": "system",
+          "value": "Eres el asistente de la app \"Barrio Seguro\" sobre riesgo de inseguridad por localidad en Bogotá. SIEMPRE que te pregunten algo con números, nombres de localidades o comparaciones, usa las herramientas disponibles (localidad_extrema, obtener_ranking, obtener_localidad, comparar_localidades, buscar_barrio). Nunca inventes ni \"recuerdes\" una cifra. Un saludo o charla normal NO necesita ninguna herramienta."
+        },
+        {
+          "from": "human",
+          "value": "Compara Tunjuelito y Rafael Uribe Uribe"
+        },
+        {
+          "from": "gpt",
+          "value": "",
+          "tool_calls": [
+            {
+              "name": "comparar_localidades",
+              "arguments": {
+                "nombres": [
+                  "Tunjuelito",
+                  "Rafael Uribe Uribe"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "from": "tool",
+          "value": "{\"Tunjuelito\": {\"localidad\": \"Tunjuelito\", \"nivel_riesgo\": \"medio\", \"score_mixto\": 0.1954, \"posicion\": 13, \"delitos_totales\": 14738, \"tasa_delitos_100k\": 8309.18, \"poblacion\": 177370}, \"Rafael Uribe Uribe\": {\"localidad\": \"Rafael Uribe Uribe\", \"nivel_riesgo\": \"medio\", \"score_mixto\": 0.2295, \"posicion\": 9, \"delitos_totales\": 27148, \"tasa_delitos_100k\": 7161.0, \"poblacion\": 379109}}"
+        },
+        {
+          "from": "gpt",
+          "value": "Tunjuelito tiene riesgo medio (puesto #13) y Rafael Uribe Uribe tiene riesgo medio (puesto #9). Tunjuelito es relativamente más segura de las dos."
+        }
+      ]
+    },
+    {
+      "conversations": [
+        {
+          "from": "system",
+          "value": "Eres el asistente de la app \"Barrio Seguro\" sobre riesgo de inseguridad por localidad en Bogotá. SIEMPRE que te pregunten algo con números, nombres de localidades o comparaciones, usa las herramientas disponibles (localidad_extrema, obtener_ranking, obtener_localidad, comparar_localidades, buscar_barrio). Nunca inventes ni \"recuerdes\" una cifra. Un saludo o charla normal NO necesita ninguna herramienta."
+        },
+        {
+          "from": "human",
+          "value": "¿Qué tan seguro es Puente Aranda?"
+        },
+        {
+          "from": "gpt",
+          "value": "",
+          "tool_calls": [
+            {
+              "name": "obtener_localidad",
+              "arguments": {
+                "nombre": "Puente Aranda"
+              }
+            }
+          ]
+        },
+        {
+          "from": "tool",
+          "value": "{\"localidad\": \"Puente Aranda\", \"nivel_riesgo\": \"medio\", \"score_mixto\": 0.2603, \"posicion\": 8, \"delitos_totales\": 34239, \"tasa_delitos_100k\": 13602.5, \"poblacion\": 251711}"
+        },
+        {
+          "from": "gpt",
+          "value": "Puente Aranda tiene un nivel de riesgo **medio** (puesto #8 de 20), con 34,239 delitos verificados entre 2023 y 2025 (13602.5 por cada 100.000 habitantes)."
+        }
+      ]
+    },
+    {
+      "conversations": [
+        {
+          "from": "system",
+          "value": "Eres el asistente de la app \"Barrio Seguro\" sobre riesgo de inseguridad por localidad en Bogotá. SIEMPRE que te pregunten algo con números, nombres de localidades o comparaciones, usa las herramientas disponibles (localidad_extrema, obtener_ranking, obtener_localidad, comparar_localidades, buscar_barrio). Nunca inventes ni \"recuerdes\" una cifra. Un saludo o charla normal NO necesita ninguna herramienta."
+        },
+        {
+          "from": "human",
+          "value": "¿Cuál es la localidad más segura de Bogotá?"
+        },
+        {
+          "from": "gpt",
+          "value": "",
+          "tool_calls": [
+            {
+              "name": "localidad_extrema",
+              "arguments": {
+                "cual": "menor"
+              }
+            }
+          ]
+        },
+        {
+          "from": "tool",
+          "value": "{\"localidad\": \"Sumapaz\", \"nivel_riesgo\": \"bajo\", \"score_mixto\": 0.0, \"posicion\": 20, \"delitos_totales\": 5, \"tasa_delitos_100k\": 137.02, \"poblacion\": 3649}"
+        },
+        {
+          "from": "gpt",
+          "value": "La localidad más segura es **Sumapaz**, con riesgo **bajo** y 5 delitos verificados entre 2023 y 2025."
+        }
+      ]
+    },
+    {
+      "conversations": [
+        {
+          "from": "system",
+          "value": "Eres el asistente de la app \"Barrio Seguro\" sobre riesgo de inseguridad por localidad en Bogotá. SIEMPRE que te pregunten algo con números, nombres de localidades o comparaciones, usa las herramientas disponibles (localidad_extrema, obtener_ranking, obtener_localidad, comparar_localidades, buscar_barrio). Nunca inventes ni \"recuerdes\" una cifra. Un saludo o charla normal NO necesita ninguna herramienta."
+        },
+        {
+          "from": "human",
+          "value": "Compara Los Mártires y Ciudad Bolívar"
+        },
+        {
+          "from": "gpt",
+          "value": "",
+          "tool_calls": [
+            {
+              "name": "comparar_localidades",
+              "arguments": {
+                "nombres": [
+                  "Los Mártires",
+                  "Ciudad Bolívar"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "from": "tool",
+          "value": "{\"Los Mártires\": {\"localidad\": \"Los Mártires\", \"nivel_riesgo\": \"alto\", \"score_mixto\": 1.0, \"posicion\": 1, \"delitos_totales\": 42688, \"tasa_delitos_100k\": 50826.91, \"poblacion\": 83987}, \"Ciudad Bolívar\": {\"localidad\": \"Ciudad Bolívar\", \"nivel_riesgo\": \"bajo\", \"score_mixto\": 0.1153, \"posicion\": 17, \"delitos_totales\": 47162, \"tasa_delitos_100k\": 6933.49, \"poblacion\": 680206}}"
+        },
+        {
+          "from": "gpt",
+          "value": "Los Mártires tiene riesgo alto (puesto #1) y Ciudad Bolívar tiene riesgo bajo (puesto #17). Ciudad Bolívar es relativamente más segura de las dos."
+        }
+      ]
+    },
+    {
+      "conversations": [
+        {
+          "from": "system",
+          "value": "Eres el asistente de la app \"Barrio Seguro\" sobre riesgo de inseguridad por localidad en Bogotá. SIEMPRE que te pregunten algo con números, nombres de localidades o comparaciones, usa las herramientas disponibles (localidad_extrema, obtener_ranking, obtener_localidad, comparar_localidades, buscar_barrio). Nunca inventes ni \"recuerdes\" una cifra. Un saludo o charla normal NO necesita ninguna herramienta."
+        },
+        {
+          "from": "human",
+          "value": "Compara Rafael Uribe Uribe y Puente Aranda"
+        },
+        {
+          "from": "gpt",
+          "value": "",
+          "tool_calls": [
+            {
+              "name": "comparar_localidades",
+              "arguments": {
+                "nombres": [
+                  "Rafael Uribe Uribe",
+                  "Puente Aranda"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "from": "tool",
+          "value": "{\"Rafael Uribe Uribe\": {\"localidad\": \"Rafael Uribe Uribe\", \"nivel_riesgo\": \"medio\", \"score_mixto\": 0.2295, \"posicion\": 9, \"delitos_totales\": 27148, \"tasa_delitos_100k\": 7161.0, \"poblacion\": 379109}, \"Puente Aranda\": {\"localidad\": \"Puente Aranda\", \"nivel_riesgo\": \"medio\", \"score_mixto\": 0.2603, \"posicion\": 8, \"delitos_totales\": 34239, \"tasa_delitos_100k\": 13602.5, \"poblacion\": 251711}}"
+        },
+        {
+          "from": "gpt",
+          "value": "Rafael Uribe Uribe tiene riesgo medio (puesto #9) y Puente Aranda tiene riesgo medio (puesto #8). Rafael Uribe Uribe es relativamente más segura de las dos."
+        }
+      ]
+    }
+  ],
+  "validation": [
+    {
+      "conversations": [
+        {
+          "from": "system",
+          "value": "Eres el asistente de la app \"Barrio Seguro\" sobre riesgo de inseguridad por localidad en Bogotá. SIEMPRE que te pregunten algo con números, nombres de localidades o comparaciones, usa las herramientas disponibles (localidad_extrema, obtener_ranking, obtener_localidad, comparar_localidades, buscar_barrio). Nunca inventes ni \"recuerdes\" una cifra. Un saludo o charla normal NO necesita ninguna herramienta."
+        },
+        {
+          "from": "human",
+          "value": "¿Cómo está el riesgo en Suba?"
+        },
+        {
+          "from": "gpt",
+          "value": "",
+          "tool_calls": [
+            {
+              "name": "obtener_localidad",
+              "arguments": {
+                "nombre": "Suba"
+              }
+            }
+          ]
+        },
+        {
+          "from": "tool",
+          "value": "{\"localidad\": \"Suba\", \"nivel_riesgo\": \"bajo\", \"score_mixto\": 0.1169, \"posicion\": 15, \"delitos_totales\": 81468, \"tasa_delitos_100k\": 6535.02, \"poblacion\": 1246637}"
+        },
+        {
+          "from": "gpt",
+          "value": "Suba tiene un nivel de riesgo **bajo** (puesto #15 de 20), con 81,468 delitos verificados entre 2023 y 2025 (6535.0 por cada 100.000 habitantes)."
+        }
+      ]
+    },
+    {
+      "conversations": [
+        {
+          "from": "system",
+          "value": "Eres el asistente de la app \"Barrio Seguro\" sobre riesgo de inseguridad por localidad en Bogotá. SIEMPRE que te pregunten algo con números, nombres de localidades o comparaciones, usa las herramientas disponibles (localidad_extrema, obtener_ranking, obtener_localidad, comparar_localidades, buscar_barrio). Nunca inventes ni \"recuerdes\" una cifra. Un saludo o charla normal NO necesita ninguna herramienta."
+        },
+        {
+          "from": "human",
+          "value": "¿Dónde hay menos riesgo en la ciudad?"
+        },
+        {
+          "from": "gpt",
+          "value": "",
+          "tool_calls": [
+            {
+              "name": "localidad_extrema",
+              "arguments": {
+                "cual": "menor"
+              }
+            }
+          ]
+        },
+        {
+          "from": "tool",
+          "value": "{\"localidad\": \"Sumapaz\", \"nivel_riesgo\": \"bajo\", \"score_mixto\": 0.0, \"posicion\": 20, \"delitos_totales\": 5, \"tasa_delitos_100k\": 137.02, \"poblacion\": 3649}"
+        },
+        {
+          "from": "gpt",
+          "value": "La localidad más segura es **Sumapaz**, con riesgo **bajo** y 5 delitos verificados entre 2023 y 2025."
+        }
+      ]
+    },
+    {
+      "conversations": [
+        {
+          "from": "system",
+          "value": "Eres el asistente de la app \"Barrio Seguro\" sobre riesgo de inseguridad por localidad en Bogotá. SIEMPRE que te pregunten algo con números, nombres de localidades o comparaciones, usa las herramientas disponibles (localidad_extrema, obtener_ranking, obtener_localidad, comparar_localidades, buscar_barrio). Nunca inventes ni \"recuerdes\" una cifra. Un saludo o charla normal NO necesita ninguna herramienta."
+        },
+        {
+          "from": "human",
+          "value": "¿Qué tan seguro es Rafael Uribe Uribe?"
+        },
+        {
+          "from": "gpt",
+          "value": "",
+          "tool_calls": [
+            {
+              "name": "obtener_localidad",
+              "arguments": {
+                "nombre": "Rafael Uribe Uribe"
+              }
+            }
+          ]
+        },
+        {
+          "from": "tool",
+          "value": "{\"localidad\": \"Rafael Uribe Uribe\", \"nivel_riesgo\": \"medio\", \"score_mixto\": 0.2295, \"posicion\": 9, \"delitos_totales\": 27148, \"tasa_delitos_100k\": 7161.0, \"poblacion\": 379109}"
+        },
+        {
+          "from": "gpt",
+          "value": "Rafael Uribe Uribe tiene un nivel de riesgo **medio** (puesto #9 de 20), con 27,148 delitos verificados entre 2023 y 2025 (7161.0 por cada 100.000 habitantes)."
+        }
+      ]
+    },
+    {
+      "conversations": [
+        {
+          "from": "system",
+          "value": "Eres el asistente de la app \"Barrio Seguro\" sobre riesgo de inseguridad por localidad en Bogotá. SIEMPRE que te pregunten algo con números, nombres de localidades o comparaciones, usa las herramientas disponibles (localidad_extrema, obtener_ranking, obtener_localidad, comparar_localidades, buscar_barrio). Nunca inventes ni \"recuerdes\" una cifra. Un saludo o charla normal NO necesita ninguna herramienta."
+        },
+        {
+          "from": "human",
+          "value": "Adiós"
+        },
+        {
+          "from": "gpt",
+          "value": "¡Hasta luego!"
+        }
+      ]
+    },
+    {
+      "conversations": [
+        {
+          "from": "system",
+          "value": "Eres el asistente de la app \"Barrio Seguro\" sobre riesgo de inseguridad por localidad en Bogotá. SIEMPRE que te pregunten algo con números, nombres de localidades o comparaciones, usa las herramientas disponibles (localidad_extrema, obtener_ranking, obtener_localidad, comparar_localidades, buscar_barrio). Nunca inventes ni \"recuerdes\" una cifra. Un saludo o charla normal NO necesita ninguna herramienta."
+        },
+        {
+          "from": "human",
+          "value": "¿Cómo está el riesgo en Sumapaz?"
+        },
+        {
+          "from": "gpt",
+          "value": "",
+          "tool_calls": [
+            {
+              "name": "obtener_localidad",
+              "arguments": {
+                "nombre": "Sumapaz"
+              }
+            }
+          ]
+        },
+        {
+          "from": "tool",
+          "value": "{\"localidad\": \"Sumapaz\", \"nivel_riesgo\": \"bajo\", \"score_mixto\": 0.0, \"posicion\": 20, \"delitos_totales\": 5, \"tasa_delitos_100k\": 137.02, \"poblacion\": 3649}"
+        },
+        {
+          "from": "gpt",
+          "value": "Sumapaz tiene un nivel de riesgo **bajo** (puesto #20 de 20), con 5 delitos verificados entre 2023 y 2025 (137.0 por cada 100.000 habitantes)."
+        }
+      ]
+    },
+    {
+      "conversations": [
+        {
+          "from": "system",
+          "value": "Eres el asistente de la app \"Barrio Seguro\" sobre riesgo de inseguridad por localidad en Bogotá. SIEMPRE que te pregunten algo con números, nombres de localidades o comparaciones, usa las herramientas disponibles (localidad_extrema, obtener_ranking, obtener_localidad, comparar_localidades, buscar_barrio). Nunca inventes ni \"recuerdes\" una cifra. Un saludo o charla normal NO necesita ninguna herramienta."
+        },
+        {
+          "from": "human",
+          "value": "¿Es peligroso Tunjuelito?"
+        },
+        {
+          "from": "gpt",
+          "value": "",
+          "tool_calls": [
+            {
+              "name": "obtener_localidad",
+              "arguments": {
+                "nombre": "Tunjuelito"
+              }
+            }
+          ]
+        },
+        {
+          "from": "tool",
+          "value": "{\"localidad\": \"Tunjuelito\", \"nivel_riesgo\": \"medio\", \"score_mixto\": 0.1954, \"posicion\": 13, \"delitos_totales\": 14738, \"tasa_delitos_100k\": 8309.18, \"poblacion\": 177370}"
+        },
+        {
+          "from": "gpt",
+          "value": "Tunjuelito tiene un nivel de riesgo **medio** (puesto #13 de 20), con 14,738 delitos verificados entre 2023 y 2025 (8309.2 por cada 100.000 habitantes)."
+        }
+      ]
+    },
+    {
+      "conversations": [
+        {
+          "from": "system",
+          "value": "Eres el asistente de la app \"Barrio Seguro\" sobre riesgo de inseguridad por localidad en Bogotá. SIEMPRE que te pregunten algo con números, nombres de localidades o comparaciones, usa las herramientas disponibles (localidad_extrema, obtener_ranking, obtener_localidad, comparar_localidades, buscar_barrio). Nunca inventes ni \"recuerdes\" una cifra. Un saludo o charla normal NO necesita ninguna herramienta."
+        },
+        {
+          "from": "human",
+          "value": "¿Qué tan seguro es Bosa?"
+        },
+        {
+          "from": "gpt",
+          "value": "",
+          "tool_calls": [
+            {
+              "name": "obtener_localidad",
+              "arguments": {
+                "nombre": "Bosa"
+              }
+            }
+          ]
+        },
+        {
+          "from": "tool",
+          "value": "{\"localidad\": \"Bosa\", \"nivel_riesgo\": \"medio\", \"score_mixto\": 0.2055, \"posicion\": 12, \"delitos_totales\": 42579, \"tasa_delitos_100k\": 5548.91, \"poblacion\": 767340}"
+        },
+        {
+          "from": "gpt",
+          "value": "Bosa tiene un nivel de riesgo **medio** (puesto #12 de 20), con 42,579 delitos verificados entre 2023 y 2025 (5548.9 por cada 100.000 habitantes)."
+        }
+      ]
+    },
+    {
+      "conversations": [
+        {
+          "from": "system",
+          "value": "Eres el asistente de la app \"Barrio Seguro\" sobre riesgo de inseguridad por localidad en Bogotá. SIEMPRE que te pregunten algo con números, nombres de localidades o comparaciones, usa las herramientas disponibles (localidad_extrema, obtener_ranking, obtener_localidad, comparar_localidades, buscar_barrio). Nunca inventes ni \"recuerdes\" una cifra. Un saludo o charla normal NO necesita ninguna herramienta."
+        },
+        {
+          "from": "human",
+          "value": "¿Cómo están clasificadas todas las localidades?"
+        },
+        {
+          "from": "gpt",
+          "value": "",
+          "tool_calls": [
+            {
+              "name": "obtener_ranking",
+              "arguments": {}
+            }
+          ]
+        },
+        {
+          "from": "tool",
+          "value": "[{\"localidad\": \"Los Mártires\", \"nivel_riesgo\": \"alto\", \"score_mixto\": 1.0, \"posicion\": 1, \"delitos_totales\": 42688, \"tasa_delitos_100k\": 50826.91, \"poblacion\": 83987}, {\"localidad\": \"Candelaria\", \"nivel_riesgo\": \"alto\", \"score_mixto\": 0.6519, \"posicion\": 2, \"delitos_totales\": 7469, \"tasa_delitos_100k\": 44455.69, \"poblacion\": 16801}, {\"localidad\": \"Teusaquillo\", \"nivel_riesgo\": \"medio\", \"score_mixto\": 0.3757, \"posicion\": 3, \"delitos_totales\": 39702, \"tasa_delitos_100k\": 25197.06, \"poblacion\": 157566}, {\"localidad\": \"Santa Fe\", \"nivel_riesgo\": \"medio\", \"score_mixto\": 0.3684, \"posicion\": 4, \"delitos_totales\": 38210, \"tasa_delitos_100k\": 33698.75, \"poblacion\": 113387}, {\"localidad\": \"Antonio Nariño\", \"nivel_riesgo\": \"medio\", \"score_mixto\": 0.3363, \"posicion\": 5, \"delitos_totales\": 13691, \"tasa_delitos_100k\": 17165.68, \"poblacion\": 79758}, {\"localidad\": \"Chapinero\", \"nivel_riesgo\": \"medio\", \"score_mixto\": 0.3298, \"posicion\": 6, \"delitos_totales\": 51644, \"tasa_delitos_100k\": 31549.3, \"poblacion\": 163693}, {\"localidad\": \"Barrios Unidos\", \"nivel_riesgo\": \"medio\", \"score_mixto\": 0.3186, \"posicion\": 7, \"delitos_totales\": 27503, \"tasa_delitos_100k\": 19679.3, \"poblacion\": 139756}, {\"localidad\": \"Puente Aranda\", \"nivel_riesgo\": \"medio\", \"score_mixto\": 0.2603, \"posicion\": 8, \"delitos_totales\": 34239, \"tasa_delitos_100k\": 13602.5, \"poblacion\": 251711}, {\"localidad\": \"Rafael Uribe Uribe\", \"nivel_riesgo\": \"medio\", \"score_mixto\": 0.2295, \"posicion\": 9, \"delitos_totales\": 27148, \"tasa_delitos_100k\": 7161.0, \"poblacion\": 379109}, {\"localidad\": \"Engativá\", \"nivel_riesgo\": \"medio\", \"score_mixto\": 0.2217, \"posicion\": 10, \"delitos_totales\": 72894, \"tasa_delitos_100k\": 8810.23, \"poblacion\": 827379}, {\"localidad\": \"Kennedy\", \"nivel_riesgo\": \"medio\", \"score_mixto\": 0.2193, \"posicion\": 11, \"delitos_totales\": 78410, \"tasa_delitos_100k\": 7256.17, \"poblacion\": 1080598}, {\"localidad\": \"Bosa\", \"nivel_riesgo\": \"medio\", \"score_mixto\": 0.2055, \"posicion\": 12, \"delitos_totales\": 42579, \"tasa_delitos_100k\": 5548.91, \"poblacion\": 767340}, {\"localidad\": \"Tunjuelito\", \"nivel_riesgo\": \"medio\", \"score_mixto\": 0.1954, \"posicion\": 13, \"delitos_totales\": 14738, \"tasa_delitos_100k\": 8309.18, \"poblacion\": 177370}, {\"localidad\": \"Fontibón\", \"nivel_riesgo\": \"bajo\", \"score_mixto\": 0.1798, \"posicion\": 14, \"delitos_totales\": 41963, \"tasa_delitos_100k\": 10719.2, \"poblacion\": 391475}, {\"localidad\": \"Suba\", \"nivel_riesgo\": \"bajo\", \"score_mixto\": 0.1169, \"posicion\": 15, \"delitos_totales\": 81468, \"tasa_delitos_100k\": 6535.02, \"poblacion\": 1246637}, {\"localidad\": \"San Cristóbal\", \"nivel_riesgo\": \"bajo\", \"score_mixto\": 0.1154, \"posicion\": 16, \"delitos_totales\": 26073, \"tasa_delitos_100k\": 6495.29, \"poblacion\": 401414}, {\"localidad\": \"Ciudad Bolívar\", \"nivel_riesgo\": \"bajo\", \"score_mixto\": 0.1153, \"posicion\": 17, \"delitos_totales\": 47162, \"tasa_delitos_100k\": 6933.49, \"poblacion\": 680206}, {\"localidad\": \"Usaquén\", \"nivel_riesgo\": \"bajo\", \"score_mixto\": 0.1106, \"posicion\": 18, \"delitos_totales\": 43287, \"tasa_delitos_100k\": 7555.44, \"poblacion\": 572925}, {\"localidad\": \"Usme\", \"nivel_riesgo\": \"bajo\", \"score_mixto\": 0.0683, \"posicion\": 19, \"delitos_totales\": 21375, \"tasa_delitos_100k\": 5302.17, \"poblacion\": 403137}, {\"localidad\": \"Sumapaz\", \"nivel_riesgo\": \"bajo\", \"score_mixto\": 0.0, \"posicion\": 20, \"delitos_totales\": 5, \"tasa_delitos_100k\": 137.02, \"poblacion\": 3649}]"
+        },
+        {
+          "from": "gpt",
+          "value": "El top 3 de mayor riesgo es: #1 Los Mártires, #2 Candelaria, #3 Teusaquillo. ¿Quieres el detalle de alguna localidad en particular?"
+        }
+      ]
+    }
+  ]
+}

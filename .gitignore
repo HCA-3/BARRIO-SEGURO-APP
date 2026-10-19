@@ -33,3 +33,9 @@ __pycache__/
 
 # Salidas locales de pruebas
 /.artifacts/
+
+# Adaptador LoRA entrenado (~135MB, incluye tokenizer.json completo): no
+# cabe cómodamente en git. Se reentrena en minutos con
+# Agente/entrenar_lora.py + Agente/gold_dataset_sharegpt.json (este sí
+# versionado), así que no hace falta versionar los pesos resultantes.
+Agente/lora_barrio_seguro/

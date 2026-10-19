@@ -31,9 +31,15 @@ import glob
 import json
 import os
 import re
+import sys
 import time
 import unicodedata
 from typing import Any
+
+# run_api.py importa este archivo como "Api.backend_riesgo" desde la raíz del
+# proyecto (no desde dentro de Api/), así que un "import rag_contexto" plano
+# falla con ModuleNotFoundError salvo que esta carpeta esté en sys.path.
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 import geopandas as gpd
 import pandas as pd
@@ -45,6 +51,8 @@ except ImportError:
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+
+from rag_contexto import IndiceRAGLocalidades
 from shapely.geometry import Point
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -417,11 +425,16 @@ TOOLS = [
             "description": (
                 "Guarda un hecho DURADERO sobre este usuario para recordarlo en "
                 "futuras conversaciones (ej. dónde vive, dónde trabaja/estudia, "
-                "rutinas u horarios, preferencias de seguridad). Úsala solo cuando "
+                "rutinas u horarios, preferencias de seguridad). Úsala SOLO cuando "
                 "el usuario comparta algo sobre sí mismo que valga la pena recordar "
-                "más allá de esta conversación — no la uses para cada mensaje, ni "
-                "para preguntas sobre localidades. Nunca guardes contraseñas, datos "
-                "financieros ni información sensible innecesaria."
+                "más allá de esta conversación. NUNCA la uses en saludos, "
+                "despedidas, ni para 'recordar' que tuvieron esta conversación o "
+                "que es la primera vez que hablan — eso no es un hecho sobre el "
+                "usuario, es ruido de la conversación misma (ej. 'Habló por "
+                "primera vez' NO es un hecho válido, nunca la llames solo por "
+                "eso). No la uses para cada mensaje, ni para preguntas sobre "
+                "localidades. Nunca guardes contraseñas, datos financieros ni "
+                "información sensible innecesaria."
             ),
             "parameters": {
                 "type": "object",
@@ -553,6 +566,25 @@ def desenvolver_json_accidental(texto: str) -> str:
         if isinstance(valor, str) and valor.strip():
             return valor
     return texto
+
+
+def _intentar_extraer_tool_call_de_texto(texto: str) -> dict | None:
+    """Con Qwen2.5:3b se vio que a veces escribe la llamada a la herramienta
+    como JSON plano en "content" (ej. '{"name": "buscar_barrio",
+    "arguments": {...}}') en vez de en el campo "tool_calls" que Ollama sabe
+    parsear — el usuario vería ese JSON crudo en el chat. Se detecta el
+    patrón y se reconstruye la llamada real para ejecutarla, en vez de
+    mostrarla como si fuera la respuesta final."""
+    texto = (texto or "").strip()
+    if not (texto.startswith("{") and '"name"' in texto and '"arguments"' in texto):
+        return None
+    try:
+        datos = json.loads(texto)
+    except json.JSONDecodeError:
+        return None
+    if isinstance(datos, dict) and isinstance(datos.get("name"), str) and isinstance(datos.get("arguments"), dict):
+        return {"name": datos["name"], "arguments": datos["arguments"]}
+    return None
 
 
 # Palabras que una respuesta real (sobre riesgo/localidades/barrios, o un
@@ -717,6 +749,15 @@ LIMITES = cargar_limites()
 DATOS_UPZ = cargar_datos_upz()
 LIMITES_UPZ = cargar_limites_upz()
 BARRIOS = cargar_barrios()
+
+# Índice RAG (recuperación de contexto por TF-IDF sobre resúmenes de las 20
+# localidades, ver rag_contexto.py). Complementa el tool-calling: ayuda sobre
+# todo cuando el modelo local (3B/CPU) no decide invocar una herramienta,
+# porque ya tiene a la vista datos reales de la localidad nombrada en vez de
+# alucinar. No reemplaza a las tools: para preguntas de extremos/ranking
+# sigue haciendo falta localidad_extrema/obtener_ranking (TF-IDF no entiende
+# superlativos como "la más peligrosa").
+INDICE_RAG = IndiceRAGLocalidades(DATOS)
 
 
 def tool_upz_por_punto(lat: float, lng: float) -> dict | None:
@@ -977,13 +1018,25 @@ def localidad_establecida_reciente(historial: list) -> str | None:
     return None
 
 
-def _enriquecer_info_localidad(info: dict) -> dict:
+def _enriquecer_info_localidad(info: dict, registros: list | None = None) -> dict:
     res = dict(info)
     res["delitos_totales"] = res.get("delitos_totales") or res.get("delitos_recientes_total_2023_2025") or 0
     res["poblacion"] = res.get("poblacion") or res.get("poblacion_2025") or 0
     contexto = res.get("contexto") if isinstance(res.get("contexto"), dict) else {}
     res["estrato_promedio"] = res.get("estrato_promedio") or contexto.get("estrato_promedio", 0.0)
     res["luminarias"] = res.get("luminarias") or contexto.get("luminarias_estimadas", 0)
+    # "posicion" (puesto en el ranking) solo viene calculado en
+    # tool_obtener_ranking, no en el registro crudo de una sola localidad --
+    # responder_deterministico_inteligente lo usaba sin que existiera aquí,
+    # causando un KeyError real (reproducido con "¿Qué tan seguro es
+    # Chapinero?"). Se calcula igual que en tool_obtener_ranking (orden
+    # descendente por score_mixto) si se recibe la lista completa.
+    if registros is not None and "posicion" not in res:
+        ordenados = sorted(registros, key=lambda r: r.get("score_mixto", 0), reverse=True)
+        for i, r in enumerate(ordenados, start=1):
+            if r.get("localidad") == res.get("localidad"):
+                res["posicion"] = i
+                break
     return res
 
 
@@ -1005,11 +1058,11 @@ def tool_obtener_localidad(datos: dict, nombre: str) -> dict:
 
     for info in registros:
         if normalizar(info["localidad"]) == nombre_norm:
-            return _enriquecer_info_localidad(info)
+            return _enriquecer_info_localidad(info, registros)
 
     parciales = [info for info in registros if nombre_norm in normalizar(info["localidad"])]
     if len(parciales) == 1:
-        return _enriquecer_info_localidad(parciales[0])
+        return _enriquecer_info_localidad(parciales[0], registros)
     if parciales:
         return {"error": f"Nombre ambiguo. Coincidencias: {[p['localidad'] for p in parciales]}"}
     return {
@@ -1254,17 +1307,50 @@ def preguntar(modelo: str, historial: list, datos: dict, lat: float = None, lng:
 
             tool_calls = mensaje.get("tool_calls")
             if not tool_calls:
+                # Con Qwen2.5:3b se vio otro caso real: a veces escribe la
+                # llamada a la herramienta como JSON plano en "content" en
+                # vez de en el campo "tool_calls" que Ollama sabe parsear
+                # (ej. content='{"name": "buscar_barrio", "arguments": {...}}').
+                # Sin esto, ese JSON crudo se le mostraba tal cual al
+                # usuario en el chat. Se detecta el patrón y se ejecuta la
+                # llamada real en vez de mostrarla como texto.
+                llamada_en_texto = _intentar_extraer_tool_call_de_texto(mensaje.get("content", ""))
+                if llamada_en_texto:
+                    tool_calls = [{"function": llamada_en_texto}]
+
+            if not tool_calls:
                 texto = desenvolver_json_accidental(reparar_mojibake(mensaje.get("content", "")))
                 texto = quitar_frases_sin_respaldo(texto)
                 texto = quitar_tasas_inventadas(texto)
-                return reemplazar_narracion_meta(texto), hechos_nuevos
+                texto = reemplazar_narracion_meta(texto)
+                # Con Qwen2.5:3b se vio un caso real: el modelo "genera" tokens
+                # (eval_count > 0) que el parseo de Ollama no logra mapear a
+                # content NI a tool_calls -- queda vacío. Devolver "" como si
+                # fuera una respuesta válida se veía como el chat "colgado" sin
+                # error. Mejor tratarlo igual que una excepción: caer al
+                # respaldo determinístico, que SIEMPRE da algo.
+                if texto.strip():
+                    return texto, hechos_nuevos
+                break
 
             for llamada in tool_calls:
                 fn = llamada["function"]
                 argumentos = reparar_mojibake_argumentos(fn.get("arguments") or {})
                 if fn["name"] == "recordar_hecho":
                     hecho = str(argumentos.get("hecho", "")).strip()
-                    if hecho:
+                    # Guardrail de backend (no solo el prompt, ver nota en la
+                    # descripción de la tool): Qwen2.5:3b a veces intenta
+                    # "recordar" ruido de la conversación misma (ej. "Habló
+                    # por primera vez") ante un simple saludo, en vez de un
+                    # hecho real sobre el usuario. Se descarta si es muy corto
+                    # o si solo habla de la conversación, no del usuario.
+                    hecho_norm = normalizar(hecho)
+                    _PISTAS_HECHO_INVALIDO = (
+                        "primera vez", "hablo con", "hablamos", "nos conocimos",
+                        "saludo", "esta conversacion", "este chat", "inicio la conversacion",
+                    )
+                    es_invalido = len(hecho) < 8 or any(p in hecho_norm for p in _PISTAS_HECHO_INVALIDO)
+                    if hecho and not es_invalido:
                         hechos_nuevos.append(hecho)
                 resultado = ejecutar_tool(fn["name"], argumentos, datos, lat, lng)
                 historial.append({"role": "tool", "content": json.dumps(resultado, ensure_ascii=False)})
@@ -1517,6 +1603,11 @@ def chat(req: ChatRequest):
             f"\n\nUBICACIÓN ACTUAL DEL USUARIO: latitud {req.lat}, longitud {req.lng}.\n"
             "Si te preguntan por su ubicación o riesgo actual, usa consultar_riesgo_actual."
         )
+
+    ultimo_mensaje_usr = next(
+        (m.get("content", "") for m in reversed(req.mensajes) if m.get("role") == "user"), ""
+    )
+    system_prompt += INDICE_RAG.contexto_para_prompt(ultimo_mensaje_usr)
 
     historial = [{"role": "system", "content": system_prompt}] + req.mensajes
     respuesta, hechos_nuevos = preguntar(req.modelo, historial, DATOS, req.lat, req.lng)
