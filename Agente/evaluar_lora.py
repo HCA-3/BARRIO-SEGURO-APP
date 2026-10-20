@@ -7,14 +7,28 @@ No mide "parece mejor" -- mide si invoca la herramienta correcta con
 argumentos coherentes, comparando contra la respuesta esperada real.
 """
 import json
+import os
 import sys
 
 import torch
 from peft import PeftModel
 from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig
 
-MODELO_BASE = "Qwen/Qwen2.5-3B-Instruct"
-RUTA_LORA = r"C:\Users\User\Desktop\Trabajo de Grado 2\Agente\BARRIO-SEGURO-APP\Agente\lora_barrio_seguro"
+MODELO_BASE = os.environ.get("BARRIO_SEGURO_MODELO_LORA", "Qwen/Qwen2.5-3B-Instruct")
+# Ruta relativa al proyecto (antes harcodeada a la ruta de otra máquina,
+# "C:\Users\User\Desktop\Trabajo de Grado 2\...": no corría en ningún equipo
+# distinto al que la entrenó). Debe coincidir con RUTA_SALIDA de
+# entrenar_lora.py, que ya usaba la ruta relativa correcta.
+RUTA_LORA = os.path.join(os.path.dirname(__file__), "lora_barrio_seguro")
+
+CUDA_DISPONIBLE = torch.cuda.is_available()
+if not CUDA_DISPONIBLE:
+    print(
+        "AVISO: no se detectó GPU CUDA en esta máquina. bitsandbytes (4-bit) "
+        "requiere CUDA, así que se evalúa en CPU sin cuantizar -- mucho más "
+        "lento (varios minutos por respuesta en un modelo de 3B es normal), "
+        "pero funciona.\n"
+    )
 
 SYSTEM = (
     "Eres el asistente de la app \"Barrio Seguro\" sobre riesgo de inseguridad "
@@ -61,14 +75,29 @@ CASOS = [
 
 
 def cargar(con_lora: bool):
-    bnb_config = BitsAndBytesConfig(
-        load_in_4bit=True, bnb_4bit_quant_type="nf4",
-        bnb_4bit_compute_dtype=torch.bfloat16, bnb_4bit_use_double_quant=True,
-    )
+    if not os.path.isdir(RUTA_LORA) and con_lora:
+        raise SystemExit(
+            f"No existe {RUTA_LORA}. Hace falta entrenar el adaptador primero "
+            f"(python entrenar_lora.py) o copiar aquí la carpeta lora_barrio_seguro/ "
+            f"ya entrenada en otra máquina."
+        )
+
     tok = AutoTokenizer.from_pretrained(MODELO_BASE)
-    modelo = AutoModelForCausalLM.from_pretrained(
-        MODELO_BASE, quantization_config=bnb_config, device_map={"": 0},
-    )
+    if CUDA_DISPONIBLE:
+        bnb_config = BitsAndBytesConfig(
+            load_in_4bit=True, bnb_4bit_quant_type="nf4",
+            bnb_4bit_compute_dtype=torch.bfloat16, bnb_4bit_use_double_quant=True,
+        )
+        modelo = AutoModelForCausalLM.from_pretrained(
+            MODELO_BASE, quantization_config=bnb_config, device_map={"": 0},
+        )
+    else:
+        # Sin CUDA no hay bitsandbytes: se carga en fp32 sobre CPU (no bf16 --
+        # esta CPU no tiene aceleración nativa bf16, ver entrenar_lora.py).
+        # Más RAM (~12-13GB para un modelo de 3B en fp32) pero no depende de GPU.
+        modelo = AutoModelForCausalLM.from_pretrained(
+            MODELO_BASE, torch_dtype=torch.float32, device_map="cpu",
+        )
     if con_lora:
         modelo = PeftModel.from_pretrained(modelo, RUTA_LORA)
     modelo.eval()
@@ -109,7 +138,8 @@ def evaluar(etiqueta, con_lora):
         print(f"   salida cruda: {salida[:200]!r}")
     print(f"\n>>> {etiqueta}: {aciertos}/{len(CASOS)} correctos ({aciertos/len(CASOS)*100:.0f}%)")
     del modelo
-    torch.cuda.empty_cache()
+    if CUDA_DISPONIBLE:
+        torch.cuda.empty_cache()
     return aciertos, len(CASOS)
 
 

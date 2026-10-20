@@ -20,3 +20,17 @@ urllib3==2.7.0
 fastapi
 uvicorn
 pydantic
+
+# Fine-tuning y evaluación del LoRA (entrenar_lora.py, evaluar_lora.py).
+# torch necesita el índice de PyTorch aparte -- "pip install -r
+# requirements.txt" solo no lo resuelve porque "+cpu" no es un paquete de
+# PyPI normal:
+#   pip install torch==2.14.1+cpu --index-url https://download.pytorch.org/whl/cpu
+#   pip install -r requirements.txt
+# (en una máquina con GPU CUDA, instalar el build de torch con CUDA en vez
+# del +cpu, y bitsandbytes además para la cuantización 4-bit)
+torch==2.14.1+cpu
+transformers==5.20.2
+peft==0.21.2
+datasets==5.1.0
+accelerate==1.15.0
