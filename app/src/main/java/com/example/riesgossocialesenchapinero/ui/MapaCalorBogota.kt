@@ -249,6 +249,36 @@ fun MapaCalorBogotaScreen(
         }
     }
 
+    var cargandoCalificaciones by remember { mutableStateOf(false) }
+
+    // Descarga asíncrona automática de calificaciones al abrir la pantalla
+    LaunchedEffect(Unit) {
+        cargandoCalificaciones = true
+        withContext(Dispatchers.IO) {
+            val descargados = FirebaseComunidadManager.descargarCalificacionesCuadras(context)
+            if (descargados.isNotEmpty()) {
+                reportesFirebase = descargados
+            }
+        }
+        cargandoCalificaciones = false
+    }
+
+    val recargarCalificaciones: () -> Unit = {
+        scope.launch {
+            cargandoCalificaciones = true
+            val descargados = withContext(Dispatchers.IO) {
+                FirebaseComunidadManager.descargarCalificacionesCuadras(context)
+            }
+            if (descargados.isNotEmpty()) {
+                reportesFirebase = descargados
+                Toast.makeText(context, "Calificaciones actualizadas: ${descargados.size} cuadras", Toast.LENGTH_SHORT).show()
+            } else {
+                Toast.makeText(context, "Calificaciones al día", Toast.LENGTH_SHORT).show()
+            }
+            cargandoCalificaciones = false
+        }
+    }
+
     // Escuchar reportes comunitarios de cuadras en tiempo real desde Firebase Firestore
     DisposableEffect(Unit) {
         val listener = FirebaseComunidadManager.escucharCalificacionesCuadras(
@@ -627,6 +657,8 @@ fun MapaCalorBogotaScreen(
                     end = 16.dp,
                     bottom = if (reporteSeleccionado != null || localidadSeleccionadaInfo != null) 280.dp else 24.dp
                 ),
+            cargando = cargandoCalificaciones,
+            onRecargarClick = recargarCalificaciones,
             onCalificarClick = {
                 modoSeleccionarPunto = true
                 Toast.makeText(context, "Toca cualquier punto del mapa para calificar la calle", Toast.LENGTH_SHORT).show()
@@ -759,7 +791,7 @@ fun MapaCalorBogotaScreen(
                 onDismiss = { puntoParaCalificar = null },
                 onGuardar = { reporteNuevo ->
                     scope.launch {
-                        val exito = FirebaseComunidadManager.guardarCalificacionCuadra(reporteNuevo)
+                        val exito = FirebaseComunidadManager.guardarCalificacionCuadra(reporteNuevo, context)
                         // Agregar inmediatamente a la lista local para respuesta instantánea
                         reportesFirebase = listOf(reporteNuevo) + reportesFirebase
                         puntoParaCalificar = null
@@ -801,6 +833,8 @@ fun ItemLeyenda(color: Color, titulo: String, descripcion: String) {
 @Composable
 fun FloatingActionButtonGroup(
     modifier: Modifier = Modifier,
+    cargando: Boolean = false,
+    onRecargarClick: () -> Unit = {},
     onCalificarClick: () -> Unit,
     onCalificarMiUbicacionClick: () -> Unit,
     onRecentrarClick: () -> Unit,
@@ -813,6 +847,22 @@ fun FloatingActionButtonGroup(
         horizontalAlignment = Alignment.End,
         verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
+        // Recargar / Descargar calificaciones asíncronas
+        Surface(
+            shape = CircleShape,
+            color = MaterialTheme.colorScheme.surface,
+            shadowElevation = 6.dp,
+            modifier = Modifier.size(44.dp)
+        ) {
+            IconButton(onClick = onRecargarClick) {
+                if (cargando) {
+                    CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
+                } else {
+                    Text("🔄", fontSize = 18.sp)
+                }
+            }
+        }
+
         // Calificar mi ubicación actual
         Surface(
             shape = CircleShape,
@@ -1123,7 +1173,6 @@ fun DialogoCalificarCuadra(
         )
     }
     var justificacion by remember { mutableStateOf("") }
-    var alias by remember { mutableStateOf("Vecino de Bogotá") }
 
     val niveles = listOf("Bajo", "Medio", "Alto", "Critico")
     val categorias = listOf(
@@ -1298,15 +1347,33 @@ fun DialogoCalificarCuadra(
                     modifier = Modifier.fillMaxWidth()
                 )
 
-                Spacer(modifier = Modifier.height(10.dp))
+                Spacer(modifier = Modifier.height(14.dp))
 
-                OutlinedTextField(
-                    value = alias,
-                    onValueChange = { alias = it },
-                    label = { Text("Tu alias o nombre de vecino") },
-                    singleLine = true,
+                // Garantía de Anonimato Total (Sin solicitud de datos personales)
+                Surface(
+                    shape = RoundedCornerShape(12.dp),
+                    color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f),
                     modifier = Modifier.fillMaxWidth()
-                )
+                ) {
+                    Row(
+                        modifier = Modifier.padding(12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text("🛡️", fontSize = 20.sp, modifier = Modifier.padding(end = 8.dp))
+                        Column {
+                            Text(
+                                text = "Calificación 100% Anónima",
+                                style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                                color = MaterialTheme.colorScheme.onSecondaryContainer
+                            )
+                            Text(
+                                text = "Tu identidad está protegida. No se solicita ni almacena tu nombre, teléfono, correo ni datos personales.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.8f)
+                            )
+                        }
+                    }
+                }
 
                 Spacer(modifier = Modifier.height(18.dp))
 
@@ -1330,7 +1397,7 @@ fun DialogoCalificarCuadra(
                                 categoria = categoria,
                                 justificacion = justificacion.trim(),
                                 horarioCritico = horario,
-                                usuarioAlias = alias.trim().ifBlank { "Vecino anónimo" },
+                                usuarioAlias = "Vecino anónimo",
                                 timestamp = System.currentTimeMillis()
                             )
                             onGuardar(reporte)

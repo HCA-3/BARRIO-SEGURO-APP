@@ -1834,4 +1834,199 @@ def eliminar_mensaje_comunidad(msg_id: str):
     return {"status": "ok", "eliminado": msg_id}
 
 
+# ---------------------------------------------------------------------------
+# CALIFICACIONES Y REPORTES COMUNITARIOS DE CUADRAS (PERSISTENCIA Y SYNC)
+# ---------------------------------------------------------------------------
+class CalificacionCuadraIn(BaseModel):
+    id: str | None = None
+    latitud: float
+    longitud: float
+    direccion_aprox: str | None = None
+    direccionAprox: str | None = None
+    nivel_riesgo: str | None = None
+    nivelRiesgo: str | None = None
+    categoria: str = "Robo frecuente"
+    justificacion: str = ""
+    horario_critico: str | None = None
+    horarioCritico: str | None = None
+    usuario_alias: str | None = None
+    usuarioAlias: str | None = None
+    timestamp: int | None = None
+    votos_apoyo: int | None = None
+    votosApoyo: int | None = None
+
+
+CALIFICACIONES_CUADRAS_PATH = os.path.join(BASE_DIR, "calificaciones_cuadras.json")
+_CALIFICACIONES_CUADRAS: list[dict[str, Any]] = []
+
+
+def _guardar_calificaciones_cuadras_disco():
+    try:
+        with open(CALIFICACIONES_CUADRAS_PATH, "w", encoding="utf-8") as f:
+            json.dump(_CALIFICACIONES_CUADRAS, f, ensure_ascii=False, indent=2)
+    except Exception as e:
+        print("Error guardando calificaciones_cuadras.json:", e)
+
+
+def _cargar_calificaciones_cuadras_disco():
+    global _CALIFICACIONES_CUADRAS
+    if os.path.exists(CALIFICACIONES_CUADRAS_PATH):
+        try:
+            with open(CALIFICACIONES_CUADRAS_PATH, "r", encoding="utf-8") as f:
+                _CALIFICACIONES_CUADRAS = json.load(f)
+                return
+        except Exception as e:
+            print("Error leyendo calificaciones_cuadras.json:", e)
+
+    # Semilla inicial con reportes reales de Chapinero / Bogotá
+    _CALIFICACIONES_CUADRAS = [
+        {
+            "id": "rep_ej_1",
+            "latitud": 4.6486,
+            "longitud": -74.0628,
+            "direccion_aprox": "Cra. 7 con Calle 60 (Parque de los Hippies, Chapinero)",
+            "direccionAprox": "Cra. 7 con Calle 60 (Parque de los Hippies, Chapinero)",
+            "nivel_riesgo": "Medio",
+            "nivelRiesgo": "Medio",
+            "categoria": "Robo frecuente / Cosquilleo",
+            "justificacion": "Cuidado con celulares en horas pico y viernes en la noche.",
+            "horario_critico": "Noche",
+            "horarioCritico": "Noche",
+            "usuario_alias": "Vecino Chapinero Central",
+            "usuarioAlias": "Vecino Chapinero Central",
+            "timestamp": int((time.time() - 7200) * 1000),
+            "votos_apoyo": 14,
+            "votosApoyo": 14,
+        },
+        {
+            "id": "rep_ej_2",
+            "latitud": 4.6582,
+            "longitud": -74.0583,
+            "direccion_aprox": "Calle 72 con Cra. 11 (Sector Financiero, Chapinero)",
+            "direccionAprox": "Calle 72 con Cra. 11 (Sector Financiero, Chapinero)",
+            "nivel_riesgo": "Bajo",
+            "nivelRiesgo": "Bajo",
+            "categoria": "Zona segura",
+            "justificacion": "Buena iluminación y presencia constante de cuadrantes de policía.",
+            "horario_critico": "Día",
+            "horarioCritico": "Día",
+            "usuario_alias": "Comerciante Calle 72",
+            "usuarioAlias": "Comerciante Calle 72",
+            "timestamp": int((time.time() - 14400) * 1000),
+            "votos_apoyo": 22,
+            "votosApoyo": 22,
+        },
+        {
+            "id": "rep_ej_3",
+            "latitud": 4.6672,
+            "longitud": -74.0535,
+            "direccion_aprox": "Cra. 15 con Calle 85 (Zona Rosa, Chapinero)",
+            "direccionAprox": "Cra. 15 con Calle 85 (Zona Rosa, Chapinero)",
+            "nivel_riesgo": "Alto",
+            "nivelRiesgo": "Alto",
+            "categoria": "Hurto a personas",
+            "justificacion": "Motos sospechosas acechando a peatones saliendo de restaurantes.",
+            "horario_critico": "Noche",
+            "horarioCritico": "Noche",
+            "usuario_alias": "Estudiante Zona Rosa",
+            "usuarioAlias": "Estudiante Zona Rosa",
+            "timestamp": int((time.time() - 21600) * 1000),
+            "votos_apoyo": 19,
+            "votosApoyo": 19,
+        },
+        {
+            "id": "rep_ej_4",
+            "latitud": 4.6300,
+            "longitud": -74.0660,
+            "direccion_aprox": "Cra. 7 con Calle 45 (Sector Universidades, Javeriana)",
+            "direccionAprox": "Cra. 7 con Calle 45 (Sector Universidades, Javeriana)",
+            "nivel_riesgo": "Alto",
+            "nivelRiesgo": "Alto",
+            "categoria": "Robo frecuente / Atraco",
+            "justificacion": "Evitar puentes peatonales después de las 7:00 pm.",
+            "horario_critico": "Noche",
+            "horarioCritico": "Noche",
+            "usuario_alias": "Universitario Javeriana",
+            "usuarioAlias": "Universitario Javeriana",
+            "timestamp": int((time.time() - 28800) * 1000),
+            "votos_apoyo": 31,
+            "votosApoyo": 31,
+        },
+    ]
+    _guardar_calificaciones_cuadras_disco()
+
+
+_cargar_calificaciones_cuadras_disco()
+
+
+@app.get("/cuadras/calificaciones")
+def obtener_calificaciones_cuadras():
+    """Devuelve las calificaciones y justificaciones de cuadras reportadas."""
+    return _CALIFICACIONES_CUADRAS
+
+
+@app.post("/cuadras/calificaciones")
+def guardar_calificacion_cuadra(body: CalificacionCuadraIn):
+    """Guarda o actualiza una calificación de cuadra reportada por la comunidad."""
+    global _CALIFICACIONES_CUADRAS
+    cid = body.id or f"cuadra_{int(time.time() * 1000)}"
+    justificacion_limpia = censurar_texto(body.justificacion.strip())
+    alias_limpio = censurar_texto((body.usuario_alias or body.usuarioAlias or "Vecino anónimo").strip()) or "Vecino anónimo"
+    dir_aprox = (body.direccion_aprox or body.direccionAprox or "").strip()
+    n_riesgo = body.nivel_riesgo or body.nivelRiesgo or "Medio"
+    h_critico = body.horario_critico or body.horarioCritico or "Noche"
+    v_apoyo = body.votos_apoyo if body.votos_apoyo is not None else (body.votosApoyo or 0)
+
+    nuevo_reporte = {
+        "id": cid,
+        "latitud": body.latitud,
+        "longitud": body.longitud,
+        "direccion_aprox": dir_aprox,
+        "direccionAprox": dir_aprox,
+        "nivel_riesgo": n_riesgo,
+        "nivelRiesgo": n_riesgo,
+        "categoria": body.categoria,
+        "justificacion": justificacion_limpia,
+        "horario_critico": h_critico,
+        "horarioCritico": h_critico,
+        "usuario_alias": alias_limpio,
+        "usuarioAlias": alias_limpio,
+        "timestamp": body.timestamp or int(time.time() * 1000),
+        "votos_apoyo": v_apoyo,
+        "votosApoyo": v_apoyo,
+    }
+
+    # Si ya existe con este ID, reemplazarlo; si no, insertarlo al inicio
+    idx = next((i for i, c in enumerate(_CALIFICACIONES_CUADRAS) if str(c.get("id")) == str(cid)), None)
+    if idx is not None:
+        _CALIFICACIONES_CUADRAS[idx] = nuevo_reporte
+    else:
+        _CALIFICACIONES_CUADRAS.insert(0, nuevo_reporte)
+
+    _guardar_calificaciones_cuadras_disco()
+    return nuevo_reporte
+
+
+@app.delete("/cuadras/calificaciones/{reporte_id}")
+def eliminar_calificacion_cuadra(reporte_id: str):
+    """Elimina una calificación de cuadra por ID."""
+    global _CALIFICACIONES_CUADRAS
+    _CALIFICACIONES_CUADRAS = [c for c in _CALIFICACIONES_CUADRAS if str(c.get("id")) != str(reporte_id)]
+    _guardar_calificaciones_cuadras_disco()
+    return {"status": "ok", "eliminado": reporte_id}
+
+
+@app.post("/cuadras/calificaciones/{reporte_id}/apoyar")
+def apoyar_calificacion_cuadra(reporte_id: str):
+    """Incrementa los votos de apoyo comunitario a un reporte de cuadra."""
+    for c in _CALIFICACIONES_CUADRAS:
+        if str(c.get("id")) == str(reporte_id):
+            c["votos_apoyo"] = c.get("votos_apoyo", 0) + 1
+            c["votosApoyo"] = c["votos_apoyo"]
+            _guardar_calificaciones_cuadras_disco()
+            return {"status": "ok", "id": reporte_id, "votos_apoyo": c["votos_apoyo"]}
+    raise HTTPException(status_code=404, detail="Reporte no encontrado")
+
+
+
 

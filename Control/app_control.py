@@ -108,6 +108,11 @@ class MainWindow(QMainWindow):
         self.timer_activity.timeout.connect(self.actualizar_actividad)
         self.timer_activity.start(2000)
 
+        self.all_calificaciones = []
+        self.timer_calif = QTimer(self)
+        self.timer_calif.timeout.connect(self.cargar_calificaciones_cuadras_silencioso)
+        self.timer_calif.start(4000)
+
         # Cargar datos iniciales
         self.actualizar_telemetria()
         self.cargar_datos_almacenados()
@@ -571,8 +576,49 @@ class MainWindow(QMainWindow):
         self.table_sismos.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
         ss_layout.addWidget(self.table_sismos)
 
+        # Subtab 4: Calificaciones y Reportes Comunitarios de Cuadras
+        self.subtab_calificaciones = QWidget()
+        sq_layout = QVBoxLayout(self.subtab_calificaciones)
+        sq_ctrl = QHBoxLayout()
+        self.btn_refresh_calif = QPushButton("🔄 Actualizar Calificaciones")
+        self.btn_refresh_calif.clicked.connect(self.cargar_calificaciones_cuadras)
+        self.btn_delete_calif = QPushButton("🗑️ Eliminar Reporte Seleccionado")
+        self.btn_delete_calif.setObjectName("btn_stop")
+        self.btn_delete_calif.clicked.connect(self.eliminar_calificacion_cuadra)
+
+        self.txt_search_calif = QLineEdit()
+        self.txt_search_calif.setPlaceholderText("🔍 Filtrar por calle, motivo, justificación o alias...")
+        self.txt_search_calif.textChanged.connect(self.filtrar_calificaciones)
+
+        self.lbl_calif_badge = QLabel("📊 Total: 0 reportes")
+        self.lbl_calif_badge.setStyleSheet("color: #00e5ff; font-weight: bold; padding: 4px 8px;")
+
+        sq_ctrl.addWidget(self.btn_refresh_calif)
+        sq_ctrl.addWidget(self.btn_delete_calif)
+        sq_ctrl.addWidget(self.txt_search_calif)
+        sq_ctrl.addWidget(self.lbl_calif_badge)
+        sq_ctrl.addStretch()
+        sq_layout.addLayout(sq_ctrl)
+
+        self.table_calificaciones = QTableWidget(0, 9)
+        self.table_calificaciones.setHorizontalHeaderLabels([
+            "ID", "Fecha / Hora", "Dirección / Sector", "Peligro", "Motivo", "Horario", "Comentario / Justificación", "Vecino / Alias", "Votos"
+        ])
+        self.table_calificaciones.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Interactive)
+        self.table_calificaciones.setColumnWidth(0, 90)
+        self.table_calificaciones.setColumnWidth(1, 140)
+        self.table_calificaciones.setColumnWidth(2, 220)
+        self.table_calificaciones.setColumnWidth(3, 90)
+        self.table_calificaciones.setColumnWidth(4, 150)
+        self.table_calificaciones.setColumnWidth(5, 80)
+        self.table_calificaciones.setColumnWidth(6, 260)
+        self.table_calificaciones.setColumnWidth(7, 130)
+        self.table_calificaciones.setColumnWidth(8, 70)
+        sq_layout.addWidget(self.table_calificaciones)
+
         self.data_tabs.addTab(self.subtab_zonas, "🏙️ Zonas de Riesgo")
         self.data_tabs.addTab(self.subtab_comunidad, "💬 Chat Comunidad & Alertas")
+        self.data_tabs.addTab(self.subtab_calificaciones, "⭐ Calificaciones de Cuadras")
         self.data_tabs.addTab(self.subtab_sismos, "🌋 Sismos Recientes")
 
     # -----------------------------------------------------------------------
@@ -885,6 +931,7 @@ class MainWindow(QMainWindow):
     def cargar_datos_almacenados(self):
         self.cargar_zonas_riesgo()
         self.cargar_mensajes_comunidad()
+        self.cargar_calificaciones_cuadras()
         self.cargar_sismos()
 
     def cargar_zonas_riesgo(self):
@@ -968,6 +1015,89 @@ class MainWindow(QMainWindow):
                 self.cargar_mensajes_comunidad()
         except Exception as e:
             QMessageBox.critical(self, "Error", f"No se pudo eliminar el mensaje:\n{e}")
+
+    def cargar_calificaciones_cuadras_silencioso(self):
+        # Solo refrescar en segundo plano si el usuario no tiene una fila seleccionada activamente
+        if self.table_calificaciones.currentRow() >= 0:
+            return
+        self.cargar_calificaciones_cuadras(notificar_error=False)
+
+    def cargar_calificaciones_cuadras(self, notificar_error=True):
+        try:
+            resp = requests.get(f"{API_URL}/cuadras/calificaciones", timeout=2)
+            if resp.status_code == 200:
+                self.all_calificaciones = resp.json()
+                self.filtrar_calificaciones()
+        except Exception as e:
+            if notificar_error:
+                print("Error cargando calificaciones de cuadras:", e)
+
+    def filtrar_calificaciones(self):
+        filtro = self.txt_search_calif.text().lower().strip()
+        calificaciones = getattr(self, 'all_calificaciones', [])
+        if filtro:
+            calificaciones = [
+                c for c in calificaciones
+                if filtro in str(c.get("direccion_aprox", "")).lower()
+                or filtro in str(c.get("justificacion", "")).lower()
+                or filtro in str(c.get("usuario_alias", "")).lower()
+                or filtro in str(c.get("categoria", "")).lower()
+                or filtro in str(c.get("nivel_riesgo", "")).lower()
+            ]
+
+        self.lbl_calif_badge.setText(f"📊 Total: {len(calificaciones)} reportes")
+        self.table_calificaciones.setRowCount(len(calificaciones))
+        for i, c in enumerate(calificaciones):
+            self.table_calificaciones.setItem(i, 0, QTableWidgetItem(str(c.get("id", ""))))
+
+            ts = c.get("timestamp", 0) / 1000.0
+            hora_str = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(ts)) if ts else "-"
+            self.table_calificaciones.setItem(i, 1, QTableWidgetItem(hora_str))
+
+            dir_txt = str(c.get("direccion_aprox") or c.get("direccionAprox") or "-")
+            self.table_calificaciones.setItem(i, 2, QTableWidgetItem(dir_txt))
+
+            nivel = str(c.get("nivel_riesgo") or c.get("nivelRiesgo") or "Medio").upper()
+            item_nivel = QTableWidgetItem(nivel)
+            if "CRIT" in nivel:
+                item_nivel.setForeground(QColor("#ff1744"))
+            elif "ALT" in nivel:
+                item_nivel.setForeground(QColor("#ff6d00"))
+            elif "MED" in nivel:
+                item_nivel.setForeground(QColor("#ffab00"))
+            else:
+                item_nivel.setForeground(QColor("#00e676"))
+            item_nivel.setFont(QFont("Segoe UI", 10, QFont.Weight.Bold))
+            self.table_calificaciones.setItem(i, 3, item_nivel)
+
+            self.table_calificaciones.setItem(i, 4, QTableWidgetItem(str(c.get("categoria", "-"))))
+
+            horario = str(c.get("horario_critico") or c.get("horarioCritico") or "-")
+            self.table_calificaciones.setItem(i, 5, QTableWidgetItem(horario))
+
+            just = str(c.get("justificacion", "-"))
+            self.table_calificaciones.setItem(i, 6, QTableWidgetItem(just))
+
+            alias = str(c.get("usuario_alias") or c.get("usuarioAlias") or "Vecino anónimo")
+            self.table_calificaciones.setItem(i, 7, QTableWidgetItem(alias))
+
+            votos = str(c.get("votos_apoyo") if c.get("votos_apoyo") is not None else c.get("votosApoyo", 0))
+            self.table_calificaciones.setItem(i, 8, QTableWidgetItem(f"👍 {votos}"))
+
+    def eliminar_calificacion_cuadra(self):
+        selected = self.table_calificaciones.currentRow()
+        if selected < 0:
+            QMessageBox.warning(self, "Selección requerida", "Selecciona una calificación de la tabla para eliminar.")
+            return
+
+        cid = self.table_calificaciones.item(selected, 0).text()
+        try:
+            resp = requests.delete(f"{API_URL}/cuadras/calificaciones/{cid}", timeout=2)
+            if resp.status_code == 200:
+                QMessageBox.information(self, "Eliminado", f"Calificación/Reporte {cid} eliminado exitosamente.")
+                self.cargar_calificaciones_cuadras()
+        except Exception as e:
+            QMessageBox.critical(self, "Error", f"No se pudo eliminar el reporte:\n{e}")
 
     def cargar_sismos(self):
         try:

@@ -598,5 +598,94 @@ object ApiClient {
             )
         }
     }
+
+    /**
+     * Descarga de forma asíncrona la lista de calificaciones de cuadras reportadas.
+     */
+    fun obtenerCalificacionesCuadras(): List<ReporteCuadra> {
+        return try {
+            conAutodeteccion { obtenerCalificacionesCuadrasUnaVez() }
+        } catch (e: Exception) {
+            emptyList()
+        }
+    }
+
+    private fun obtenerCalificacionesCuadrasUnaVez(): List<ReporteCuadra> {
+        val request = Request.Builder().url(baseUrl + "cuadras/calificaciones").get().build()
+        client.newCall(request).execute().use { resp ->
+            if (!resp.isSuccessful) throw ApiException("Error ${resp.code} obteniendo calificaciones")
+            val arr = JSONArray(resp.body?.string() ?: "[]")
+            return List(arr.length()) { i ->
+                val o = arr.getJSONObject(i)
+                ReporteCuadra(
+                    id = o.optString("id", "cuadra_$i"),
+                    latitud = o.optDouble("latitud", 0.0),
+                    longitud = o.optDouble("longitud", 0.0),
+                    direccionAprox = o.optString("direccion_aprox", o.optString("direccionAprox", "")),
+                    nivelRiesgo = o.optString("nivel_riesgo", o.optString("nivelRiesgo", "Medio")),
+                    categoria = o.optString("categoria", "Robo frecuente"),
+                    justificacion = o.optString("justificacion", ""),
+                    horarioCritico = o.optString("horario_critico", o.optString("horarioCritico", "Noche")),
+                    timestamp = o.optLong("timestamp", System.currentTimeMillis()),
+                    usuarioAlias = o.optString("usuario_alias", o.optString("usuarioAlias", "Vecino anónimo")),
+                    votosApoyo = o.optInt("votos_apoyo", o.optInt("votosApoyo", 0))
+                )
+            }
+        }
+    }
+
+    /**
+     * Guarda o sincroniza una nueva calificación de cuadra en el backend.
+     */
+    fun guardarCalificacionCuadra(reporte: ReporteCuadra): Boolean {
+        return try {
+            conAutodeteccion { guardarCalificacionCuadraUnaVez(reporte) }
+            true
+        } catch (e: Exception) {
+            false
+        }
+    }
+
+    private fun guardarCalificacionCuadraUnaVez(reporte: ReporteCuadra) {
+        val cuerpoJson = JSONObject().apply {
+            put("id", reporte.id)
+            put("latitud", reporte.latitud)
+            put("longitud", reporte.longitud)
+            put("direccion_aprox", reporte.direccionAprox)
+            put("nivel_riesgo", reporte.nivelRiesgo)
+            put("categoria", reporte.categoria)
+            put("justificacion", reporte.justificacion)
+            put("horario_critico", reporte.horarioCritico)
+            put("usuario_alias", reporte.usuarioAlias)
+            put("timestamp", reporte.timestamp)
+            put("votos_apoyo", reporte.votosApoyo)
+        }.toString()
+
+        val request = Request.Builder()
+            .url(baseUrl + "cuadras/calificaciones")
+            .post(cuerpoJson.toRequestBody(jsonMediaType))
+            .build()
+
+        client.newCall(request).execute().use { resp ->
+            if (!resp.isSuccessful) throw ApiException("Error ${resp.code} guardando calificación de cuadra")
+        }
+    }
+
+    /**
+     * Apoya o confirma comunitariamente un reporte de cuadra.
+     */
+    fun apoyarCalificacionCuadra(reporteId: String): Boolean {
+        return try {
+            val request = Request.Builder()
+                .url(baseUrl + "cuadras/calificaciones/$reporteId/apoyar")
+                .post("{}".toRequestBody(jsonMediaType))
+                .build()
+            client.newCall(request).execute().use { resp ->
+                resp.isSuccessful
+            }
+        } catch (e: Exception) {
+            false
+        }
+    }
 }
 
