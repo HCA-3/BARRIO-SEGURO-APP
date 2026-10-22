@@ -39,3 +39,10 @@ __pycache__/
 # Agente/entrenar_lora.py + Agente/gold_dataset_sharegpt.json (este sí
 # versionado), así que no hace falta versionar los pesos resultantes.
 Agente/lora_barrio_seguro/
+
+# Datos crudos descargados a mano en Agente/output (CSV/XLSX de datos
+# abiertos, accesos directos .url). Solo se versionan las salidas generadas
+# por el pipeline (*.json / *.geojson), que la API necesita para arrancar.
+Agente/output/*.csv
+Agente/output/*.xlsx
+Agente/output/*.url

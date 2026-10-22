@@ -42,11 +42,17 @@ from PyQt6.QtWidgets import (
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
+# Clave para los endpoints de administración (telemetría y borrados) del
+# backend. Debe coincidir con BARRIO_SEGURO_ADMIN_KEY del servidor; si ninguno
+# la define, el backend solo acepta esas rutas desde localhost directo.
+ADMIN_KEY = os.environ.get("BARRIO_SEGURO_ADMIN_KEY", "")
+ADMIN_HEADERS = {"X-Admin-Key": ADMIN_KEY} if ADMIN_KEY else {}
+
 def obtener_api_url() -> str:
     for port in (8001, 8000):
         url = f"http://127.0.0.1:{port}"
         try:
-            r = requests.get(f"{url}/health", timeout=0.5)
+            r = requests.get(f"{url}/health", headers=ADMIN_HEADERS, timeout=0.5)
             if r.status_code == 200:
                 return url
         except Exception:
@@ -714,7 +720,7 @@ class MainWindow(QMainWindow):
 
         self.txt_logs.append(f">>> Probando conectividad remota vía Internet hacia: {url}/health ...")
         try:
-            r = requests.get(f"{url}/health", timeout=6.0)
+            r = requests.get(f"{url}/health", headers=ADMIN_HEADERS, timeout=6.0)
             if r.status_code == 200:
                 data = r.json()
                 QMessageBox.information(
@@ -787,7 +793,7 @@ class MainWindow(QMainWindow):
         self.actualizar_info_tunnel()
 
         try:
-            resp = requests.get(f"{API_URL}/telemetria/resumen", timeout=1.5)
+            resp = requests.get(f"{API_URL}/telemetria/resumen", headers=ADMIN_HEADERS, timeout=1.5)
             if resp.status_code == 200:
                 data = resp.json()
 
@@ -894,7 +900,7 @@ class MainWindow(QMainWindow):
     # -----------------------------------------------------------------------
     def actualizar_actividad(self):
         try:
-            resp = requests.get(f"{API_URL}/telemetria/actividad?limit=50", timeout=1.5)
+            resp = requests.get(f"{API_URL}/telemetria/actividad?limit=50", headers=ADMIN_HEADERS, timeout=1.5)
             if resp.status_code == 200:
                 actividad = resp.json()
                 filtro = self.txt_mon_filter.text().lower().strip()
@@ -980,7 +986,7 @@ class MainWindow(QMainWindow):
 
     def cargar_mensajes_comunidad(self):
         try:
-            resp = requests.get(f"{API_URL}/comunidad/mensajes", timeout=2)
+            resp = requests.get(f"{API_URL}/comunidad/mensajes", headers=ADMIN_HEADERS, timeout=2)
             if resp.status_code == 200:
                 mensajes = resp.json()
                 self.table_comunidad.setRowCount(len(mensajes))
@@ -1009,7 +1015,7 @@ class MainWindow(QMainWindow):
 
         msg_id = self.table_comunidad.item(selected, 0).text()
         try:
-            resp = requests.delete(f"{API_URL}/comunidad/mensajes/{msg_id}", timeout=2)
+            resp = requests.delete(f"{API_URL}/comunidad/mensajes/{msg_id}", headers=ADMIN_HEADERS, timeout=2)
             if resp.status_code == 200:
                 QMessageBox.information(self, "Eliminado", f"Mensaje {msg_id} eliminado exitosamente.")
                 self.cargar_mensajes_comunidad()
@@ -1024,7 +1030,7 @@ class MainWindow(QMainWindow):
 
     def cargar_calificaciones_cuadras(self, notificar_error=True):
         try:
-            resp = requests.get(f"{API_URL}/cuadras/calificaciones", timeout=2)
+            resp = requests.get(f"{API_URL}/cuadras/calificaciones", headers=ADMIN_HEADERS, timeout=2)
             if resp.status_code == 200:
                 self.all_calificaciones = resp.json()
                 self.filtrar_calificaciones()
@@ -1092,7 +1098,7 @@ class MainWindow(QMainWindow):
 
         cid = self.table_calificaciones.item(selected, 0).text()
         try:
-            resp = requests.delete(f"{API_URL}/cuadras/calificaciones/{cid}", timeout=2)
+            resp = requests.delete(f"{API_URL}/cuadras/calificaciones/{cid}", headers=ADMIN_HEADERS, timeout=2)
             if resp.status_code == 200:
                 QMessageBox.information(self, "Eliminado", f"Calificación/Reporte {cid} eliminado exitosamente.")
                 self.cargar_calificaciones_cuadras()
@@ -1101,7 +1107,7 @@ class MainWindow(QMainWindow):
 
     def cargar_sismos(self):
         try:
-            resp = requests.get(f"{API_URL}/sismos/recientes", timeout=3)
+            resp = requests.get(f"{API_URL}/sismos/recientes", headers=ADMIN_HEADERS, timeout=3)
             if resp.status_code == 200:
                 sismos = resp.json()
                 self.table_sismos.setRowCount(len(sismos))

@@ -21,6 +21,14 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        // Clave que la app manda al backend en "X-API-Key". Se lee de
+        // local.properties (no versionado): barrio_seguro.api_key=...
+        // Debe coincidir con BARRIO_SEGURO_API_KEY del servidor. Vacía = sin clave.
+        val props = java.util.Properties()
+        rootProject.file("local.properties").takeIf { it.exists() }?.inputStream()?.use { props.load(it) }
+        val apiKey = props.getProperty("barrio_seguro.api_key", "")
+        buildConfigField("String", "API_KEY", "\"$apiKey\"")
     }
 
     buildTypes {
@@ -36,6 +44,7 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 }
 

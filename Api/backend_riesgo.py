@@ -1372,6 +1372,63 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# --- Control de acceso (RNF-05 / ESC-04 del Documento de Arquitectura) ---
+# Dos niveles, ambos configurables por variable de entorno:
+#  - BARRIO_SEGURO_API_KEY: clave que la app Android manda en "X-API-Key".
+#    Si NO está definida, los endpoints públicos quedan abiertos (compatibilidad
+#    con APKs ya instaladas). Si está definida, se exige en todo menos en
+#    RUTAS_LIBRES.
+#  - BARRIO_SEGURO_ADMIN_KEY: clave de la app de Control ("X-Admin-Key") para
+#    telemetría y borrados (moderación). Si NO está definida, esas rutas solo
+#    se aceptan desde localhost directo (no a través del túnel Cloudflare,
+#    que también llega como 127.0.0.1 pero añade cabeceras de proxy).
+API_KEY = os.environ.get("BARRIO_SEGURO_API_KEY", "").strip()
+ADMIN_KEY = os.environ.get("BARRIO_SEGURO_ADMIN_KEY", "").strip()
+RUTAS_LIBRES = {"/health", "/ping", "/docs", "/openapi.json"}
+_CABECERAS_PROXY = ("cf-connecting-ip", "x-forwarded-for", "x-real-ip")
+
+
+def _es_ruta_admin(request: Request) -> bool:
+    return request.url.path.startswith("/telemetria") or request.method == "DELETE"
+
+
+def _es_local_directo(request: Request) -> bool:
+    host = request.client.host if request.client else ""
+    if host not in ("127.0.0.1", "::1", "localhost"):
+        return False
+    return not any(h in request.headers for h in _CABECERAS_PROXY)
+
+
+@app.middleware("http")
+async def autenticacion_middleware(request: Request, call_next):
+    from fastapi.responses import JSONResponse
+    import hmac
+
+    path = request.url.path
+    if request.method == "OPTIONS" or path in RUTAS_LIBRES:
+        return await call_next(request)
+
+    if _es_ruta_admin(request):
+        enviada = request.headers.get("x-admin-key", "")
+        if ADMIN_KEY:
+            autorizado = hmac.compare_digest(enviada, ADMIN_KEY)
+        else:
+            autorizado = _es_local_directo(request)
+        if not autorizado:
+            return JSONResponse(status_code=403, content={"detail": "Acceso de administrador requerido"})
+        return await call_next(request)
+
+    if API_KEY:
+        enviada = request.headers.get("x-api-key", "")
+        # La clave de admin también sirve para los endpoints públicos.
+        valida = hmac.compare_digest(enviada, API_KEY) or (
+            bool(ADMIN_KEY) and hmac.compare_digest(enviada, ADMIN_KEY)
+        )
+        if not valida:
+            return JSONResponse(status_code=401, content={"detail": "API key inválida o ausente"})
+    return await call_next(request)
+
+
 _HISTORIAL_TELEMETRIA: list[dict[str, Any]] = []
 _SERVIDORES_INICIO_TS = time.time()
 _PETICIONES_ACTIVAS = 0
