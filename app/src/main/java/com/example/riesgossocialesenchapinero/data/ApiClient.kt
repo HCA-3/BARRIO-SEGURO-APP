@@ -78,6 +78,14 @@ object ApiClient {
         // timeout del backend y llega su mensaje de error en vez de un corte seco.
         .readTimeout(660, TimeUnit.SECONDS)
         .writeTimeout(660, TimeUnit.SECONDS)
+        // Control de acceso: el backend exige "X-API-Key" si tiene definida
+        // BARRIO_SEGURO_API_KEY. La clave sale de BuildConfig (local.properties).
+        .addInterceptor { chain ->
+            val original = chain.request()
+            val clave = com.example.riesgossocialesenchapinero.BuildConfig.API_KEY
+            if (clave.isEmpty()) chain.proceed(original)
+            else chain.proceed(original.newBuilder().header("X-API-Key", clave).build())
+        }
         .build()
 
     // Para sondear candidatos: si el PC no está en esa red el intento tiene que
