@@ -45,6 +45,16 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # Clave para los endpoints de administración (telemetría y borrados) del
 # backend. Debe coincidir con BARRIO_SEGURO_ADMIN_KEY del servidor; si ninguno
 # la define, el backend solo acepta esas rutas desde localhost directo.
+# Carga .env de la raíz (mismas claves que usa iniciar_servidor.sh). Lo que se
+# defina aquí lo hereda también el backend que esta app lanza.
+_ENV_PATH = os.path.join(BASE_DIR, ".env")
+if os.path.exists(_ENV_PATH):
+    with open(_ENV_PATH, encoding="utf-8") as _f:
+        for _linea in _f:
+            _linea = _linea.strip()
+            if _linea and not _linea.startswith("#") and "=" in _linea:
+                _k, _v = _linea.split("=", 1)
+                os.environ.setdefault(_k.strip(), _v.strip().strip('"'))
 ADMIN_KEY = os.environ.get("BARRIO_SEGURO_ADMIN_KEY", "")
 ADMIN_HEADERS = {"X-Admin-Key": ADMIN_KEY} if ADMIN_KEY else {}
 
