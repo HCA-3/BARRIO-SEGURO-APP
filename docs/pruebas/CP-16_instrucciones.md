@@ -80,7 +80,6 @@ python docs/pruebas/resumen_cp16.py
 ```
 
 Imprime la latencia promedio, mínima, máxima, y cuántos cruces quedaron
-por debajo del umbral objetivo (ver nota de ese script sobre de dónde
-sale el umbral -- no hay uno formalmente definido en el código ni en la
-documentación del equipo, así que el script usa 10s como supuesto y lo
-dice explícitamente).
+por debajo del umbral objetivo de **60 segundos** (RNF-12, Anexo B v3:
+"alerta en ≤ 1 intervalo de muestreo", y el protocolo de esta prueba fija
+ese intervalo en 1 minuto).
