@@ -2,19 +2,16 @@
 y cuantos cruces quedaron por debajo del umbral objetivo de latencia de
 notificacion.
 
-UMBRAL: no se encontro un valor formalmente definido en el codigo ni en la
-documentacion del equipo para "latencia de notificacion por geolocalizacion"
-(lo que SI existe es el timeout de 100s del chat con Ollama, que es un
-requisito distinto -- ver Api/backend_riesgo.py). Por eso este script usa
-10 segundos como supuesto, tal como se le indico. Si el equipo define un
-valor real, cambiar UMBRAL_SEGUNDOS_SUPUESTO abajo.
+UMBRAL: RNF-12 del Anexo B v3 exige "alerta en <= 1 intervalo de muestreo",
+y el protocolo de la CP-16 fija ese intervalo en 1 minuto. Por eso el
+umbral es 60 segundos (no es un supuesto -- ver RNF-12, Anexo B v3).
 """
 import csv
 import os
 import statistics
 import sys
 
-UMBRAL_SEGUNDOS_SUPUESTO = 10.0  # SUPUESTO, no confirmado por el equipo/documentacion
+UMBRAL_SEGUNDOS = 60.0  # RNF-12 (Anexo B v3): alerta en <= 1 intervalo de muestreo (1 min)
 
 RUTA_CSV = os.path.join(os.path.dirname(__file__), "CP-16_registro.csv")
 
@@ -50,9 +47,9 @@ def main() -> None:
     promedio = statistics.mean(latencias)
     minima = min(latencias)
     maxima = max(latencias)
-    bajo_umbral = sum(1 for l in latencias if l <= UMBRAL_SEGUNDOS_SUPUESTO)
+    bajo_umbral = sum(1 for l in latencias if l <= UMBRAL_SEGUNDOS)
 
-    print(f"\nUmbral usado: {UMBRAL_SEGUNDOS_SUPUESTO:.1f}s (SUPUESTO, no confirmado por el equipo)")
+    print(f"\nUmbral usado: {UMBRAL_SEGUNDOS:.1f}s (RNF-12, Anexo B v3: alerta en <= 1 intervalo de muestreo)")
     print(f"Latencia promedio: {promedio:.2f}s")
     print(f"Latencia minima:   {minima:.2f}s")
     print(f"Latencia maxima:   {maxima:.2f}s")
