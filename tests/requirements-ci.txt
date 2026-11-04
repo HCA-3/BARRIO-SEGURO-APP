@@ -1,0 +1,10 @@
+fastapi
+pydantic
+httpx
+uvicorn
+geopandas==1.1.4
+pandas==3.0.5
+shapely==2.1.2
+requests==2.34.2
+scikit-learn
+pytest
