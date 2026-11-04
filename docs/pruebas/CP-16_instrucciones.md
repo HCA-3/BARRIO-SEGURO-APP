@@ -80,6 +80,6 @@ python docs/pruebas/resumen_cp16.py
 ```
 
 Imprime la latencia promedio, mínima, máxima, y cuántos cruces quedaron
-por debajo del umbral objetivo de **60 segundos** (RNF-12, Anexo B v3:
-"alerta en ≤ 1 intervalo de muestreo", y el protocolo de esta prueba fija
-ese intervalo en 1 minuto).
+por debajo del umbral objetivo de **120 segundos** (RNF-12, Anexo B v3,
+Tabla B.2: "alerta en ≤ 1 intervalo de muestreo (2 min por defecto)" —
+coincide con `INTERVALO_MS` en `MonitoreoUbicacionService.kt`).

@@ -2,16 +2,18 @@
 y cuantos cruces quedaron por debajo del umbral objetivo de latencia de
 notificacion.
 
-UMBRAL: RNF-12 del Anexo B v3 exige "alerta en <= 1 intervalo de muestreo",
-y el protocolo de la CP-16 fija ese intervalo en 1 minuto. Por eso el
-umbral es 60 segundos (no es un supuesto -- ver RNF-12, Anexo B v3).
+UMBRAL: RNF-12 del Anexo B v3 ("La alerta debe llegar mientras la persona
+sigue en la zona") exige "alerta en <= 1 intervalo de muestreo (2 min por
+defecto)". El intervalo de 2 min coincide con INTERVALO_MS en
+app/.../location/MonitoreoUbicacionService.kt. Por eso el umbral es 120
+segundos (no es un supuesto -- ver RNF-12, Anexo B v3, Tabla B.2).
 """
 import csv
 import os
 import statistics
 import sys
 
-UMBRAL_SEGUNDOS = 60.0  # RNF-12 (Anexo B v3): alerta en <= 1 intervalo de muestreo (1 min)
+UMBRAL_SEGUNDOS = 120.0  # RNF-12 (Anexo B v3): alerta en <= 1 intervalo de muestreo (2 min por defecto)
 
 RUTA_CSV = os.path.join(os.path.dirname(__file__), "CP-16_registro.csv")
 
