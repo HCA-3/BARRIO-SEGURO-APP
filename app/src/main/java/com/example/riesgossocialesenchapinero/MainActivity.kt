@@ -166,6 +166,11 @@ class MainActivity : AppCompatActivity() {
                 // pantalla de Riesgo con demasiadas barras apiladas antes de
                 // llegar al mapa.
                 var vistaMapa by remember { mutableStateOf(true) }
+                // Mismo patrón que vistaMapa (toggle en el TopAppBar): la
+                // pantalla de Emergencias tenía las líneas telefónicas, pero
+                // DesastresAmbientalesScreen (guías + mochila de 72h) existía
+                // en el código sin ningún punto de entrada en la navegación.
+                var vistaLineasEmergencia by remember { mutableStateOf(true) }
 
                 // true cuando el diálogo lo pidió el usuario pulsando "Activar",
                 // no el arranque automático: solo en ese caso tiene sentido
@@ -277,6 +282,24 @@ class MainActivity : AppCompatActivity() {
                                         )
                                     }
                                 }
+                                if (pantallaActual == Pantalla.EMERGENCIAS) {
+                                    IconButton(onClick = { vistaLineasEmergencia = true }) {
+                                        Text(
+                                            "📞",
+                                            fontSize = 19.sp,
+                                            color = if (vistaLineasEmergencia) MaterialTheme.colorScheme.primary
+                                                else MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
+                                    IconButton(onClick = { vistaLineasEmergencia = false }) {
+                                        Text(
+                                            "📘",
+                                            fontSize = 19.sp,
+                                            color = if (!vistaLineasEmergencia) MaterialTheme.colorScheme.primary
+                                                else MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
+                                }
                                 IconButton(onClick = { mostrarTutorialManual = true }) {
                                     Text("🎓", fontSize = 19.sp)
                                 }
@@ -361,7 +384,11 @@ class MainActivity : AppCompatActivity() {
                                 },
                             )
                             Pantalla.DENUNCIAS -> DenunciasScreen(modifier = Modifier.fillMaxSize())
-                            Pantalla.EMERGENCIAS -> EmergenciasScreen(modifier = Modifier.fillMaxSize())
+                            Pantalla.EMERGENCIAS -> if (vistaLineasEmergencia) {
+                                EmergenciasScreen(modifier = Modifier.fillMaxSize())
+                            } else {
+                                DesastresAmbientalesScreen(modifier = Modifier.fillMaxSize())
+                            }
                             Pantalla.CHAT -> PantallaChat(
                                 modifier = Modifier.fillMaxSize(),
                                 viewModel = chatViewModel
