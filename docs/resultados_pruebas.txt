@@ -1,0 +1,45 @@
+============================= test session starts =============================
+platform win32 -- Python 3.13.7, pytest-9.1.1, pluggy-1.7.0 -- C:\Python313\python.exe
+cachedir: .pytest_cache
+rootdir: C:\Users\User\Desktop\Trabajo de Grado 2\Agente\BARRIO-SEGURO-APP
+plugins: anyio-4.14.2
+collecting ... collected 34 items
+
+Api/tests/test_backend_riesgo.py::test_geofencing_punto_resuelve_localidad_correcta[Fontib\xf3n] PASSED [  2%]
+Api/tests/test_backend_riesgo.py::test_geofencing_punto_resuelve_localidad_correcta[Ciudad Bol\xedvar] PASSED [  5%]
+Api/tests/test_backend_riesgo.py::test_geofencing_punto_resuelve_localidad_correcta[Los M\xe1rtires] PASSED [  8%]
+Api/tests/test_backend_riesgo.py::test_geofencing_punto_resuelve_localidad_correcta[Antonio Nari\xf1o] PASSED [ 11%]
+Api/tests/test_backend_riesgo.py::test_geofencing_punto_resuelve_localidad_correcta[Chapinero] PASSED [ 14%]
+Api/tests/test_backend_riesgo.py::test_geofencing_punto_resuelve_localidad_correcta[Sumapaz] PASSED [ 17%]
+Api/tests/test_backend_riesgo.py::test_geofencing_punto_resuelve_localidad_correcta[Rafael Uribe Uribe] PASSED [ 20%]
+Api/tests/test_backend_riesgo.py::test_geofencing_punto_resuelve_localidad_correcta[Candelaria] PASSED [ 23%]
+Api/tests/test_backend_riesgo.py::test_geofencing_punto_resuelve_localidad_correcta[Barrios Unidos] PASSED [ 26%]
+Api/tests/test_backend_riesgo.py::test_geofencing_punto_resuelve_localidad_correcta[Teusaquillo] PASSED [ 29%]
+Api/tests/test_backend_riesgo.py::test_geofencing_punto_resuelve_localidad_correcta[Puente Aranda] PASSED [ 32%]
+Api/tests/test_backend_riesgo.py::test_geofencing_punto_resuelve_localidad_correcta[Usaqu\xe9n] PASSED [ 35%]
+Api/tests/test_backend_riesgo.py::test_geofencing_punto_resuelve_localidad_correcta[San Crist\xf3bal] PASSED [ 38%]
+Api/tests/test_backend_riesgo.py::test_geofencing_punto_resuelve_localidad_correcta[Usme] PASSED [ 41%]
+Api/tests/test_backend_riesgo.py::test_geofencing_punto_resuelve_localidad_correcta[Bosa] PASSED [ 44%]
+Api/tests/test_backend_riesgo.py::test_geofencing_punto_resuelve_localidad_correcta[Kennedy] PASSED [ 47%]
+Api/tests/test_backend_riesgo.py::test_geofencing_punto_resuelve_localidad_correcta[Engativ\xe1] PASSED [ 50%]
+Api/tests/test_backend_riesgo.py::test_geofencing_punto_resuelve_localidad_correcta[Suba] PASSED [ 52%]
+Api/tests/test_backend_riesgo.py::test_geofencing_punto_resuelve_localidad_correcta[Tunjuelito] PASSED [ 55%]
+Api/tests/test_backend_riesgo.py::test_geofencing_punto_resuelve_localidad_correcta[Santa Fe] PASSED [ 58%]
+Api/tests/test_backend_riesgo.py::test_geofencing_punto_fuera_de_bogota_da_404 PASSED [ 61%]
+Api/tests/test_backend_riesgo.py::test_health PASSED                     [ 64%]
+Api/tests/test_backend_riesgo.py::test_zonas_devuelve_las_20_localidades PASSED [ 67%]
+Api/tests/test_backend_riesgo.py::test_zonas_ranking_viene_ordenado_por_score_descendente PASSED [ 70%]
+Api/tests/test_backend_riesgo.py::test_zonas_extremo_valido[mayor] PASSED [ 73%]
+Api/tests/test_backend_riesgo.py::test_zonas_extremo_valido[menor] PASSED [ 76%]
+Api/tests/test_backend_riesgo.py::test_zonas_extremo_parametro_invalido_da_400 PASSED [ 79%]
+Api/tests/test_backend_riesgo.py::test_zona_por_nombre_existente PASSED  [ 82%]
+Api/tests/test_backend_riesgo.py::test_zona_por_nombre_inexistente_da_404 PASSED [ 85%]
+Api/tests/test_backend_riesgo.py::test_barrios_buscar_sin_coincidencias PASSED [ 88%]
+Api/tests/test_backend_riesgo.py::test_chat_no_revienta_con_pregunta_que_antes_causaba_keyerror_posicion PASSED [ 91%]
+Api/tests/test_backend_riesgo.py::test_chat_responde_algo_no_vacio_a_un_saludo PASSED [ 94%]
+Agente/tests/test_fitness_functions.py::test_rn01_nivel_riesgo_no_usa_estrato_promedio_como_insumo PASSED [ 97%]
+Agente/tests/test_fitness_functions.py::test_rn01_formula_score_mixto_es_la_documentada PASSED [100%]
+
+============================= 34 passed in 12.38s =============================
+
+Ejecutado: 2026-10-26 14:26:51

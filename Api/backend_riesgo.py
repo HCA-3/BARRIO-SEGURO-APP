@@ -956,6 +956,15 @@ def tool_obtener_ranking(datos: dict) -> list:
                 "score_ponderado_por_km2": info["score_ponderado_por_km2"],
                 "tasa_delitos_100k": info["tasa_delitos_100k"],
             })
+    # "posicion" es el código oficial de localidad (DANE, 1-20), no el rango
+    # de riesgo -- se conserva así porque la app lo usa como etiqueta
+    # ("Localidad N"). Pero la LISTA en sí debe venir ordenada de mayor a
+    # menor riesgo: así lo promete la descripción de esta tool al modelo
+    # ("Devuelve TODAS las localidades ordenadas de mayor a menor riesgo") y
+    # así lo espera la pestaña "Ranking" de la app y el resumen top-3/bottom-3
+    # de responder_deterministico_inteligente (antes de este fix, ambos
+    # mostraban las localidades en orden de código oficial, no de riesgo).
+    filas.sort(key=lambda f: f["score_mixto"], reverse=True)
     return filas
 
 
