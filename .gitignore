@@ -46,3 +46,5 @@ Agente/lora_barrio_seguro/
 Agente/output/*.csv
 Agente/output/*.xlsx
 Agente/output/*.url
+
+/.idea/claudeCodeEditorTabs.xml
