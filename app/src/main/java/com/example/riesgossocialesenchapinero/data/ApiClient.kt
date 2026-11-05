@@ -27,15 +27,20 @@ object ApiClient {
 
     /**
      * Se prueban en este orden cuando no hay una URL guardada:
-     *  - 10.0.2.2  emulador de Android Studio (su alias del localhost del PC).
-     *  - 127.0.0.1 celular por USB con "adb reverse tcp:8000 tcp:8000". Es el
-     *    único que sirve si el celular y el PC están en redes distintas.
-     *  - 192.168.x celular en la MISMA wifi que el PC (la IP sale con
-     *    "ipconfig"; también se puede escribir a mano desde la app).
+     *  - 192.168.1.7:8001 celular en la red Wi-Fi local actual.
+     *  - 10.0.2.2:8001 / 8000 emulador de Android Studio.
+     *  - 127.0.0.1:8001 / 8000 celular por USB con "adb reverse".
+     *  - Túnel Cloudflare para conexión remota por datos móviles.
      */
     val CANDIDATOS = listOf(
-        "http://10.0.2.2:8000/",
+        "http://127.0.0.1:8001/",
+        "http://192.168.1.7:8001/",
+        "http://192.168.0.114:8001/",
+        "https://forgot-imagine-puzzles-passive.trycloudflare.com/",
+        "http://10.0.2.2:8001/",
         "http://127.0.0.1:8000/",
+        "http://192.168.1.7:8000/",
+        "http://10.0.2.2:8000/",
         "http://192.168.0.107:8000/",
     )
 
@@ -54,12 +59,14 @@ object ApiClient {
         guardadas.getString(CLAVE_URL, null)?.let { baseUrl = it }
     }
 
-    /** Acepta "192.168.0.107", "192.168.0.107:8000" o la URL completa. */
+    /** Acepta "192.168.1.7", "192.168.1.7:8001", "https://...trycloudflare.com" o la URL completa. */
     private fun normalizar(valor: String): String {
         var url = valor.trim()
         if (url.isEmpty()) return CANDIDATOS.first()
         if (!url.startsWith("http://") && !url.startsWith("https://")) url = "http://" + url
-        if (!url.substringAfter("://").contains(":")) url = url + ":8000"
+        if (!url.startsWith("https://") && !url.substringAfter("://").contains(":")) {
+            url = url + ":8001"
+        }
         if (!url.endsWith("/")) url = url + "/"
         return url
     }
@@ -119,19 +126,26 @@ object ApiClient {
 
     /**
      * Envuelve una petición: si falla por no poder conectar (la URL guardada
-     * dejó de servir porque se cambió de emulador a celular, de wifi, etc.),
-     * busca el backend en los otros candidatos y reintenta una vez.
+     * dejó de servir porque se cambió de emulador a celular, de wifi, o el túnel
+     * Cloudflare expiró), busca el backend en los otros candidatos y reintenta una vez.
      *
      * Va aquí y no en los ViewModel a propósito: así lo aprovechan por igual el
      * ranking, el chat y el servicio de ubicación, sin repetir la lógica en cada
-     * uno. Solo reintenta ante IOException (fallo de conexión); un error HTTP
-     * del backend significa que sí lo encontramos y reintentar no arreglaría nada.
+     * uno. Reintenta ante IOException (fallo de conexión) o errores HTTP 5xx / 530 de proxy.
      */
     private fun <T> conAutodeteccion(peticion: () -> T): T = try {
         peticion()
-    } catch (e: IOException) {
-        if (autodetectar() == null) throw e
-        peticion()
+    } catch (e: Exception) {
+        val esFalloConexion = when (e) {
+            is IOException -> true
+            is ApiException -> e.code in 500..599 || e.code == 0 || (e.message?.contains(Regex("5[0-9]{2}")) == true)
+            else -> false
+        }
+        if (esFalloConexion && autodetectar() != null) {
+            peticion()
+        } else {
+            throw e
+        }
     }
 
     private val jsonMediaType = "application/json; charset=utf-8".toMediaType()
@@ -214,7 +228,9 @@ object ApiClient {
         val incidentesNuse: Int,
     )
 
-    class ApiException(message: String) : Exception(message)
+    class ApiException(val code: Int = 0, message: String) : Exception(message) {
+        constructor(message: String) : this(0, message)
+    }
 
     fun obtenerRanking(): List<Localidad> {
         return try {
@@ -227,7 +243,7 @@ object ApiClient {
     private fun obtenerRankingUnaVez(): List<Localidad> {
         val request = Request.Builder().url(baseUrl + "zonas/ranking").get().build()
         client.newCall(request).execute().use { resp ->
-            if (!resp.isSuccessful) throw ApiException("Error ${resp.code} consultando el ranking")
+            if (!resp.isSuccessful) throw ApiException(resp.code, "Error ${resp.code} consultando el ranking")
             val arr = JSONArray(resp.body?.string() ?: "[]")
             return List(arr.length()) { i ->
                 val o = arr.getJSONObject(i)
@@ -273,7 +289,7 @@ object ApiClient {
         val request = Request.Builder().url(baseUrl + "riesgo?lat=$lat&lng=$lng").get().build()
         client.newCall(request).execute().use { resp ->
             if (resp.code == 404) return null
-            if (!resp.isSuccessful) throw ApiException("Error ${resp.code} consultando el riesgo por ubicación")
+            if (!resp.isSuccessful) throw ApiException(resp.code, "Error ${resp.code} consultando el riesgo por ubicación")
             val o = JSONObject(resp.body?.string() ?: "{}")
             val upzJson = o.optJSONObject("upz")
             return RiesgoPorPunto(
@@ -310,7 +326,7 @@ object ApiClient {
         }
         val request = Request.Builder().url(url).get().build()
         client.newCall(request).execute().use { resp ->
-            if (!resp.isSuccessful) throw ApiException("Error ${resp.code} buscando el barrio")
+            if (!resp.isSuccessful) throw ApiException(resp.code, "Error ${resp.code} buscando el barrio")
             val o = JSONObject(resp.body?.string() ?: "{}")
             if (o.has("opciones")) {
                 val arr = o.getJSONArray("opciones")
@@ -353,7 +369,7 @@ object ApiClient {
         // es lo que hacía que el fallo pareciera aleatorio.
         val url = baseUrl + "zonas/" + URLEncoder.encode(nombre, "UTF-8").replace("+", "%20")
         client.newCall(Request.Builder().url(url).get().build()).execute().use { resp ->
-            if (!resp.isSuccessful) throw ApiException("Error ${resp.code} consultando $nombre")
+            if (!resp.isSuccessful) throw ApiException(resp.code, "Error ${resp.code} consultando $nombre")
             val o = JSONObject(resp.body?.string() ?: "{}")
             val delitos = o.optJSONObject("detalle_delitos") ?: JSONObject()
             val contexto = o.optJSONObject("contexto") ?: JSONObject()
@@ -464,7 +480,7 @@ object ApiClient {
             .build()
 
         client.newCall(request).execute().use { resp ->
-            if (!resp.isSuccessful) throw ApiException("Error ${resp.code} hablando con el agente")
+            if (!resp.isSuccessful) throw ApiException(resp.code, "Error ${resp.code} hablando con el agente")
             val json = JSONObject(resp.body?.string() ?: "{}")
             val mensajesResp = json.getJSONArray("mensajes")
             val historialActualizado = List(mensajesResp.length()) { i ->
@@ -521,7 +537,7 @@ object ApiClient {
     private fun obtenerMensajesComunidadUnaVez(miAlias: String): List<MensajeComunidad> {
         val request = Request.Builder().url(baseUrl + "comunidad/mensajes").get().build()
         client.newCall(request).execute().use { resp ->
-            if (!resp.isSuccessful) throw ApiException("Error ${resp.code} consultando chat comunitario")
+            if (!resp.isSuccessful) throw ApiException(resp.code, "Error ${resp.code} consultando chat comunitario")
             val arr = JSONArray(resp.body?.string() ?: "[]")
             return List(arr.length()) { i ->
                 val o = arr.getJSONObject(i)
@@ -591,7 +607,7 @@ object ApiClient {
             .build()
 
         client.newCall(request).execute().use { resp ->
-            if (!resp.isSuccessful) throw ApiException("Error ${resp.code} publicando mensaje")
+            if (!resp.isSuccessful) throw ApiException(resp.code, "Error ${resp.code} publicando mensaje")
             val o = JSONObject(resp.body?.string() ?: "{}")
             return MensajeComunidad(
                 id = o.getString("id"),
@@ -621,7 +637,7 @@ object ApiClient {
     private fun obtenerCalificacionesCuadrasUnaVez(): List<ReporteCuadra> {
         val request = Request.Builder().url(baseUrl + "cuadras/calificaciones").get().build()
         client.newCall(request).execute().use { resp ->
-            if (!resp.isSuccessful) throw ApiException("Error ${resp.code} obteniendo calificaciones")
+            if (!resp.isSuccessful) throw ApiException(resp.code, "Error ${resp.code} obteniendo calificaciones")
             val arr = JSONArray(resp.body?.string() ?: "[]")
             return List(arr.length()) { i ->
                 val o = arr.getJSONObject(i)
@@ -675,7 +691,7 @@ object ApiClient {
             .build()
 
         client.newCall(request).execute().use { resp ->
-            if (!resp.isSuccessful) throw ApiException("Error ${resp.code} guardando calificación de cuadra")
+            if (!resp.isSuccessful) throw ApiException(resp.code, "Error ${resp.code} guardando calificación de cuadra")
         }
     }
 
