@@ -60,6 +60,13 @@ fun AjustesScreen(
         )
         Spacer(modifier = Modifier.height(20.dp))
 
+        val context = androidx.compose.ui.platform.LocalContext.current
+        val lanzadorPermisoNotif = androidx.activity.compose.rememberLauncherForActivityResult(
+            androidx.activity.result.contract.ActivityResultContracts.RequestPermission()
+        ) { concedido ->
+            viewModel.cambiarAlertas(concedido)
+        }
+
         // SECCIÓN NOTIFICACIONES DE RIESGO (RF-003)
         Text(
             text = stringResource(R.string.ajustes_alertas_titulo),
@@ -81,7 +88,21 @@ fun AjustesScreen(
             }
             Switch(
                 checked = estado.alertasHabilitadas,
-                onCheckedChange = { viewModel.cambiarAlertas(it) }
+                onCheckedChange = { activo ->
+                    if (activo) {
+                        if (!hayPermisoNotificaciones(context)) {
+                            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+                                lanzadorPermisoNotif.launch(android.Manifest.permission.POST_NOTIFICATIONS)
+                            } else {
+                                abrirAjustesDeLaApp(context)
+                            }
+                        } else {
+                            viewModel.cambiarAlertas(true)
+                        }
+                    } else {
+                        viewModel.cambiarAlertas(false)
+                    }
+                }
             )
         }
 

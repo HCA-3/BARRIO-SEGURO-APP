@@ -15,6 +15,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.compose.LocalActivityResultRegistryOwner
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.text.KeyboardActions
@@ -107,11 +108,13 @@ class MainActivity : AppCompatActivity() {
     // puede haberse detenido solo. Guardarlos en un `remember` de la pantalla
     // dejaba el botón mostrando un estado viejo.
     private val permisoUbicacion = mutableStateOf(false)
+    private val permisoNotificaciones = mutableStateOf(false)
     private val monitoreoActivo = mutableStateOf(false)
 
     override fun onResume() {
         super.onResume()
         permisoUbicacion.value = hayPermisoUbicacion(this)
+        permisoNotificaciones.value = hayPermisoNotificaciones(this)
         monitoreoActivo.value = MonitoreoUbicacionService.activo
     }
 
@@ -176,47 +179,53 @@ class MainActivity : AppCompatActivity() {
                 // no el arranque automático: solo en ese caso tiene sentido
                 // mandarlo a Ajustes si Android ya no muestra el diálogo.
                 var pedidoPorElUsuario by remember { mutableStateOf(false) }
+                var mostrarDialogoPermisoNotif by remember { mutableStateOf(false) }
 
                 val lanzadorPermisos = rememberLauncherForActivityResult(
                     ActivityResultContracts.RequestMultiplePermissions(),
-                ) { resultados ->
-                    val concedido = resultados[Manifest.permission.ACCESS_FINE_LOCATION] == true ||
-                        resultados[Manifest.permission.ACCESS_COARSE_LOCATION] == true
-                    permisoUbicacion.value = concedido
-                    if (concedido) {
-                        // Lo pidió para activar el monitoreo: arráncalo ya, sin
-                        // obligarle a pulsar "Activar" una segunda vez.
-                        if (pedidoPorElUsuario) {
+                ) { _ ->
+                    val concedidoUbicacion = hayPermisoUbicacion(actividad)
+                    val concedidoNotificaciones = hayPermisoNotificaciones(actividad)
+                    permisoUbicacion.value = concedidoUbicacion
+                    permisoNotificaciones.value = concedidoNotificaciones
+
+                    if (pedidoPorElUsuario) {
+                        if (concedidoUbicacion) {
+                            // Arrancar monitoreo sin esperar segunda pulsación
                             iniciarServicioMonitoreo(actividad)
                             monitoreoActivo.value = true
+                            if (!concedidoNotificaciones) {
+                                mostrarDialogoPermisoNotif = true
+                            }
+                        } else if (!actividad.shouldShowRequestPermissionRationale(
+                                Manifest.permission.ACCESS_FINE_LOCATION,
+                            )
+                        ) {
+                            // Negado permanente de ubicación: enviar a Ajustes
+                            abrirAjustesDeLaApp(actividad)
                         }
-                    } else if (pedidoPorElUsuario &&
-                        !actividad.shouldShowRequestPermissionRationale(
-                            Manifest.permission.ACCESS_FINE_LOCATION,
-                        )
-                    ) {
-                        // Negado de forma permanente: Android ya no volverá a
-                        // mostrar el diálogo, así que la única vía es Ajustes.
-                        abrirAjustesDeLaApp(actividad)
                     }
                     pedidoPorElUsuario = false
                 }
 
-                val pedirPermisoUbicacion = {
-                    val permisos = mutableListOf(
-                        Manifest.permission.ACCESS_FINE_LOCATION,
-                        Manifest.permission.ACCESS_COARSE_LOCATION,
-                    )
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                val pedirTodosLosPermisos = {
+                    val permisos = mutableListOf<String>()
+                    if (!hayPermisoUbicacion(actividad)) {
+                        permisos.add(Manifest.permission.ACCESS_FINE_LOCATION)
+                        permisos.add(Manifest.permission.ACCESS_COARSE_LOCATION)
+                    }
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && !hayPermisoNotificaciones(actividad)) {
                         permisos.add(Manifest.permission.POST_NOTIFICATIONS)
                     }
-                    lanzadorPermisos.launch(permisos.toTypedArray())
+                    if (permisos.isNotEmpty()) {
+                        lanzadorPermisos.launch(permisos.toTypedArray())
+                    }
                 }
 
-                // Se pide al entrar, solo si los términos ya fueron aceptados y el permiso no está concedido
+                // Se pide al entrar, si los términos ya fueron aceptados y falta ubicación o notificaciones
                 LaunchedEffect(ajustesEstado.terminosAceptados) {
-                    if (ajustesEstado.terminosAceptados && !hayPermisoUbicacion(actividad)) {
-                        pedirPermisoUbicacion()
+                    if (ajustesEstado.terminosAceptados && (!hayPermisoUbicacion(actividad) || !hayPermisoNotificaciones(actividad))) {
+                        pedirTodosLosPermisos()
                     }
                 }
 
@@ -227,12 +236,44 @@ class MainActivity : AppCompatActivity() {
                     com.example.riesgossocialesenchapinero.ui.ModalBienvenidaTerminos(
                         onAceptar = {
                             ajustesViewModel.aceptarTerminos()
-                            if (!hayPermisoUbicacion(actividad)) {
-                                pedirPermisoUbicacion()
+                            if (!hayPermisoUbicacion(actividad) || !hayPermisoNotificaciones(actividad)) {
+                                pedirTodosLosPermisos()
                             }
                         },
                         onRechazar = {
                             actividad.finish()
+                        }
+                    )
+                }
+
+                // Diálogo explicativo si las notificaciones no fueron autorizadas
+                if (mostrarDialogoPermisoNotif) {
+                    AlertDialog(
+                        onDismissRequest = { mostrarDialogoPermisoNotif = false },
+                        title = {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text("🔔 ", fontSize = 22.sp)
+                                Text("Permiso de Notificaciones", fontWeight = FontWeight.Bold)
+                            }
+                        },
+                        text = {
+                            Text(
+                                "Para que Barrio Seguro pueda avisarte en segundo plano cuando entres a una zona de riesgo alto o salgas de un sector, es necesario autorizar las notificaciones de la aplicación.\n\n¿Deseas activarlas en los Ajustes del sistema?",
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                        },
+                        confirmButton = {
+                            Button(onClick = {
+                                mostrarDialogoPermisoNotif = false
+                                abrirAjustesDeLaApp(actividad)
+                            }) {
+                                Text("Abrir Ajustes")
+                            }
+                        },
+                        dismissButton = {
+                            TextButton(onClick = { mostrarDialogoPermisoNotif = false }) {
+                                Text("Ahora no")
+                            }
                         }
                     )
                 }
@@ -371,15 +412,16 @@ class MainActivity : AppCompatActivity() {
                                     if (monitoreoActivo.value) {
                                         detenerServicioMonitoreo(actividad)
                                         monitoreoActivo.value = false
-                                    } else if (permisoUbicacion.value) {
-                                        iniciarServicioMonitoreo(actividad)
-                                        monitoreoActivo.value = true
                                     } else {
-                                        // Falta el permiso: se pide aquí porque lo
-                                        // pidió el usuario explícitamente, no de
-                                        // forma automática.
-                                        pedidoPorElUsuario = true
-                                        pedirPermisoUbicacion()
+                                        val faltaUbi = !hayPermisoUbicacion(actividad)
+                                        val faltaNotif = !hayPermisoNotificaciones(actividad)
+                                        if (faltaUbi || faltaNotif) {
+                                            pedidoPorElUsuario = true
+                                            pedirTodosLosPermisos()
+                                        } else {
+                                            iniciarServicioMonitoreo(actividad)
+                                            monitoreoActivo.value = true
+                                        }
                                     }
                                 },
                             )
@@ -550,7 +592,7 @@ fun PantallaRiesgo(
                         value = servidor,
                         onValueChange = { servidor = it },
                         label = { Text(stringResource(R.string.servidor_label)) },
-                        placeholder = { Text("192.168.0.109:8001") },
+                        placeholder = { Text("192.168.1.7:8001") },
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
                     )
@@ -618,6 +660,9 @@ fun PantallaRiesgo(
 
 @Composable
 fun ControlMonitoreo(activo: Boolean, onToggle: () -> Unit) {
+    val context = LocalContext.current
+    val tieneNotificaciones = remember(activo) { hayPermisoNotificaciones(context) }
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -627,27 +672,52 @@ fun ControlMonitoreo(activo: Boolean, onToggle: () -> Unit) {
         elevation = CardDefaults.cardElevation(defaultElevation = if (activo) 4.dp else 2.dp),
         border = if (activo) BorderStroke(1.5.dp, MaterialTheme.colorScheme.primary) else null
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(16.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Column(modifier = Modifier.weight(1f).padding(end = 8.dp)) {
-                Text(stringResource(R.string.monitoreo_titulo), style = MaterialTheme.typography.titleSmall)
-                Text(
-                    if (activo) {
-                        stringResource(R.string.monitoreo_activo)
-                    } else {
-                        stringResource(R.string.monitoreo_inactivo)
-                    },
-                    style = MaterialTheme.typography.bodySmall,
-                )
+        Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Column(modifier = Modifier.weight(1f).padding(end = 8.dp)) {
+                    Text(stringResource(R.string.monitoreo_titulo), style = MaterialTheme.typography.titleSmall)
+                    Text(
+                        if (activo) {
+                            stringResource(R.string.monitoreo_activo)
+                        } else {
+                            stringResource(R.string.monitoreo_inactivo)
+                        },
+                        style = MaterialTheme.typography.bodySmall,
+                    )
+                }
+                // Siempre Activar/Detener: el botón nunca deja de ofrecer el toggle.
+                // Si falta el permiso, al pulsar "Activar" se pide (y si ya estaba
+                // negado a perpetuidad, se abre Ajustes) — ver MainActivity.
+                Button(onClick = onToggle) {
+                    Text(if (activo) stringResource(R.string.btn_detener) else stringResource(R.string.btn_activar))
+                }
             }
-            // Siempre Activar/Detener: el botón nunca deja de ofrecer el toggle.
-            // Si falta el permiso, al pulsar "Activar" se pide (y si ya estaba
-            // negado a perpetuidad, se abre Ajustes) — ver MainActivity.
-            Button(onClick = onToggle) {
-                Text(if (activo) stringResource(R.string.btn_detener) else stringResource(R.string.btn_activar))
+
+            if (activo && !tieneNotificaciones) {
+                Spacer(modifier = Modifier.height(10.dp))
+                Surface(
+                    shape = RoundedCornerShape(10.dp),
+                    color = MaterialTheme.colorScheme.errorContainer,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { abrirAjustesDeLaApp(context) }
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text("🔔", modifier = Modifier.padding(end = 8.dp))
+                        Text(
+                            text = "Notificaciones desactivadas. Toca aquí para autorizarlas en Ajustes.",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onErrorContainer
+                        )
+                    }
+                }
             }
         }
     }
@@ -955,14 +1025,22 @@ fun DialogoDetalle(
 
 
 
-private fun hayPermisoUbicacion(context: Context): Boolean =
+fun hayPermisoUbicacion(context: Context): Boolean =
     ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) ==
         PackageManager.PERMISSION_GRANTED ||
         ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) ==
         PackageManager.PERMISSION_GRANTED
 
+fun hayPermisoNotificaciones(context: Context): Boolean =
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+        ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) ==
+            PackageManager.PERMISSION_GRANTED
+    } else {
+        androidx.core.app.NotificationManagerCompat.from(context).areNotificationsEnabled()
+    }
+
 /** Pantalla de ajustes de la app, para conceder a mano un permiso ya negado. */
-private fun abrirAjustesDeLaApp(context: Context) {
+fun abrirAjustesDeLaApp(context: Context) {
     val intent = Intent(
         Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
         Uri.fromParts("package", context.packageName, null),
