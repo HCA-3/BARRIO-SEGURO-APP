@@ -1,5 +1,23 @@
 [
   {
+    "id": "cuadra_1793897180000",
+    "latitud": 4.637131312649103,
+    "longitud": -74.06784110111347,
+    "direccion_aprox": "Cra 15 #50-50, Bogotá D.C.",
+    "direccionAprox": "Cra 15 #50-50, Bogotá D.C.",
+    "nivel_riesgo": "Bajo",
+    "nivelRiesgo": "Bajo",
+    "categoria": "Mala iluminación",
+    "justificacion": "mala iluminación en la noche",
+    "horario_critico": "Noche",
+    "horarioCritico": "Noche",
+    "usuario_alias": "Vecino anónimo",
+    "usuarioAlias": "Vecino anónimo",
+    "timestamp": 1793897180000,
+    "votos_apoyo": 0,
+    "votosApoyo": 0
+  },
+  {
     "id": "rep_ej_1",
     "latitud": 4.6486,
     "longitud": -74.0628,

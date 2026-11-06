@@ -1,50 +1,53 @@
-*.iml
-.gradle
-/local.properties
-/.idea/caches
-/.idea/libraries
-/.idea/modules.xml
-/.idea/workspace.xml
-/.idea/navEditor.xml
-/.idea/assetWizardSettings.xml
-.DS_Store
-/build
-/captures
-.externalNativeBuild
-.cxx
+# Salidas del build Android
+app/build/
+.gradle/
+build/
 local.properties
-Agente/OllamaSetup.exe
-Agente/Bogota.osm.geopackage/Bogota-geopackage/Bogota.gpkg
-Agente/manzanaestratificacion/manzanaestratificacion.json
-Agente/estratificación_socioeconómica_por_manzana/
-Agente/incidente_reportado_(nuse/
-Agente/actualizacion.log
-# Datasets crudos de datos abiertos de Bogota (~1.1GB, con archivos de hasta
-# 559MB): no caben en git (limite duro de 100MB/archivo en GitHub). El
-# pipeline (ProcesarRiesgo.py) los busca dentro de esta carpeta si estan
-# presentes localmente; si no estan, cada fuente opcional se omite sola.
-Agente/datos bogota.gov/
+*.apk
+*.aab
+!apk/*.apk
 
-# Entornos virtuales y basura de Python
-/venv/
-Agente/.venv/
+# Archivos de entorno virtual y caches de Python
+venv/
+.venv/
 __pycache__/
 *.pyc
+.pytest_cache/
+*.sqlite3
+*.db
 
-# Salidas locales de pruebas
-/.artifacts/
+# Caches de HuggingFace / Transformers / Torch
+.cache/
+hf_cache/
 
-# Adaptador LoRA entrenado (~135MB, incluye tokenizer.json completo): no
-# cabe cómodamente en git. Se reentrena en minutos con
-# Agente/entrenar_lora.py + Agente/gold_dataset_sharegpt.json (este sí
-# versionado), así que no hace falta versionar los pesos resultantes.
-Agente/lora_barrio_seguro/
+# Salidas de generacion o modelos entrenados
+Agente/fine_tuning_qwen/lora_salida/
+Agente/output/
+!Agente/output/.gitkeep
+!Agente/output/rag_index/
 
-# Datos crudos descargados a mano en Agente/output (CSV/XLSX de datos
-# abiertos, accesos directos .url). Solo se versionan las salidas generadas
-# por el pipeline (*.json / *.geojson), que la API necesita para arrancar.
+# Logs y temporales
+*.log
+.DS_Store
+Thumbs.db
+
+# Configuración del IDE que no debe rastrearse
+.idea/workspace.xml
+.idea/caches/
+.idea/shelf/
+.idea/assetWizardSettings.xml
+.idea/compiler.xml
+.idea/encodings.xml
+.idea/kotlinc.xml
+.idea/runConfigurations.xml
+.idea/modules.xml
+
+# Salidas del script del agente (para que no ensucie git status)
 Agente/output/*.csv
+Agente/output/*.png
 Agente/output/*.xlsx
 Agente/output/*.url
-
 /.idea/claudeCodeEditorTabs.xml
+
+# Claves locales del servidor
+.env
