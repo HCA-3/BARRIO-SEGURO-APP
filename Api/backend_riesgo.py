@@ -1110,7 +1110,7 @@ def responder_deterministico_inteligente(pregunta: str, historial: list, datos: 
         return "Hola. ¿Sobre qué localidad, barrio o consulta de riesgo en Bogotá deseas información?"
 
     # 1. Saludos y bienvenida
-    if p in ("hola", "buenos dias", "buenas tardes", "buenas noches", "que tal", "hello", "hi", "salut", "ola", "hallo", "ciao"):
+    if p in ("hola", "buenos dias", "buenas tardes", "buenas noches", "que tal", "hello", "hi", "salut", "ola", "hallo", "ciao") or any(s in p for s in ("hola", "buenos dias", "buenas tardes", "buenas noches", "que tal")):
         return "¡Hola! Soy tu asistente de Barrio Seguro. Puedo darte información sobre el nivel de riesgo, delincuencia, rankings y recomendaciones de seguridad de cualquier localidad o barrio de Bogotá. ¿Qué te gustaría consultar?"
 
     # 2. Ayuda general / Qué puedes hacer
@@ -1126,14 +1126,17 @@ def responder_deterministico_inteligente(pregunta: str, historial: list, datos: 
         )
 
     # 3. Ubicación actual / Geofencing
-    if ("mi ubicacion" in p or "donde estoy" in p or "mi riesgo" in p or "aqui" in p or "este lugar" in p) and ("cual" in p or "que" in p or "como" in p or "es" in p or "dime" in p):
+    palabras_p = set(p.split())
+    if ("mi ubicacion" in p or "donde estoy" in p or "mi riesgo" in p or "este lugar" in p or "aqui" in palabras_p or "aca" in palabras_p) and ("cual" in palabras_p or "que" in palabras_p or "como" in palabras_p or "es" in palabras_p or "dime" in palabras_p):
         if lat is not None and lng is not None:
             res = tool_localidad_por_punto(datos, lat, lng)
             if "error" not in res:
                 upz_txt = f" en la UPZ {res['upz']['upz']}" if res.get("upz") else ""
+                score = res.get("score_mixto")
+                score_str = f"{score:.2f}" if score not in (None, "") else "sin dato"
                 return (
                     f"Te encuentras en la localidad de **{res['localidad']}**{upz_txt}, con un nivel de riesgo **{res['nivel_riesgo'].upper()}** "
-                    f"(Score mixto: {res['score_mixto']:.2f}). Mantén precaución preventiva en tus desplazamientos."
+                    f"(Score mixto: {score_str}). Mantén precaución preventiva en tus desplazamientos."
                 )
         return "No tengo acceso a tus coordenadas GPS actuales. Asegúrate de conceder el permiso de ubicación y tener el GPS activado en tu dispositivo."
 
@@ -1212,29 +1215,93 @@ def responder_deterministico_inteligente(pregunta: str, historial: list, datos: 
         loc1 = tool_obtener_localidad(datos, mencionadas[0])
         loc2 = tool_obtener_localidad(datos, mencionadas[1])
         if "error" not in loc1 and "error" not in loc2:
+            delitos1 = loc1.get("delitos_totales")
+            if delitos1 is None or delitos1 == "":
+                delitos1 = "sin dato"
+            delitos1_fmt = delitos1 if delitos1 == "sin dato" else f"{int(delitos1):,}"
+
+            delitos2 = loc2.get("delitos_totales")
+            if delitos2 is None or delitos2 == "":
+                delitos2 = "sin dato"
+            delitos2_fmt = delitos2 if delitos2 == "sin dato" else f"{int(delitos2):,}"
+
+            tasa1 = loc1.get("tasa_delitos_100k")
+            if tasa1 is None or tasa1 == "":
+                tasa1 = "sin dato"
+            tasa1_fmt = tasa1 if tasa1 == "sin dato" else f"{float(tasa1):.1f}"
+
+            tasa2 = loc2.get("tasa_delitos_100k")
+            if tasa2 is None or tasa2 == "":
+                tasa2 = "sin dato"
+            tasa2_fmt = tasa2 if tasa2 == "sin dato" else f"{float(tasa2):.1f}"
+
+            estrato1 = loc1.get("estrato_promedio")
+            if estrato1 is None or estrato1 == "":
+                estrato1 = "sin dato"
+            estrato1_fmt = estrato1 if estrato1 == "sin dato" else f"{float(estrato1):.1f}"
+
+            estrato2 = loc2.get("estrato_promedio")
+            if estrato2 is None or estrato2 == "":
+                estrato2 = "sin dato"
+            estrato2_fmt = estrato2 if estrato2 == "sin dato" else f"{float(estrato2):.1f}"
+
             return (
                 f"**Comparación entre {loc1['localidad']} y {loc2['localidad']}:**\n\n"
                 f"• **{loc1['localidad']}:** Puesto #{loc1['posicion']} de 20 (Riesgo **{loc1['nivel_riesgo'].upper()}**), "
-                f"{loc1['delitos_totales']:,} delitos ({loc1['tasa_delitos_100k']:.1f}/100k hab.), estrato promedio {loc1['estrato_promedio']:.1f}.\n\n"
+                f"{delitos1_fmt} delitos ({tasa1_fmt}/100k hab.), estrato promedio {estrato1_fmt}.\n\n"
                 f"• **{loc2['localidad']}:** Puesto #{loc2['posicion']} de 20 (Riesgo **{loc2['nivel_riesgo'].upper()}**), "
-                f"{loc2['delitos_totales']:,} delitos ({loc2['tasa_delitos_100k']:.1f}/100k hab.), estrato promedio {loc2['estrato_promedio']:.1f}."
+                f"{delitos2_fmt} delitos ({tasa2_fmt}/100k hab.), estrato promedio {estrato2_fmt}."
             )
 
     # 11. Búsqueda de localidad individual mencionada
     if mencionadas:
         loc_info = tool_obtener_localidad(datos, mencionadas[0])
         if "error" not in loc_info:
+            delitos = loc_info.get("delitos_totales")
+            if delitos is None or delitos == "":
+                delitos = "sin dato"
+            delitos_fmt = delitos if delitos == "sin dato" else f"{int(delitos):,}"
+
+            tasa = loc_info.get("tasa_delitos_100k")
+            if tasa is None or tasa == "":
+                tasa = "sin dato"
+            tasa_fmt = tasa if tasa == "sin dato" else f"{float(tasa):.1f}"
+
+            poblacion = loc_info.get("poblacion")
+            if poblacion is None or poblacion == "":
+                poblacion = "sin dato"
+            poblacion_fmt = poblacion if poblacion == "sin dato" else f"{int(poblacion):,}"
+
+            estrato = loc_info.get("estrato_promedio")
+            if estrato is None or estrato == "":
+                estrato = "sin dato"
+            estrato_fmt = estrato if estrato == "sin dato" else f"{float(estrato):.1f}"
+
+            luminarias = loc_info.get("luminarias")
+            if luminarias is None or luminarias == "":
+                luminarias = "sin dato"
+            luminarias_fmt = luminarias if luminarias == "sin dato" else f"{int(luminarias):,}"
+
+            score = loc_info.get("score_mixto")
+            if score is None or score == "":
+                score = "sin dato"
+            score_fmt = score if score == "sin dato" else f"{float(score):.2f}"
+
             return (
                 f"**{loc_info['localidad']}** se ubica en el puesto #{loc_info['posicion']} del ranking distrital de riesgo, "
-                f"con una clasificación de **RIESGO {loc_info['nivel_riesgo'].upper()}** (Score mixto: {loc_info['score_mixto']:.2f}).\n\n"
-                f"• **Delitos acumulados:** {loc_info['delitos_totales']:,} ({loc_info['tasa_delitos_100k']:.1f} por cada 100.000 habitantes)\n"
-                f"• **Población:** {loc_info['poblacion']:,} hab. | **Estrato promedio:** {loc_info['estrato_promedio']:.1f}\n"
-                f"• **Luminarias públicas:** {loc_info['luminarias']:,}\n\n"
+                f"con una clasificación de **RIESGO {loc_info['nivel_riesgo'].upper()}** (Score mixto: {score_fmt}).\n\n"
+                f"• **Delitos acumulados:** {delitos_fmt} ({tasa_fmt} por cada 100.000 habitantes)\n"
+                f"• **Población:** {poblacion_fmt} hab. | **Estrato promedio:** {estrato_fmt}\n"
+                f"• **Luminarias públicas:** {luminarias_fmt}\n\n"
                 f"Recomendación: En zonas comerciales o de transporte masivo, mantén tus pertenencias a la vista y utiliza vías principales con buena iluminación."
             )
 
     # 12. Búsqueda de Barrio en la base de datos geoespacial
-    res_barrio = tool_buscar_barrio(datos, pregunta)
+    candidato_barrio = pregunta
+    m_barrio = re.search(r'\bbarrio\s+([a-zA-ZáéíóúÁÉÍÓÚñÑ0-9\s]+)', pregunta, re.IGNORECASE)
+    if m_barrio:
+        candidato_barrio = m_barrio.group(1).strip()
+    res_barrio = tool_buscar_barrio(datos, candidato_barrio)
     if isinstance(res_barrio, dict) and "error" not in res_barrio and "barrio" in res_barrio:
         upz_info = f" (UPZ {res_barrio['upz']['upz']})" if res_barrio.get("upz") else ""
         return (
