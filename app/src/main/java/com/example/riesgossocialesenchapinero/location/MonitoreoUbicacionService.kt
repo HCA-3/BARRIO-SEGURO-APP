@@ -14,6 +14,7 @@ import android.util.Log
 import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
 import com.example.riesgossocialesenchapinero.MainActivity
+import com.example.riesgossocialesenchapinero.hayPermisoNotificaciones
 import com.example.riesgossocialesenchapinero.data.AjustesManager
 import com.example.riesgossocialesenchapinero.data.ApiClient
 import com.google.android.gms.location.LocationCallback
@@ -163,13 +164,20 @@ class MonitoreoUbicacionService : Service() {
                 return@launch
             }
 
+            var falloRed = false
             val resultado = try {
                 ApiClient.consultarRiesgoPorPunto(lat, lng)
             } catch (e: Exception) {
-                Log.e(TAG, "consultarRiesgoPorPunto falló (se reintenta en el próximo chequeo)", e)
+                Log.e(TAG, "consultarRiesgoPorPunto falló (error de red o servidor, se reintenta en el próximo chequeo)", e)
+                falloRed = true
                 null
             }
-            Log.d(TAG, "resultado riesgo para ($lat, $lng): $resultado")
+            Log.d(TAG, "resultado riesgo para ($lat, $lng): $resultado, falloRed: $falloRed")
+
+            if (falloRed) {
+                // Ante corte de red o timeout temporal, no cambiamos el estado ni emitimos alertas falsas de salida de Bogotá
+                return@launch
+            }
 
             if (resultado != null) {
                 val nuevaLoc = resultado.localidad
@@ -308,11 +316,7 @@ class MonitoreoUbicacionService : Service() {
     }
 
     private fun mostrarNotificacionSector(titulo: String, mensaje: String, esAlertaAlta: Boolean = false) {
-        if (ActivityCompat.checkSelfPermission(
-                this,
-                android.Manifest.permission.POST_NOTIFICATIONS,
-            ) != PackageManager.PERMISSION_GRANTED
-        ) {
+        if (!hayPermisoNotificaciones(this)) {
             return
         }
 
@@ -342,11 +346,7 @@ class MonitoreoUbicacionService : Service() {
     }
 
     private fun mostrarAlertaUpz(upz: String) {
-        if (ActivityCompat.checkSelfPermission(
-                this,
-                android.Manifest.permission.POST_NOTIFICATIONS,
-            ) != PackageManager.PERMISSION_GRANTED
-        ) {
+        if (!hayPermisoNotificaciones(this)) {
             return
         }
 
