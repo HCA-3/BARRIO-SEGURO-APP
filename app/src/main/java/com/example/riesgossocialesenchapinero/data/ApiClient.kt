@@ -641,18 +641,20 @@ object ApiClient {
             val arr = JSONArray(resp.body?.string() ?: "[]")
             return List(arr.length()) { i ->
                 val o = arr.getJSONObject(i)
+                val lat = if (o.has("latitud")) o.optDouble("latitud", 0.0) else o.optDouble("lat", 0.0)
+                val lng = if (o.has("longitud")) o.optDouble("longitud", 0.0) else o.optDouble("lng", 0.0)
                 ReporteCuadra(
                     id = o.optString("id", "cuadra_$i"),
-                    latitud = o.optDouble("latitud", 0.0),
-                    longitud = o.optDouble("longitud", 0.0),
+                    latitud = lat,
+                    longitud = lng,
                     direccionAprox = o.optString("direccion_aprox", o.optString("direccionAprox", "")),
-                    nivelRiesgo = o.optString("nivel_riesgo", o.optString("nivelRiesgo", "Medio")),
-                    categoria = o.optString("categoria", "Robo frecuente"),
-                    justificacion = o.optString("justificacion", ""),
-                    horarioCritico = o.optString("horario_critico", o.optString("horarioCritico", "Noche")),
+                    nivelRiesgo = o.optString("nivel_riesgo", o.optString("nivelRiesgo", o.optString("peligro", "Medio"))),
+                    categoria = o.optString("categoria", o.optString("motivo", "Robo frecuente")),
+                    justificacion = o.optString("justificacion", o.optString("comentario", "")),
+                    horarioCritico = o.optString("horario_critico", o.optString("horarioCritico", o.optString("horario", "Noche"))),
                     timestamp = o.optLong("timestamp", System.currentTimeMillis()),
-                    usuarioAlias = o.optString("usuario_alias", o.optString("usuarioAlias", "Vecino anónimo")),
-                    votosApoyo = o.optInt("votos_apoyo", o.optInt("votosApoyo", 0))
+                    usuarioAlias = o.optString("usuario_alias", o.optString("usuarioAlias", o.optString("alias", "Vecino anónimo"))),
+                    votosApoyo = o.optInt("votos_apoyo", o.optInt("votosApoyo", o.optInt("votos", 0)))
                 )
             }
         }

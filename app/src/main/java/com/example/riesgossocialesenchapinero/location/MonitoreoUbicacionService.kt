@@ -52,9 +52,11 @@ class MonitoreoUbicacionService : Service() {
         private const val CANAL_MONITOREO = "monitoreo_ubicacion"
         private const val CANAL_ALERTA = "alerta_riesgo"
         private const val CANAL_ALERTA_UPZ = "alerta_llamadas_upz"
+        private const val CANAL_SECTOR = "cambio_sector"
         private const val ID_NOTIFICACION_MONITOREO = 1
         private const val ID_NOTIFICACION_ALERTA = 2
         private const val ID_NOTIFICACION_ALERTA_UPZ = 3
+        private const val ID_NOTIFICACION_SECTOR = 4
 
         // Cada cuánto se revisa la ubicación. 2 minutos: suficientemente
         // frecuente para una alerta útil ("acabo de entrar a una zona roja"),
@@ -65,13 +67,12 @@ class MonitoreoUbicacionService : Service() {
     private lateinit var clienteUbicacion: com.google.android.gms.location.FusedLocationProviderClient
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
-    // Última localidad de riesgo alto por la que ya se avisó, para no repetir
-    // la misma alerta en cada chequeo mientras el usuario sigue ahí parado.
-    // Se resetea al salir de una zona de riesgo alto, así que si vuelve a
-    // entrar (a la misma u otra) se vuelve a avisar.
-    private var ultimaZonaAlertada: String? = null
+    // Última localidad y nivel de riesgo confirmados para no repetir la alerta
+    // mientras el usuario siga en el mismo sector, pero sí avisar cuando cambie de localidad.
+    private var ultimaLocalidad: String? = null
+    private var ultimoNivelRiesgo: String? = null
 
-    // Igual que ultimaZonaAlertada, pero para la capa secundaria de UPZ
+    // Igual que ultimaLocalidad, pero para la capa secundaria de UPZ
     // (llamadas de emergencia). Es independiente: se puede estar en una
     // localidad de riesgo medio pero en una UPZ puntual con muchas llamadas.
     private var ultimaUpzAlertada: String? = null
@@ -170,23 +171,81 @@ class MonitoreoUbicacionService : Service() {
             }
             Log.d(TAG, "resultado riesgo para ($lat, $lng): $resultado")
 
-            if (resultado?.nivelRiesgo == "alto") {
-                if (resultado.localidad != ultimaZonaAlertada) {
-                    ultimaZonaAlertada = resultado.localidad
-                    mostrarAlerta(resultado.localidad)
-                }
-            } else {
-                ultimaZonaAlertada = null
-            }
+            if (resultado != null) {
+                val nuevaLoc = resultado.localidad
+                val nuevoRiesgo = resultado.nivelRiesgo.lowercase()
+                val riesgoFmt = nuevoRiesgo.replaceFirstChar { it.uppercase() }
 
-            val upz = resultado?.upz
-            if (upz?.nivelLlamadas == "alto") {
-                if (upz.upz != ultimaUpzAlertada) {
-                    ultimaUpzAlertada = upz.upz
-                    mostrarAlertaUpz(upz.upz)
+                // Si cambió de sector/localidad o es la primera detección
+                if (nuevaLoc != ultimaLocalidad) {
+                    val localidadAnterior = ultimaLocalidad
+                    val riesgoAnterior = ultimoNivelRiesgo
+
+                    if (localidadAnterior != null) {
+                        // Cruce de frontera entre localidades
+                        if (nuevoRiesgo == "alto") {
+                            mostrarNotificacionSector(
+                                titulo = "⚠️ Zona de riesgo alto: $nuevaLoc",
+                                mensaje = "Saliste de $localidadAnterior y entraste a $nuevaLoc (Nivel de riesgo ALTO). Mantente alerta a tus pertenencias.",
+                                esAlertaAlta = true,
+                            )
+                        } else if (riesgoAnterior == "alto") {
+                            mostrarNotificacionSector(
+                                titulo = "✅ Saliste de zona de riesgo alto",
+                                mensaje = "Dejaste atrás $localidadAnterior. Ahora te encuentras en $nuevaLoc (Riesgo $riesgoFmt).",
+                                esAlertaAlta = false,
+                            )
+                        } else {
+                            mostrarNotificacionSector(
+                                titulo = "📍 Cambio de sector: $nuevaLoc",
+                                mensaje = "Saliste de $localidadAnterior y entraste a $nuevaLoc (Riesgo $riesgoFmt).",
+                                esAlertaAlta = false,
+                            )
+                        }
+                    } else {
+                        // Primera detección al activar el monitoreo
+                        if (nuevoRiesgo == "alto") {
+                            mostrarNotificacionSector(
+                                titulo = "⚠️ Zona de riesgo alto: $nuevaLoc",
+                                mensaje = "Te encuentras en $nuevaLoc, una localidad con nivel de riesgo alto.",
+                                esAlertaAlta = true,
+                            )
+                        } else {
+                            mostrarNotificacionSector(
+                                titulo = "📍 Monitoreo activo en $nuevaLoc",
+                                mensaje = "Te encuentras en la localidad de $nuevaLoc (Riesgo $riesgoFmt).",
+                                esAlertaAlta = false,
+                            )
+                        }
+                    }
+
+                    ultimaLocalidad = nuevaLoc
+                    ultimoNivelRiesgo = nuevoRiesgo
+                }
+
+                // Alerta específica para UPZ con alto volumen de llamadas
+                val upz = resultado.upz
+                if (upz?.nivelLlamadas == "alto") {
+                    if (upz.upz != ultimaUpzAlertada) {
+                        ultimaUpzAlertada = upz.upz
+                        mostrarAlertaUpz(upz.upz)
+                    }
+                } else {
+                    ultimaUpzAlertada = null
                 }
             } else {
-                ultimaUpzAlertada = null
+                // resultado == null: El usuario salió del perímetro de Bogotá
+                if (ultimaLocalidad != null) {
+                    val salioDe = ultimaLocalidad
+                    mostrarNotificacionSector(
+                        titulo = "ℹ️ Fuera de Bogotá",
+                        mensaje = "Saliste de $salioDe y estás fuera del perímetro de Bogotá. Monitoreo de riesgo en espera.",
+                        esAlertaAlta = false,
+                    )
+                    ultimaLocalidad = null
+                    ultimoNivelRiesgo = null
+                    ultimaUpzAlertada = null
+                }
             }
         }
     }
@@ -220,6 +279,16 @@ class MonitoreoUbicacionService : Service() {
                     "emergencia recientes. Señal secundaria, no es delito verificado."
             },
         )
+
+        manager.createNotificationChannel(
+            NotificationChannel(
+                CANAL_SECTOR,
+                "Notificaciones de sector y localidad",
+                NotificationManager.IMPORTANCE_DEFAULT,
+            ).apply {
+                description = "Avisa cuando cambias de localidad, entras a un nuevo sector o sales de Bogotá."
+            },
+        )
     }
 
     private fun notificacionMonitoreo(): Notification {
@@ -238,7 +307,7 @@ class MonitoreoUbicacionService : Service() {
             .build()
     }
 
-    private fun mostrarAlerta(localidad: String) {
+    private fun mostrarNotificacionSector(titulo: String, mensaje: String, esAlertaAlta: Boolean = false) {
         if (ActivityCompat.checkSelfPermission(
                 this,
                 android.Manifest.permission.POST_NOTIFICATIONS,
@@ -253,16 +322,23 @@ class MonitoreoUbicacionService : Service() {
             Intent(this, MainActivity::class.java),
             PendingIntent.FLAG_IMMUTABLE,
         )
-        val notificacion = NotificationCompat.Builder(this, CANAL_ALERTA)
-            .setContentTitle("⚠️ Zona de riesgo alto")
-            .setContentText("Entraste a $localidad, una localidad con nivel de riesgo alto.")
-            .setSmallIcon(android.R.drawable.ic_dialog_alert)
-            .setPriority(NotificationCompat.PRIORITY_HIGH)
+
+        val canal = if (esAlertaAlta) CANAL_ALERTA else CANAL_SECTOR
+        val prioridad = if (esAlertaAlta) NotificationCompat.PRIORITY_HIGH else NotificationCompat.PRIORITY_DEFAULT
+        val icono = if (esAlertaAlta) android.R.drawable.ic_dialog_alert else android.R.drawable.ic_dialog_info
+
+        val notificacion = NotificationCompat.Builder(this, canal)
+            .setContentTitle(titulo)
+            .setContentText(mensaje)
+            .setStyle(NotificationCompat.BigTextStyle().bigText(mensaje))
+            .setSmallIcon(icono)
+            .setPriority(prioridad)
             .setAutoCancel(true)
             .setContentIntent(abrirApp)
             .build()
 
-        getSystemService(NotificationManager::class.java).notify(ID_NOTIFICACION_ALERTA, notificacion)
+        val notifId = if (esAlertaAlta) ID_NOTIFICACION_ALERTA else ID_NOTIFICACION_SECTOR
+        getSystemService(NotificationManager::class.java).notify(notifId, notificacion)
     }
 
     private fun mostrarAlertaUpz(upz: String) {
