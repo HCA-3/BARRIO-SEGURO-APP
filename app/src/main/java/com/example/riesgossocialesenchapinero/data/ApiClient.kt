@@ -36,7 +36,7 @@ object ApiClient {
         "http://127.0.0.1:8001/",
         "http://192.168.1.7:8001/",
         "http://192.168.0.114:8001/",
-        "https://forgot-imagine-puzzles-passive.trycloudflare.com/",
+        "https://stops-air-graham-held.trycloudflare.com/",
         "http://10.0.2.2:8001/",
         "http://127.0.0.1:8000/",
         "http://192.168.1.7:8000/",

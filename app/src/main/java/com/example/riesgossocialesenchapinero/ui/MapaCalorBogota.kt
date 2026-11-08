@@ -210,6 +210,18 @@ fun MapaCalorBogotaScreen(
             permisos[Manifest.permission.ACCESS_COARSE_LOCATION] == true
         ) {
             try {
+                // lastLocation es una posición en caché del sistema: llega casi
+                // al instante (a diferencia de getCurrentLocation, que puede
+                // tardar segundos o no responder nunca en interiores). La
+                // pedimos primero para no dejar al usuario esperando un GPS
+                // "frío", y en paralelo pedimos una posición fresca de verdad.
+                fusedLocationClient.lastLocation.addOnSuccessListener { loc: Location? ->
+                    if (loc != null && miUbicacion == null) {
+                        val gp = GeoPoint(loc.latitude, loc.longitude)
+                        miUbicacion = gp
+                        mapaRef?.controller?.animateTo(gp, 15.5, 800L)
+                    }
+                }
                 fusedLocationClient.getCurrentLocation(Priority.PRIORITY_HIGH_ACCURACY, null)
                     .addOnSuccessListener { loc: Location? ->
                         if (loc != null) {
@@ -225,6 +237,11 @@ fun MapaCalorBogotaScreen(
     LaunchedEffect(Unit) {
         if (ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
             try {
+                fusedLocationClient.lastLocation.addOnSuccessListener { loc: Location? ->
+                    if (loc != null && miUbicacion == null) {
+                        miUbicacion = GeoPoint(loc.latitude, loc.longitude)
+                    }
+                }
                 fusedLocationClient.getCurrentLocation(Priority.PRIORITY_HIGH_ACCURACY, null)
                     .addOnSuccessListener { loc: Location? ->
                         if (loc != null) {
@@ -666,6 +683,15 @@ fun MapaCalorBogotaScreen(
             onCalificarMiUbicacionClick = {
                 if (miUbicacion != null) {
                     iniciarCalificacionPunto(miUbicacion!!)
+                } else if (ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+                    // Permiso ya concedido pero el GPS aún no entrega una
+                    // posición: antes esto no hacía nada visible (el botón
+                    // "parecía muerto"). Avisamos y calificamos el centro
+                    // actual del mapa para que el botón sí responda.
+                    Toast.makeText(context, "Aún ubicando tu GPS, calificando el centro visible del mapa", Toast.LENGTH_SHORT).show()
+                    mapaRef?.mapCenter?.let { centro ->
+                        iniciarCalificacionPunto(GeoPoint(centro.latitude, centro.longitude))
+                    }
                 } else {
                     lanzadorPermisos.launch(
                         arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION)
