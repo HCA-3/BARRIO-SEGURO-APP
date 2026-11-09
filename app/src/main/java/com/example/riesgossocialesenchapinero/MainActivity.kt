@@ -183,6 +183,9 @@ class MainActivity : AppCompatActivity() {
                 // mandarlo a Ajustes si Android ya no muestra el diálogo.
                 var pedidoPorElUsuario by remember { mutableStateOf(false) }
                 var mostrarDialogoPermisoNotif by remember { mutableStateOf(false) }
+                var mostrarDialogoPermisosIniciales by remember {
+                    mutableStateOf(!hayPermisoUbicacion(actividad) || !hayPermisoNotificaciones(actividad))
+                }
 
                 val lanzadorPermisos = rememberLauncherForActivityResult(
                     ActivityResultContracts.RequestMultiplePermissions(),
@@ -191,6 +194,13 @@ class MainActivity : AppCompatActivity() {
                     val concedidoNotificaciones = hayPermisoNotificaciones(actividad)
                     permisoUbicacion.value = concedidoUbicacion
                     permisoNotificaciones.value = concedidoNotificaciones
+
+                    if (concedidoNotificaciones) {
+                        ajustesViewModel.cambiarAlertas(true)
+                    }
+                    if (concedidoUbicacion && concedidoNotificaciones) {
+                        mostrarDialogoPermisosIniciales = false
+                    }
 
                     if (pedidoPorElUsuario) {
                         if (concedidoUbicacion) {
@@ -222,14 +232,23 @@ class MainActivity : AppCompatActivity() {
                     }
                     if (permisos.isNotEmpty()) {
                         lanzadorPermisos.launch(permisos.toTypedArray())
+                    } else if (!hayPermisoNotificaciones(actividad)) {
+                        abrirAjustesDeNotificaciones(actividad)
                     }
                 }
 
-                // Se pide al entrar, si los términos ya fueron aceptados y falta ubicación o notificaciones
-                LaunchedEffect(ajustesEstado.terminosAceptados) {
-                    if (ajustesEstado.terminosAceptados && (!hayPermisoUbicacion(actividad) || !hayPermisoNotificaciones(actividad))) {
-                        pedirTodosLosPermisos()
-                    }
+                // Modal explicativo de permisos de Ubicación y Notificaciones si falta alguno
+                if (ajustesEstado.terminosAceptados && mostrarDialogoPermisosIniciales && (!permisoUbicacion.value || !permisoNotificaciones.value)) {
+                    com.example.riesgossocialesenchapinero.ui.ModalPermisosSeguridad(
+                        permisoUbicacionConcedido = permisoUbicacion.value,
+                        permisoNotificacionesConcedido = permisoNotificaciones.value,
+                        onConcederPermisos = {
+                            pedirTodosLosPermisos()
+                        },
+                        onContinuar = {
+                            mostrarDialogoPermisosIniciales = false
+                        }
+                    )
                 }
 
                 var mostrarTutorialManual by remember { mutableStateOf(false) }
@@ -240,6 +259,7 @@ class MainActivity : AppCompatActivity() {
                         onAceptar = {
                             ajustesViewModel.aceptarTerminos()
                             if (!hayPermisoUbicacion(actividad) || !hayPermisoNotificaciones(actividad)) {
+                                mostrarDialogoPermisosIniciales = true
                                 pedirTodosLosPermisos()
                             }
                         },
@@ -709,14 +729,14 @@ fun ControlMonitoreo(activo: Boolean, onToggle: () -> Unit) {
                 }
             }
 
-            if (activo && !tieneNotificaciones) {
+            if (!tieneNotificaciones) {
                 Spacer(modifier = Modifier.height(10.dp))
                 Surface(
                     shape = RoundedCornerShape(10.dp),
-                    color = MaterialTheme.colorScheme.errorContainer,
+                    color = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.85f),
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clickable { abrirAjustesDeLaApp(context) }
+                        .clickable { abrirAjustesDeNotificaciones(context) }
                 ) {
                     Row(
                         modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
@@ -724,7 +744,7 @@ fun ControlMonitoreo(activo: Boolean, onToggle: () -> Unit) {
                     ) {
                         Text("🔔", modifier = Modifier.padding(end = 8.dp))
                         Text(
-                            text = "Notificaciones desactivadas. Toca aquí para autorizarlas en Ajustes.",
+                            text = "Notificaciones del sistema desactivadas. Toca aquí para activarlas en Ajustes y recibir alertas de riesgo.",
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onErrorContainer
                         )
@@ -1057,6 +1077,20 @@ fun abrirAjustesDeLaApp(context: Context) {
         Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
         Uri.fromParts("package", context.packageName, null),
     ).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+    context.startActivity(intent)
+}
+
+/** Pantalla de configuración de notificaciones del sistema para la app. */
+fun abrirAjustesDeNotificaciones(context: Context) {
+    val intent = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+        Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
+            putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
+        }
+    } else {
+        Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+            data = Uri.fromParts("package", context.packageName, null)
+        }
+    }.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
     context.startActivity(intent)
 }
 

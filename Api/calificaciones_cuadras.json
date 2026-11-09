@@ -1,5 +1,23 @@
 [
   {
+    "id": "cuadra_1794196988116",
+    "latitud": 4.644890460791672,
+    "longitud": -74.06678229724315,
+    "direccion_aprox": "Cl. 58 # 14A-39, Teusaquillo, Bogotá D.C., D.C., Bogotá D.C., Bogotá D.C., D.C.",
+    "direccionAprox": "Cl. 58 # 14A-39, Teusaquillo, Bogotá D.C., D.C., Bogotá D.C., Bogotá D.C., D.C.",
+    "nivel_riesgo": "Medio",
+    "nivelRiesgo": "Medio",
+    "categoria": "Mala iluminación",
+    "justificacion": "mala iluminación",
+    "horario_critico": "Noche",
+    "horarioCritico": "Noche",
+    "usuario_alias": "Vecino anónimo",
+    "usuarioAlias": "Vecino anónimo",
+    "timestamp": 1794196988116,
+    "votos_apoyo": 0,
+    "votosApoyo": 0
+  },
+  {
     "id": "cuadra_1793897180000",
     "latitud": 4.637131312649103,
     "longitud": -74.06784110111347,

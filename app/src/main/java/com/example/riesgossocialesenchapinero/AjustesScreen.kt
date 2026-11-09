@@ -18,6 +18,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.animation.animateContentSize
 import com.example.riesgossocialesenchapinero.ui.bounceClick
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.HorizontalDivider
@@ -26,6 +27,7 @@ import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -33,6 +35,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.layout.width
 import androidx.compose.ui.semantics.Role
@@ -63,11 +66,139 @@ fun AjustesScreen(
         Spacer(modifier = Modifier.height(20.dp))
 
         val context = androidx.compose.ui.platform.LocalContext.current
+        val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
+        var tieneUbicacion by remember { mutableStateOf(hayPermisoUbicacion(context)) }
+        var tieneNotif by remember { mutableStateOf(hayPermisoNotificaciones(context)) }
+
+        DisposableEffect(lifecycleOwner) {
+            val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
+                if (event == androidx.lifecycle.Lifecycle.Event.ON_RESUME) {
+                    tieneUbicacion = hayPermisoUbicacion(context)
+                    tieneNotif = hayPermisoNotificaciones(context)
+                }
+            }
+            lifecycleOwner.lifecycle.addObserver(observer)
+            onDispose {
+                lifecycleOwner.lifecycle.removeObserver(observer)
+            }
+        }
+
         val lanzadorPermisoNotif = androidx.activity.compose.rememberLauncherForActivityResult(
             androidx.activity.result.contract.ActivityResultContracts.RequestPermission()
         ) { concedido ->
             viewModel.cambiarAlertas(concedido)
+            tieneNotif = hayPermisoNotificaciones(context)
         }
+
+        val lanzadorPermisoUbicacion = androidx.activity.compose.rememberLauncherForActivityResult(
+            androidx.activity.result.contract.ActivityResultContracts.RequestMultiplePermissions()
+        ) { _ ->
+            tieneUbicacion = hayPermisoUbicacion(context)
+        }
+
+        // SECCIÓN ESTADO DE PERMISOS DE SEGURIDAD
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 4.dp),
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+            )
+        ) {
+            Column(modifier = Modifier.padding(14.dp)) {
+                Text(
+                    text = "🛡️ Permisos del Sistema",
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary
+                )
+                Spacer(modifier = Modifier.height(10.dp))
+
+                // Fila Ubicación
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Row(
+                        modifier = Modifier.weight(1f),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text("📍", fontSize = 18.sp, modifier = Modifier.padding(end = 8.dp))
+                        Column {
+                            Text("Ubicación GPS", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
+                            Text(
+                                if (tieneUbicacion) "Autorizada para monitoreo" else "Requerida para cuadrantes y mapa",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                    if (tieneUbicacion) {
+                        Text("Activa ✅", color = Color(0xFF2E7D32), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.labelMedium)
+                    } else {
+                        Button(
+                            onClick = {
+                                lanzadorPermisoUbicacion.launch(
+                                    arrayOf(
+                                        android.Manifest.permission.ACCESS_FINE_LOCATION,
+                                        android.Manifest.permission.ACCESS_COARSE_LOCATION
+                                    )
+                                )
+                            },
+                            contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 12.dp, vertical = 4.dp)
+                        ) {
+                            Text("Activar")
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(10.dp))
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
+                Spacer(modifier = Modifier.height(10.dp))
+
+                // Fila Notificaciones
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Row(
+                        modifier = Modifier.weight(1f),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text("🔔", fontSize = 18.sp, modifier = Modifier.padding(end = 8.dp))
+                        Column {
+                            Text("Notificaciones y Alertas", style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
+                            Text(
+                                if (tieneNotif) "Autorizadas por el sistema" else "Requeridas para avisos de riesgo",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                    if (tieneNotif) {
+                        Text("Activas ✅", color = Color(0xFF2E7D32), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.labelMedium)
+                    } else {
+                        Button(
+                            onClick = {
+                                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+                                    lanzadorPermisoNotif.launch(android.Manifest.permission.POST_NOTIFICATIONS)
+                                } else {
+                                    abrirAjustesDeNotificaciones(context)
+                                }
+                            },
+                            contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 12.dp, vertical = 4.dp)
+                        ) {
+                            Text("Activar")
+                        }
+                    }
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(12.dp))
 
         // SECCIÓN NOTIFICACIONES DE RIESGO (RF-003)
         Text(
@@ -96,7 +227,7 @@ fun AjustesScreen(
                             if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
                                 lanzadorPermisoNotif.launch(android.Manifest.permission.POST_NOTIFICATIONS)
                             } else {
-                                abrirAjustesDeLaApp(context)
+                                abrirAjustesDeNotificaciones(context)
                             }
                         } else {
                             viewModel.cambiarAlertas(true)
