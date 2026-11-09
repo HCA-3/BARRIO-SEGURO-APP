@@ -10,6 +10,13 @@ plugins {
     alias(libs.plugins.google.services)
 }
 
+val versionFile = rootProject.file(".apk_version")
+val currentApkVersion = if (versionFile.exists()) {
+    versionFile.readText().trim().toIntOrNull() ?: 1
+} else {
+    1
+}
+
 android {
     namespace = "com.example.riesgossocialesenchapinero"
     compileSdk = 35
@@ -18,8 +25,8 @@ android {
         applicationId = "com.example.riesgossocialesenchapinero"
         minSdk = 29
         targetSdk = 35
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = currentApkVersion
+        versionName = "1.0.$currentApkVersion"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
