@@ -1,10 +1,13 @@
 package com.example.riesgossocialesenchapinero.ui
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
@@ -13,12 +16,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import com.example.riesgossocialesenchapinero.R
 
 /**
  * Pantalla / Modal interactivo de Términos y Condiciones y Política de Privacidad.
@@ -454,7 +460,7 @@ fun ContenidoCreditosDesarrolladores() {
 
         Spacer(modifier = Modifier.height(14.dp))
 
-        // Tarjeta Desarrollador 1
+        // Tarjeta Desarrollador 1: David
         Card(
             modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp),
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
@@ -464,25 +470,33 @@ fun ContenidoCreditosDesarrolladores() {
                 modifier = Modifier.padding(14.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Surface(
-                    shape = RoundedCornerShape(10.dp),
-                    color = MaterialTheme.colorScheme.primaryContainer,
-                    modifier = Modifier.size(46.dp)
-                ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Text("👨‍💻", fontSize = 24.sp)
-                    }
-                }
-                Spacer(modifier = Modifier.width(14.dp))
-                Text(
-                    text = "David Santiago Castelblanco Artunduaga",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
+                Image(
+                    painter = painterResource(R.drawable.foto_david),
+                    contentDescription = "David Santiago Castelblanco Artunduaga",
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier
+                        .size(56.dp)
+                        .clip(CircleShape)
+                        .border(2.dp, MaterialTheme.colorScheme.primary, CircleShape)
                 )
+                Spacer(modifier = Modifier.width(14.dp))
+                Column {
+                    Text(
+                        text = "David Santiago Castelblanco Artunduaga",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = "Desarrollador de la App",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.primary,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
             }
         }
 
-        // Tarjeta Desarrollador 2
+        // Tarjeta Desarrollador 2: Johan
         Card(
             modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp),
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
@@ -492,21 +506,29 @@ fun ContenidoCreditosDesarrolladores() {
                 modifier = Modifier.padding(14.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Surface(
-                    shape = RoundedCornerShape(10.dp),
-                    color = MaterialTheme.colorScheme.secondaryContainer,
-                    modifier = Modifier.size(46.dp)
-                ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Text("👨‍💻", fontSize = 24.sp)
-                    }
-                }
-                Spacer(modifier = Modifier.width(14.dp))
-                Text(
-                    text = "Johan Sebastian Fuentes Pinto",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
+                Image(
+                    painter = painterResource(R.drawable.foto_johan),
+                    contentDescription = "Johan Sebastian Fuentes Pinto",
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier
+                        .size(56.dp)
+                        .clip(CircleShape)
+                        .border(2.dp, MaterialTheme.colorScheme.secondary, CircleShape)
                 )
+                Spacer(modifier = Modifier.width(14.dp))
+                Column {
+                    Text(
+                        text = "Johan Sebastian Fuentes Pinto",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = "Desarrollador de la App",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.secondary,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
             }
         }
 
