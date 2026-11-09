@@ -2,6 +2,7 @@ package com.example.riesgossocialesenchapinero
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.ui.draw.clip
@@ -361,6 +362,18 @@ fun AjustesScreen(
 
         // SECCIÓN LEGAL Y PRIVACIDAD (Ley 1581 de 2012)
         var mostrarDialogoTerminos by remember { mutableStateOf(false) }
+        var imagenAmpliadaRes by remember { mutableStateOf<Int?>(null) }
+        var tituloImagenAmpliada by remember { mutableStateOf("") }
+        var subtituloImagenAmpliada by remember { mutableStateOf<String?>(null) }
+
+        if (imagenAmpliadaRes != null) {
+            com.example.riesgossocialesenchapinero.ui.DialogoVisorImagen(
+                resId = imagenAmpliadaRes!!,
+                titulo = tituloImagenAmpliada,
+                subtitulo = subtituloImagenAmpliada,
+                onCerrar = { imagenAmpliadaRes = null }
+            )
+        }
 
         Text(
             text = "⚖️ Términos, Privacidad y Créditos",
@@ -470,8 +483,15 @@ fun AjustesScreen(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Image(
                         painter = painterResource(R.drawable.ic_escudo_barrio_seguro),
-                        contentDescription = "Logo Barrio Seguro",
-                        modifier = Modifier.size(24.dp)
+                        contentDescription = "Logo Barrio Seguro - Toca para ampliar",
+                        modifier = Modifier
+                            .size(28.dp)
+                            .clip(CircleShape)
+                            .clickable {
+                                imagenAmpliadaRes = R.drawable.logo_barrio_seguro_hd
+                                tituloImagenAmpliada = "Barrio Seguro Bogotá"
+                                subtituloImagenAmpliada = "Identidad y Emblema Oficial"
+                            }
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
@@ -489,15 +509,26 @@ fun AjustesScreen(
                 ) {
                     Image(
                         painter = painterResource(R.drawable.foto_david),
-                        contentDescription = "Foto David - Desarrollador",
+                        contentDescription = "Foto David - Toca para ampliar",
                         contentScale = ContentScale.Crop,
                         modifier = Modifier
                             .size(52.dp)
                             .clip(CircleShape)
                             .border(1.5.dp, MaterialTheme.colorScheme.primary, CircleShape)
+                            .clickable {
+                                imagenAmpliadaRes = R.drawable.foto_david
+                                tituloImagenAmpliada = "David Santiago Castelblanco Artunduaga"
+                                subtituloImagenAmpliada = "Desarrollador de la App"
+                            }
                     )
                     Spacer(modifier = Modifier.width(12.dp))
-                    Column {
+                    Column(
+                        modifier = Modifier.clickable {
+                            imagenAmpliadaRes = R.drawable.foto_david
+                            tituloImagenAmpliada = "David Santiago Castelblanco Artunduaga"
+                            subtituloImagenAmpliada = "Desarrollador de la App"
+                        }
+                    ) {
                         Text(
                             text = "David Santiago Castelblanco Artunduaga",
                             style = MaterialTheme.typography.bodyMedium,
@@ -522,15 +553,26 @@ fun AjustesScreen(
                 ) {
                     Image(
                         painter = painterResource(R.drawable.foto_johan),
-                        contentDescription = "Foto Johan - Desarrollador",
+                        contentDescription = "Foto Johan - Toca para ampliar",
                         contentScale = ContentScale.Crop,
                         modifier = Modifier
                             .size(52.dp)
                             .clip(CircleShape)
                             .border(1.5.dp, MaterialTheme.colorScheme.secondary, CircleShape)
+                            .clickable {
+                                imagenAmpliadaRes = R.drawable.foto_johan
+                                tituloImagenAmpliada = "Johan Sebastian Fuentes Pinto"
+                                subtituloImagenAmpliada = "Desarrollador de la App"
+                            }
                     )
                     Spacer(modifier = Modifier.width(12.dp))
-                    Column {
+                    Column(
+                        modifier = Modifier.clickable {
+                            imagenAmpliadaRes = R.drawable.foto_johan
+                            tituloImagenAmpliada = "Johan Sebastian Fuentes Pinto"
+                            subtituloImagenAmpliada = "Desarrollador de la App"
+                        }
+                    ) {
                         Text(
                             text = "Johan Sebastian Fuentes Pinto",
                             style = MaterialTheme.typography.bodyMedium,
