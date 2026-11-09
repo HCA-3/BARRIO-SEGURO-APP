@@ -16,6 +16,9 @@ import androidx.activity.compose.LocalActivityResultRegistryOwner
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.size
+import androidx.compose.ui.res.painterResource
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.text.KeyboardActions
@@ -292,6 +295,15 @@ class MainActivity : AppCompatActivity() {
                     modifier = Modifier.fillMaxSize(),
                     topBar = {
                         TopAppBar(
+                            navigationIcon = {
+                                Image(
+                                    painter = painterResource(R.drawable.ic_escudo_barrio_seguro),
+                                    contentDescription = "Logo Barrio Seguro",
+                                    modifier = Modifier
+                                        .padding(start = 12.dp, end = 4.dp)
+                                        .size(32.dp)
+                                )
+                            },
                             title = {
                                 Text(
                                     when (pantallaActual) {

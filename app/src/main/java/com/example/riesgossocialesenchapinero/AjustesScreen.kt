@@ -1,6 +1,8 @@
 package com.example.riesgossocialesenchapinero
 
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.size
+import androidx.compose.ui.res.painterResource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -331,7 +333,11 @@ fun AjustesScreen(
         ) {
             Column(modifier = Modifier.padding(16.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text("🛡️", fontSize = 20.sp)
+                    Image(
+                        painter = painterResource(R.drawable.ic_escudo_barrio_seguro),
+                        contentDescription = "Logo Barrio Seguro",
+                        modifier = Modifier.size(24.dp)
+                    )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
                         text = "Equipo de Desarrollo Barrio Seguro",
