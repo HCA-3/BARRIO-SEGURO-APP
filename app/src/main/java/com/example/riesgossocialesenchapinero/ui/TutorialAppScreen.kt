@@ -7,7 +7,10 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.ui.res.painterResource
+import com.example.riesgossocialesenchapinero.R
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -259,6 +262,17 @@ fun ModalTutorialBienvenida(
                             .fillMaxSize()
                             .verticalScroll(rememberScrollState())
                     ) {
+                        if (pasoItem.id == 0) {
+                            Image(
+                                painter = painterResource(R.drawable.logo_barrio_seguro),
+                                contentDescription = "Logo Barrio Seguro",
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(95.dp)
+                                    .padding(bottom = 12.dp)
+                            )
+                        }
+
                         // Título y Subtítulo
                         Text(
                             text = pasoItem.titulo,
