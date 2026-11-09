@@ -252,6 +252,14 @@ class MainActivity : AppCompatActivity() {
                 }
 
                 var mostrarTutorialManual by remember { mutableStateOf(false) }
+                var mostrarVisorLogo by remember { mutableStateOf(false) }
+
+                // Visor interactivo para ampliar el logo oficial al tocarlo
+                if (mostrarVisorLogo) {
+                    com.example.riesgossocialesenchapinero.ui.DialogoVisorLogo(
+                        onCerrar = { mostrarVisorLogo = false }
+                    )
+                }
 
                 // Modal obligatorio de Términos y Condiciones y Privacidad (Ley 1581 de 2012)
                 if (!ajustesEstado.terminosAceptados) {
@@ -316,13 +324,16 @@ class MainActivity : AppCompatActivity() {
                     topBar = {
                         TopAppBar(
                             navigationIcon = {
-                                Image(
-                                    painter = painterResource(R.drawable.ic_escudo_barrio_seguro),
-                                    contentDescription = "Logo Barrio Seguro",
-                                    modifier = Modifier
-                                        .padding(start = 12.dp, end = 4.dp)
-                                        .size(32.dp)
-                                )
+                                IconButton(
+                                    onClick = { mostrarVisorLogo = true },
+                                    modifier = Modifier.padding(start = 4.dp)
+                                ) {
+                                    Image(
+                                        painter = painterResource(R.drawable.ic_escudo_barrio_seguro),
+                                        contentDescription = "Logo Barrio Seguro - Toca para ampliar",
+                                        modifier = Modifier.size(32.dp)
+                                    )
+                                }
                             },
                             title = {
                                 Text(

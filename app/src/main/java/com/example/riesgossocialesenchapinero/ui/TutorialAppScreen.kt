@@ -9,6 +9,7 @@ import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.ui.res.painterResource
 import com.example.riesgossocialesenchapinero.R
 import androidx.compose.foundation.layout.Arrangement
@@ -42,6 +43,9 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -179,6 +183,11 @@ fun ModalTutorialBienvenida(
     var pasoActual by remember { mutableIntStateOf(0) }
     val totalPasos = pasos.size
     val paso = pasos[pasoActual]
+    var mostrarVisorLogo by remember { mutableStateOf(false) }
+
+    if (mostrarVisorLogo) {
+        DialogoVisorLogo(onCerrar = { mostrarVisorLogo = false })
+    }
 
     Dialog(
         onDismissRequest = { /* Bloqueante */ },
@@ -265,11 +274,12 @@ fun ModalTutorialBienvenida(
                         if (pasoItem.id == 0) {
                             Image(
                                 painter = painterResource(R.drawable.logo_barrio_seguro),
-                                contentDescription = "Logo Barrio Seguro",
+                                contentDescription = "Logo Barrio Seguro - Toca para ampliar",
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .height(95.dp)
                                     .padding(bottom = 12.dp)
+                                    .clickable { mostrarVisorLogo = true }
                             )
                         }
 

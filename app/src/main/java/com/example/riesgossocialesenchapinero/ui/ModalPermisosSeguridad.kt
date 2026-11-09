@@ -2,6 +2,7 @@ package com.example.riesgossocialesenchapinero.ui
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -24,6 +25,10 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -49,6 +54,11 @@ fun ModalPermisosSeguridad(
     onContinuar: () -> Unit,
 ) {
     val ambosConcedidos = permisoUbicacionConcedido && permisoNotificacionesConcedido
+    var mostrarVisorLogo by remember { mutableStateOf(false) }
+
+    if (mostrarVisorLogo) {
+        DialogoVisorLogo(onCerrar = { mostrarVisorLogo = false })
+    }
 
     Dialog(
         onDismissRequest = onContinuar,
@@ -77,12 +87,13 @@ fun ModalPermisosSeguridad(
                     modifier = Modifier
                         .size(68.dp)
                         .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.primaryContainer),
+                        .background(MaterialTheme.colorScheme.primaryContainer)
+                        .clickable { mostrarVisorLogo = true },
                     contentAlignment = Alignment.Center
                 ) {
                     Image(
                         painter = painterResource(R.drawable.ic_escudo_barrio_seguro),
-                        contentDescription = "Escudo Barrio Seguro",
+                        contentDescription = "Escudo Barrio Seguro - Toca para ampliar",
                         modifier = Modifier.size(46.dp)
                     )
                 }

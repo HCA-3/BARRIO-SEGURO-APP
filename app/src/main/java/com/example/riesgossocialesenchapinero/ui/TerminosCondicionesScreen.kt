@@ -438,6 +438,19 @@ fun ContenidoPoliticaPrivacidad() {
   
 @Composable
 fun ContenidoCreditosDesarrolladores() {
+    var imagenAmpliadaRes by remember { mutableStateOf<Int?>(null) }
+    var tituloImagenAmpliada by remember { mutableStateOf("") }
+    var subtituloImagenAmpliada by remember { mutableStateOf<String?>(null) }
+
+    if (imagenAmpliadaRes != null) {
+        DialogoVisorImagen(
+            resId = imagenAmpliadaRes!!,
+            titulo = tituloImagenAmpliada,
+            subtitulo = subtituloImagenAmpliada,
+            onCerrar = { imagenAmpliadaRes = null }
+        )
+    }
+
     Column(modifier = Modifier.padding(vertical = 10.dp)) {
         Text(
             text = "CRÉDITOS Y EQUIPO DE DESARROLLO",
@@ -462,7 +475,14 @@ fun ContenidoCreditosDesarrolladores() {
 
         // Tarjeta Desarrollador 1: David
         Card(
-            modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 6.dp)
+                .clickable {
+                    imagenAmpliadaRes = R.drawable.foto_david
+                    tituloImagenAmpliada = "David Santiago Castelblanco Artunduaga"
+                    subtituloImagenAmpliada = "Desarrollador de la App"
+                },
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
             shape = RoundedCornerShape(12.dp)
         ) {
@@ -498,7 +518,14 @@ fun ContenidoCreditosDesarrolladores() {
 
         // Tarjeta Desarrollador 2: Johan
         Card(
-            modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 6.dp)
+                .clickable {
+                    imagenAmpliadaRes = R.drawable.foto_johan
+                    tituloImagenAmpliada = "Johan Sebastian Fuentes Pinto"
+                    subtituloImagenAmpliada = "Desarrollador de la App"
+                },
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
             shape = RoundedCornerShape(12.dp)
         ) {
