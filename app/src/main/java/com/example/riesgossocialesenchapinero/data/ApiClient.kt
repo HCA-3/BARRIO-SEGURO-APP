@@ -34,10 +34,10 @@ object ApiClient {
      */
     val CANDIDATOS = listOf(
         "http://127.0.0.1:8001/",
+        "http://192.168.1.11:8001/",
+        "https://fisher-comments-held-walking.trycloudflare.com/",
         "http://192.168.1.7:8001/",
         "http://192.168.0.114:8001/",
-        "https://department-realtors-lifetime-wherever.trycloudflare.com/",
-        "https://stops-air-graham-held.trycloudflare.com/",
         "http://10.0.2.2:8001/",
         "http://127.0.0.1:8000/",
         "http://192.168.1.7:8000/",
